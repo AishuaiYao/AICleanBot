@@ -4,6 +4,7 @@
 logs/
 dataset/
 models/
+build/
 
 
 *.zip
