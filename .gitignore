@@ -5,6 +5,7 @@ logs/
 dataset/
 models/
 build/
+managed_components/
 
 
 *.zip
