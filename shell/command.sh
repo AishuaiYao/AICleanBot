@@ -21,7 +21,7 @@ pip install -i https://pypi.tuna.tsinghua.edu.cn/simple torchvision==0.19.0 torc
 
 
 
-pip install setuptools==75.3.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple matplotlib
 
 
 
