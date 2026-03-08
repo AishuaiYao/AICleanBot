@@ -1,7 +1,6 @@
 .vscode/
 .idea/
 .venv/
-logs/
 dataset/
 models/
 build/
