@@ -28,7 +28,7 @@ typedef struct {
 // 假设有 ESP-DL 库，包含真实头文件
 #include "dl_model.h"
 #include "dl_tensor.h"
-#endifd
+#endif
 
 // 输入输出配置
 #define INPUT_SIZE 1      // 输入特征数

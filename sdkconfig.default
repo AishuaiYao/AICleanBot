@@ -1,0 +1,84 @@
+# ESP-DL 推理测试项目精简配置
+# 基于 main/main.cpp 的实际需求
+
+# ===========================================
+# 基础配置
+# ===========================================
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_IDF_TARGET_ESP32S3=y
+
+# ===========================================
+# 编译器配置
+# ===========================================
+CONFIG_COMPILER_OPTIMIZATION_SIZE=y
+CONFIG_COMPILER_OPTIMIZATION_ASSERTIONS_SILENT=y
+
+# ===========================================
+# 日志配置
+# ===========================================
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+CONFIG_LOG_MAXIMUM_LEVEL=3
+CONFIG_LOG_COLORS=y
+
+# ===========================================
+# FreeRTOS 配置
+# ===========================================
+CONFIG_FREERTOS_HZ=100
+CONFIG_FREERTOS_CHECK_STACKOVERFLOW_NONE=y
+
+# ===========================================
+# ESP32 系统配置
+# ===========================================
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_160=y
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ=160
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=3584
+CONFIG_ESP_CONSOLE_UART=y
+CONFIG_ESP_CONSOLE_UART_NUM=0
+CONFIG_ESP_CONSOLE_UART_BAUDRATE=115200
+
+# ===========================================
+# 启动加载器配置
+# ===========================================
+CONFIG_BOOTLOADER_COMPILER_OPTIMIZATION_SIZE=y
+CONFIG_BOOTLOADER_LOG_LEVEL_INFO=y
+
+# ===========================================
+# Flash 配置
+# ===========================================
+CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+CONFIG_ESPTOOLPY_FLASHFREQ_40M=y
+CONFIG_ESPTOOLPY_FLASHSIZE_2MB=y
+CONFIG_PARTITION_TABLE_SINGLE_APP=y
+
+# ===========================================
+# 禁用不需要的组件
+# ===========================================
+# 蓝牙
+# CONFIG_BT_ENABLED is not set
+
+# Wi-Fi（根据你的 sdkconfig 中是启用的，如果不需要可以禁用）
+# CONFIG_ESP_WIFI_ENABLED is not set
+
+# 以太网
+# CONFIG_ETH_ENABLED is not set
+
+# PSRAM
+# CONFIG_SPIRAM is not set
+
+# ULP 协处理器
+# CONFIG_ULP_COPROC_ENABLED is not set
+
+# 核心 dump
+CONFIG_ESP_COREDUMP_ENABLE_TO_NONE=y
+
+# 调试选项
+# CONFIG_ESP_GDBSTUB_ENABLED is not set
+
+# OpenThread
+# CONFIG_OPENTHREAD_ENABLED is not set
+
+# HTTP 服务器（如不需要）
+# CONFIG_HTTPD_MAX_REQ_HDR_LEN=512
+
+# MQTT（如不需要）
+# CONFIG_MQTT_PROTOCOL_311 is not set
