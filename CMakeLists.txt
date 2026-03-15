@@ -1,7 +1,8 @@
-cmake_minimum_required(VERSION 3.16)
+# The following lines of boilerplate have to be in your project's
+# CMakeLists in this exact order for cmake to work correctly
+cmake_minimum_required(VERSION 3.5)
 
-# Include ESP-IDF build system
+add_compile_options(-fdiagnostics-color=always)
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-
-# Set the project name
-project(sin_model_inference)
+idf_build_set_property(DEPENDENCIES_LOCK dependencies.lock.${IDF_TARGET})
+project(model_in_flash_rodata)

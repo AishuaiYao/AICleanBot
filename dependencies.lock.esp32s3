@@ -9,6 +9,24 @@ dependencies:
       registry_url: https://components.espressif.com/
       type: service
     version: 0.3.1
+  espressif/esp-dl:
+    dependencies:
+    - name: idf
+      version: '>=5.3'
+    - name: espressif/esp_new_jpeg
+      version: ^0.6.1
+    - name: espressif/dl_fft
+      version: '>=0.3.1'
+    - name: espressif/esp-dsp
+      version: ==1.7.0
+    source:
+      path: E:\aishuai\esp-dl\esp-dl
+      type: local
+    targets:
+    - esp32
+    - esp32s3
+    - esp32p4
+    version: 3.2.4
   espressif/esp-dsp:
     component_hash: 42dce32d46ac93dc11f60d368e29a830e9661c7345d794b8a45c343479cae636
     dependencies:
@@ -40,10 +58,7 @@ dependencies:
       type: idf
     version: 5.3.1
 direct_dependencies:
-- espressif/dl_fft
-- espressif/esp-dsp
-- espressif/esp_new_jpeg
-- idf
-manifest_hash: 7c9d25100dd8f722378335a9b4ec17fee9047b4d978b8fcb3d132a3a6dc23b52
+- espressif/esp-dl
+manifest_hash: ea6b968567f4856c1a3163f2b6e5a3c34380406c60ccd977bc5c0fe874fa7ed0
 target: esp32s3
 version: 2.0.0
