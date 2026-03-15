@@ -1,4 +1,4 @@
-pip install -i https://pypi.tuna.tsinghua.edu.cn/simple matplotlib
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple opencv-python
 
 pip install-i https://pypi.tuna.tsinghua.edu.cn/simple torch esp-ppq 
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple onnxscript

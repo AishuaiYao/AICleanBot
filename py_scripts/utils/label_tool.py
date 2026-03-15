@@ -5,11 +5,10 @@ import numpy as np
 
 # 可配置参数
 scale_size = 500  # 展示用的缩放宽度（不影响最终保存）
-target_size = 256  # 最终保存的目标尺寸，长边对齐256，短边等比后填充0
-line_expand = 2  # 线段扩展像素（核心可调节，建议2-5，数字越大线段越粗）
-img_dir = r'dataset\data'  # 原始图片目录（完全保留，不修改）
-gray_save_dir = r'dataset\image'  # 缩放后灰度图的保存目录（256×256）
-label_save_dir = r'dataset\label'  # 绘制线段后的真值图保存目录（256×256）
+line_expand = 10  # 线段扩展像素（核心可调节，建议2-5，数字越大线段越粗）
+img_dir = r'E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA'  # 原始图片目录（完全保留，不修改）
+gray_save_dir = r'E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA'  # 缩放后灰度图的保存目录（256×256）
+label_save_dir = gray_save_dir + '_label'  # 绘制线段后的真值图保存目录（256×256）
 
 # 全局变量
 click_points = []
@@ -23,20 +22,6 @@ current_img_path = None
 os.makedirs(gray_save_dir, exist_ok=True)
 os.makedirs(label_save_dir, exist_ok=True)
 
-
-# 核心函数1：长边256，等比缩放+0填充
-def resize_and_pad(img, target_size=256):
-    h, w = img.shape[:2]
-    max_side = max(h, w)
-    scale = target_size / max_side
-    new_w = int(w * scale)
-    new_h = int(h * scale)
-    img_resized = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
-    img_padded = np.zeros((target_size, target_size), dtype=np.uint8)
-    x_offset = (target_size - new_w) // 2
-    y_offset = (target_size - new_h) // 2
-    img_padded[y_offset:y_offset + new_h, x_offset:x_offset + new_w] = img_resized
-    return img_padded, (scale, x_offset, y_offset)
 
 
 # 核心函数2：只对当前新线段做膨胀，再叠加到label上，修复越画越粗的bug
@@ -98,8 +83,27 @@ if not img_paths:
     print("警告：未找到图片")
     exit()
 
+total = len(img_paths)
+processed = 0
+skipped = 0
+
+print(f"\n总图片数：{total}")
+print("-" * 50)
+
 # 遍历处理
 for idx, img_path in enumerate(img_paths):
+    img_name = os.path.basename(img_path)
+    gray_path = os.path.join(gray_save_dir, img_name)
+    label_path = os.path.join(label_save_dir, img_name)
+    
+    # 检查是否已处理
+    if os.path.exists(gray_path) and os.path.exists(label_path):
+        skipped += 1
+        processed += 1
+        progress = (processed / total) * 100
+        print(f"[{processed}/{total} {progress:5.1f}%] 跳过已处理：{img_name} (剩余：{total - processed})")
+        continue
+    
     current_img_path = img_path
     click_points = []
     img_concat_show = None
@@ -111,15 +115,21 @@ for idx, img_path in enumerate(img_paths):
     if img is None:
         print(f"警告：无法读取 {img_path}，跳过")
         continue
-    orig_h, orig_w = img.shape[:2]
-    img_original_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    
+    # 判断并转换为灰度图
+    if len(img.shape) == 3 and img.shape[2] == 3:
+        img_original_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    else:
+        img_original_gray = img  # 已经是单通道
+    
+    orig_h, orig_w = img_original_gray.shape[:2]
     label_original = np.zeros_like(img_original_gray, dtype=np.uint8)
 
     # 展示图缩放
     scale_show = scale_size / orig_w
     show_h = int(orig_h * scale_show)
-    img_resize = cv2.resize(img, (scale_size, show_h), interpolation=cv2.INTER_LINEAR)
-    img_gray_show = cv2.cvtColor(img_resize, cv2.COLOR_BGR2GRAY)
+    img_resize = cv2.resize(img_original_gray, (scale_size, show_h), interpolation=cv2.INTER_LINEAR)
+    img_gray_show = img_resize
     label_show = np.zeros_like(img_gray_show, dtype=np.uint8)
 
     # 拼接展示图
@@ -134,36 +144,28 @@ for idx, img_path in enumerate(img_paths):
     cv2.setMouseCallback('img+label', mouse_click)
     cv2.imshow('img+label', img_concat_show)
 
-    print(f"\n[{idx + 1}/{len(img_paths)}] 处理：{os.path.basename(img_path)}")
+    progress = (processed / total) * 100
+    print(f"\n[{processed + 1}/{total} {progress:5.1f}% → ", end="")
+    print(f"{((processed + 1) / total) * 100:5.1f}%] 处理：{img_name} (剩余：{total - processed - 1})")
     print("左键：起点→终点画线段，回车保存，ESC跳过/退出")
 
     while True:
         key = cv2.waitKey(1) & 0xFF
         if key == 13:  # 回车保存
-            img_gray_256, _ = resize_and_pad(img_original_gray, target_size)
-            label_256, _ = resize_and_pad(label_original, target_size)
-            img_name = os.path.basename(img_path)
-            cv2.imwrite(os.path.join(gray_save_dir, img_name), img_gray_256)
-            cv2.imwrite(os.path.join(label_save_dir, img_name), label_256)
-            print(f"已保存：{img_name}")
+            # 保存原图尺寸的灰度图和标签图
+            cv2.imwrite(gray_path, img_original_gray)
+            cv2.imwrite(label_path, label_original)
+            processed += 1
+            print(f"已保存：{img_name} (原图尺寸: {orig_w}x{orig_h})")
             break
         elif key == 27:  # ESC
             print("ESC：跳过当前图片")
             break
     if key == 27:
-        print("退出程序")
+        print(f"\n提前退出 - 已处理：{processed}/{total} ({processed/total*100:.1f}%)，跳过：{skipped}")
         break
 
     cv2.destroyAllWindows()
 
 cv2.destroyAllWindows()
-print("\n全部处理完成")
-
-
-
-
-
-
-
-
-
+print(f"\n全部完成 - 已处理：{processed}/{total} ({processed/total*100:.1f}%)，跳过：{skipped}")
