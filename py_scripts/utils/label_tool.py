@@ -147,7 +147,7 @@ for idx, img_path in enumerate(img_paths):
     progress = (processed / total) * 100
     print(f"\n[{processed + 1}/{total} {progress:5.1f}% → ", end="")
     print(f"{((processed + 1) / total) * 100:5.1f}%] 处理：{img_name} (剩余：{total - processed - 1})")
-    print("左键：起点→终点画线段，回车保存，ESC跳过/退出")
+    print("左键：起点→终点画线段，回车保存，空格跳过当前，ESC退出")
 
     while True:
         key = cv2.waitKey(1) & 0xFF
@@ -158,8 +158,11 @@ for idx, img_path in enumerate(img_paths):
             processed += 1
             print(f"已保存：{img_name} (原图尺寸: {orig_w}x{orig_h})")
             break
-        elif key == 27:  # ESC
-            print("ESC：跳过当前图片")
+        elif key == 32:  # 空格跳过当前
+            print(f"空格：跳过当前图片 {img_name}")
+            break
+        elif key == 27:  # ESC退出
+            print("ESC：退出程序")
             break
     if key == 27:
         print(f"\n提前退出 - 已处理：{processed}/{total} ({processed/total*100:.1f}%)，跳过：{skipped}")
