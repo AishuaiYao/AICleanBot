@@ -8,7 +8,7 @@
 
 
 
-
+请你在net目录下，使用segmentation_models.pytorch框架给我写一个使用标准的unet进行训练的代码。数据目录在E:\AICleanBot\py_scripts\dataset\ 。原图是FRAME_QQVGA （已经是灰度图）label是FRAME_QQVGA_label。
 
 
 
