@@ -17,7 +17,7 @@ FRAME_SVGA	800x600
 FRAME_XGA	1024x768
 FRAME_SXGA	1280x1024
 """
-save_path = "../dataset/FRAME_QQVGA"
+save_path = "FRAME_QQVGA"
 h, w = 160, 120  #
 
 
