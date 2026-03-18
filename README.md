@@ -2,7 +2,7 @@
 
 ## 网络架构
 
-![架构图](py_scripts/figure/architecture.png)
+![架构图](py_scripts/figure/architecture.jpg)
 
 
 ## 目录结构

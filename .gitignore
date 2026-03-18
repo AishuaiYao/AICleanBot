@@ -12,7 +12,7 @@ managed_components/
 *.7z
 *.tar.gz
 *.pyc
-
+*.png
 
 
 

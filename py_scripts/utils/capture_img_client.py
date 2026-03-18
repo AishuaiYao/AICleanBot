@@ -17,7 +17,8 @@ FRAME_SVGA	800x600
 FRAME_XGA	1024x768
 FRAME_SXGA	1280x1024
 """
-save_path = "FRAME_QQVGA"
+script_dir = os.path.dirname(os.path.abspath(__file__))
+save_path = os.path.join(script_dir, "FRAME_QQVGA")
 h, w = 160, 120  #
 
 
