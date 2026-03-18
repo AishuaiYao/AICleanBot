@@ -11,7 +11,7 @@ managed_components/
 *.rar
 *.7z
 *.tar.gz
-
+*.pyc
 
 
 
