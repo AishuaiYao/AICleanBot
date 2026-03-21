@@ -152,6 +152,12 @@ for idx, img_path in enumerate(img_paths):
     while True:
         key = cv2.waitKey(1) & 0xFF
         if key == 13:  # 回车保存
+            # 检查label是否为空（全黑）
+            if np.max(label_original) == 0:
+                print(f"警告：标签为空（未画线段），已跳过保存 {img_name}")
+                processed += 1
+                break
+            
             # 保存原图尺寸的灰度图和标签图
             cv2.imwrite(gray_path, img_original_gray)
             cv2.imwrite(label_path, label_original)
