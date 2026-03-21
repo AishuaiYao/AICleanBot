@@ -12,15 +12,39 @@ from datetime import datetime
 import random
 
 
-# ==================== 组合损失函数 ====================
-class CombinedLoss(nn.Module):
-    def __init__(self):
+# ==================== Focal Loss ====================
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=0.25, gamma=2.0):
         super().__init__()
-        self.dice = smp.losses.DiceLoss(mode='binary')
-        self.bce = nn.BCEWithLogitsLoss()
+        self.alpha = alpha
+        self.gamma = gamma
     
     def forward(self, pred, target):
-        return self.dice(pred, target) + self.bce(pred, target)
+        # pred: logits (未经sigmoid)
+        bce = nn.functional.binary_cross_entropy_with_logits(pred, target, reduction='none')
+        
+        # 计算pt
+        pred_prob = torch.sigmoid(pred)
+        pt = target * pred_prob + (1 - target) * (1 - pred_prob)
+        
+        # 计算alpha权重
+        alpha_t = target * self.alpha + (1 - target) * (1 - self.alpha)
+        
+        # Focal Loss
+        focal = alpha_t * (1 - pt) ** self.gamma * bce
+        
+        return focal.mean()
+
+
+# ==================== 组合损失函数 ====================
+class CombinedLoss(nn.Module):
+    def __init__(self, alpha=0.75, gamma=2.0):
+        super().__init__()
+        self.dice = smp.losses.DiceLoss(mode='binary')
+        self.focal = FocalLoss(alpha=alpha, gamma=gamma)
+    
+    def forward(self, pred, target):
+        return self.dice(pred, target) + self.focal(pred, target)
 
 
 # ==================== 配置 ====================
@@ -51,7 +75,7 @@ AUGMENTATION_CONFIG = {
     # --- 几何变换 (Geometry) : 同时作用于 Image 和 Label ---
     'h_flip': True,        # 水平翻转 (50% 概率)
     'v_flip': True,        # 垂直翻转 (50% 概率)
-    'rotate': True,        # 随机旋转 (-30° ~ +30°)
+    'rotate': False,        # 随机旋转 (-30° ~ +30°)
     
     # --- 像素变换 (Pixel) : 只作用于 Image ---
     'brightness': True,    # 随机亮度 (0.8 ~ 1.2)
@@ -229,6 +253,18 @@ def save_visualization(img_tensor, pred_tensor, save_path):
 
 # ==================== 训练 ====================
 def train():
+    # 固定随机种子（确保可复现）
+    SEED = 42
+    random.seed(SEED)
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
+    torch.cuda.manual_seed(SEED)
+    torch.cuda.manual_seed_all(SEED)
+    
+    # PyTorch确定性设置
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    
     os.makedirs(PRED_DIR, exist_ok=True)
     if SAVE_AUG_VIS:
         os.makedirs(FIGURE_DIR, exist_ok=True)
@@ -246,8 +282,6 @@ def train():
     label_names = {os.path.basename(p) for p in label_files}
     common_names = sorted(list(img_names & label_names))
     
-    # 固定随机种子以保证复现性 (可选)
-    random.seed(42)
     random.shuffle(common_names)
     
     # --- 2. 手动划分 Train / Val ---
