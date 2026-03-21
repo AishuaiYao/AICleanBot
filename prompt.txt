@@ -10,22 +10,23 @@
 · 如果某些组件在我们的C++代码里不需要，请在CMakeLists.txt里删除相关的组件。
 · 你只能修改E:\AICleanBot目录中的文件，idf的组件源码不允许修改。
 需求：
+写一个gpu测试代码在tools里，看看我的机器的gpu可用吗
 
-在执行E:\AICleanBot\py_scripts\net\train_teacher.py的时候报错了：
-(.venv) PS E:\AICleanBot> & e:\AICleanBot\.venv\Scripts\python.exe e:/AICleanBot/py_scripts/net/train_teacher.py
-Traceback (most recent call last):
-  File "e:\AICleanBot\py_scripts\net\train_teacher.py", line 351, in <module>
-    train()
-  File "e:\AICleanBot\py_scripts\net\train_teacher.py", line 260, in train
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "E:\AICleanBot\.venv\Lib\site-packages\torch\utils\data\dataloader.py", line 376, in __init__
-    sampler = RandomSampler(dataset, generator=generator)  # type: ignore[arg-type]
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "E:\AICleanBot\.venv\Lib\site-packages\torch\utils\data\sampler.py", line 164, in __init__
-    raise ValueError(
-ValueError: num_samples should be a positive integer value, but got num_samples=0
-(.venv) PS E:\AICleanBot> 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

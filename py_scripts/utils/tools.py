@@ -6,6 +6,7 @@ import re
 import glob
 import cv2
 import numpy as np
+import torch
 
 
 def batch_rename_files(directory, start_num=1, digits=5):
@@ -33,7 +34,71 @@ def batch_rename_files(directory, start_num=1, digits=5):
         print(f"重命名：{old_name} → {new_name}")
 
 
+def test_gpu():
+    """
+    测试GPU可用性
+    
+    === GPU测试报告 ===
+    CUDA可用: True
+    GPU数量: 1
+
+    --- GPU 0 ---
+    型号: NVIDIA GeForce GTX 1650
+    显存总量: 4.00 GB
+    计算能力: 7.5
+
+    CUDA版本: 12.1
+    PyTorch版本: 2.5.0+cu121
+
+    正在执行GPU计算测试...
+    ✓ 测试通过！GPU工作正常
+    """
+    print("\n=== GPU测试报告 ===")
+    
+    # CUDA可用性
+    cuda_available = torch.cuda.is_available()
+    print(f"CUDA可用: {cuda_available}")
+    
+    if not cuda_available:
+        print("GPU不可用，将使用CPU")
+        return
+    
+    # GPU数量
+    gpu_count = torch.cuda.device_count()
+    print(f"GPU数量: {gpu_count}")
+    
+    # GPU信息
+    for i in range(gpu_count):
+        print(f"\n--- GPU {i} ---")
+        print(f"型号: {torch.cuda.get_device_name(i)}")
+        
+        # 显存信息
+        props = torch.cuda.get_device_properties(i)
+        total_memory = props.total_memory / (1024**3)  # 转换为GB
+        print(f"显存总量: {total_memory:.2f} GB")
+        print(f"计算能力: {props.major}.{props.minor}")
+    
+    # CUDA版本
+    print(f"\nCUDA版本: {torch.version.cuda}")
+    print(f"PyTorch版本: {torch.__version__}")
+    
+    # GPU计算测试
+    print("\n正在执行GPU计算测试...")
+    device = torch.device('cuda:0')
+    x = torch.randn(1000, 1000, device=device)
+    y = torch.randn(1000, 1000, device=device)
+    z = torch.mm(x, y)
+    
+    if z.shape == (1000, 1000):
+        print("✓ 测试通过！GPU工作正常")
+    else:
+        print("✗ 测试失败！")
+
+
 if __name__ == "__main__":
-    # 示例用法
-    target_directory = r"E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA"  # 替换成你的目录路径
-    batch_rename_files(target_directory, start_num=1, digits=5)
+
+    test_gpu()
+
+    # 默认：批量重命名
+    # target_directory = r"E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA"
+    # batch_rename_files(target_directory, start_num=1, digits=5)

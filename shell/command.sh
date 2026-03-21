@@ -7,7 +7,7 @@ pip install -i https://pypi.tuna.tsinghua.edu.cn/simple torch==2.22
 
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple numpy==1.8
 
-pip install -i https://pypi.tuna.tsinghua.edu.cn/simple torchvision==0.19.0 torchaudio==1.33
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple  torch==2.5.0 torchvision==0.20.0
 
 
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple matplotlib
