@@ -159,6 +159,7 @@ for idx, img_path in enumerate(img_paths):
             print(f"已保存：{img_name} (原图尺寸: {orig_w}x{orig_h})")
             break
         elif key == 32:  # 空格跳过当前
+            processed += 1
             print(f"空格：跳过当前图片 {img_name}")
             break
         elif key == 27:  # ESC退出

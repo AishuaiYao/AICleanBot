@@ -185,7 +185,7 @@ class SegDataset(Dataset):
 
         # 归一化和格式转换
         img = img.astype(np.float32) / 255.0
-        label = (label > 127).astype(np.float32)
+        label = (label > 0).astype(np.float32)
         
         # 增加 Channel 维度 (H, W) -> (1, H, W)
         img = torch.from_numpy(img).unsqueeze(0)
