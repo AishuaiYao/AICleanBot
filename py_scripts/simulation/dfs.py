@@ -27,7 +27,7 @@ plt.style.use('seaborn-v0_8-darkgrid')
 
 # ==================== 配置参数 ====================
 # 选择要使用的矩阵函数
-MATRIX_FUNCTION = matrix1  # 修改这里来切换不同的矩阵
+MATRIX_FUNCTION = matrix2  # 修改这里来切换不同的矩阵
 
 # 动画速度控制（单位：毫秒/帧）
 # 数值越小速度越快，数值越大速度越慢
@@ -35,8 +35,8 @@ MATRIX_FUNCTION = matrix1  # 修改这里来切换不同的矩阵
 ANIMATION_SPEED = 400  # 默认400毫秒每帧
 
 # 起点坐标
-START_ROW = 3
-START_COL = 4
+START_ROW = 4
+START_COL = 2
 
 # 图形大小
 FIGURE_WIDTH = 14

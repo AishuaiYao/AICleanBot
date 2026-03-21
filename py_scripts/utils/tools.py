@@ -35,5 +35,5 @@ def batch_rename_files(directory, start_num=1, digits=5):
 
 if __name__ == "__main__":
     # 示例用法
-    target_directory = r"D:\works\AICleanBot-main\py_scripts\dataset\FRAME_QQVGA_label"  # 替换成你的目录路径
+    target_directory = r"E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA"  # 替换成你的目录路径
     batch_rename_files(target_directory, start_num=1, digits=5)
