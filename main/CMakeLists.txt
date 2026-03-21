@@ -6,6 +6,7 @@ set(requires
     esp_netif
     lwip
     nvs_flash
+    esp_http_server
 )
 
 idf_component_register(SRCS ${srcs}

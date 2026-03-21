@@ -1,112 +1,444 @@
 import os
+import glob
+import numpy as np
 import cv2
 import torch
+from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
 import torch.optim as optim
-import numpy as np
-from torch.utils.data import Dataset, DataLoader
+from tqdm import tqdm
+from datetime import datetime
+import random
 
 
+# ==================== 自定义U-Net模型 ====================
 class DoubleConv(nn.Module):
     def __init__(self, in_c, out_c):
         super().__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(in_c, out_c, 3, 1, 1), nn.ReLU(),
-            nn.Conv2d(out_c, out_c, 3, 1, 1), nn.ReLU()
+            nn.Conv2d(in_c, out_c, 3, 1, 1, bias=False),
+            nn.BatchNorm2d(out_c),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_c, out_c, 3, 1, 1, bias=False),
+            nn.BatchNorm2d(out_c),
+            nn.ReLU(inplace=True)
         )
-
+    
     def forward(self, x):
         return self.conv(x)
 
 
-class UNetC(nn.Module):
+class UNetMiniEXP1(nn.Module):
+    """轻量版U-Net (约500KB)"""
     def __init__(self):
         super().__init__()
-        self.down1 = DoubleConv(1, 16)
-        self.down2 = DoubleConv(16, 32)
+        # Encoder (通道数: 8 -> 16 -> 32)
+        self.enc1 = DoubleConv(1, 8)
+        self.enc2 = DoubleConv(8, 16)
+        self.enc3 = DoubleConv(16, 32)
         self.pool = nn.MaxPool2d(2)
-        self.up1 = nn.ConvTranspose2d(32, 16, 2, 2)
-        self.up2 = DoubleConv(32, 16)
-        self.out = nn.Conv2d(16, 1, 1)
-
+        
+        # Bottleneck
+        self.bottleneck = DoubleConv(32, 64)
+        
+        # Decoder
+        self.up3 = nn.ConvTranspose2d(64, 32, 2, 2)
+        self.dec3 = DoubleConv(64, 32)
+        self.up2 = nn.ConvTranspose2d(32, 16, 2, 2)
+        self.dec2 = DoubleConv(32, 16)
+        self.up1 = nn.ConvTranspose2d(16, 8, 2, 2)
+        self.dec1 = DoubleConv(16, 8)
+        
+        # Output
+        self.out = nn.Conv2d(8, 1, 1)
+    
     def forward(self, x):
-        x1 = self.down1(x)
-        x2 = self.pool(x1)
-        x3 = self.down2(x2)
-        x4 = self.up1(x3)
-        x5 = torch.cat([x4, x1], dim=1)
-        return self.out(self.up2(x5))
+        # Encoder
+        e1 = self.enc1(x)                 # 8 channels
+        e2 = self.enc2(self.pool(e1))     # 16 channels
+        e3 = self.enc3(self.pool(e2))     # 32 channels
+        
+        # Bottleneck
+        b = self.bottleneck(self.pool(e3))  # 64 channels
+        
+        # Decoder with skip connections
+        d3 = self.up3(b)
+        d3 = torch.cat([d3, e3], dim=1)
+        d3 = self.dec3(d3)
+        
+        d2 = self.up2(d3)
+        d2 = torch.cat([d2, e2], dim=1)
+        d2 = self.dec2(d2)
+        
+        d1 = self.up1(d2)
+        d1 = torch.cat([d1, e1], dim=1)
+        d1 = self.dec1(d1)
+        
+        return self.out(d1)
 
 
+class UNetMiniExp2(nn.Module):
+    """增强版U-Net (约1MB)"""
+    def __init__(self):
+        super().__init__()
+        # Encoder (通道数: 12 -> 24 -> 48)
+        self.enc1 = DoubleConv(1, 12)
+        self.enc2 = DoubleConv(12, 24)
+        self.enc3 = DoubleConv(24, 48)
+        self.pool = nn.MaxPool2d(2)
+        
+        # Bottleneck
+        self.bottleneck = DoubleConv(48, 96)
+        
+        # Decoder
+        self.up3 = nn.ConvTranspose2d(96, 48, 2, 2)
+        self.dec3 = DoubleConv(96, 48)
+        self.up2 = nn.ConvTranspose2d(48, 24, 2, 2)
+        self.dec2 = DoubleConv(48, 24)
+        self.up1 = nn.ConvTranspose2d(24, 12, 2, 2)
+        self.dec1 = DoubleConv(24, 12)
+        
+        # Output
+        self.out = nn.Conv2d(12, 1, 1)
+    
+    def forward(self, x):
+        # Encoder (3层)
+        e1 = self.enc1(x)                   # 12 channels
+        e2 = self.enc2(self.pool(e1))       # 24 channels
+        e3 = self.enc3(self.pool(e2))       # 48 channels
+        
+        # Bottleneck
+        b = self.bottleneck(self.pool(e3))  # 96 channels
+        
+        # Decoder with skip connections
+        d3 = self.up3(b)
+        d3 = torch.cat([d3, e3], dim=1)
+        d3 = self.dec3(d3)
+        
+        d2 = self.up2(d3)
+        d2 = torch.cat([d2, e2], dim=1)
+        d2 = self.dec2(d2)
+        
+        d1 = self.up1(d2)
+        d1 = torch.cat([d1, e1], dim=1)
+        d1 = self.dec1(d1)
+        
+        return self.out(d1)
+
+
+# ==================== Focal Loss ====================
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=0.75, gamma=2.0):
+        super().__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+    
+    def forward(self, pred, target):
+        bce = nn.functional.binary_cross_entropy_with_logits(pred, target, reduction='none')
+        pred_prob = torch.sigmoid(pred)
+        pt = target * pred_prob + (1 - target) * (1 - pred_prob)
+        alpha_t = target * self.alpha + (1 - target) * (1 - self.alpha)
+        focal = alpha_t * (1 - pt) ** self.gamma * bce
+        return focal.mean()
+
+
+# ==================== 组合损失函数 ====================
+class CombinedLoss(nn.Module):
+    def __init__(self, alpha=0.75, gamma=2.0):
+        super().__init__()
+        self.focal = FocalLoss(alpha=alpha, gamma=gamma)
+        self.bce = nn.BCEWithLogitsLoss()
+    
+    def forward(self, pred, target):
+        return self.focal(pred, target) + self.bce(pred, target)
+
+
+# ==================== 配置 ====================
+DATA_DIR = r'E:\AICleanBot\py_scripts\dataset'
+IMAGE_DIR = os.path.join(DATA_DIR, 'FRAME_QQVGA')
+LABEL_DIR = os.path.join(DATA_DIR, 'FRAME_QQVGA_label')
+PRED_DIR = os.path.join(DATA_DIR, 'FRAME_QQVGA_pred')
+MODEL_DIR = os.path.join(os.path.dirname(__file__), '..', 'models')
+
+BATCH_SIZE = 8
+LEARNING_RATE = 1e-4
+EPOCHS = 0
+PATIENCE = 10
+MAX_EPOCHS = 1000
+IMAGE_SIZE = 256
+TRAIN_RATIO = 0.8
+
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+# ==================== 数据增强配置 ====================
+AUGMENTATION_CONFIG = {
+    'h_flip': True,
+    'v_flip': True,
+    'rotate': True,
+    'brightness': True,
+    'contrast': True,
+    'noise': True,
+    'blur': True,
+    'color_jitter': False,
+}
+
+
+# ==================== 数据增强函数 ====================
+def apply_augmentations(img, label, config):
+    h, w = img.shape[:2]
+    applied_augs = []
+    
+    # 水平翻转
+    if config.get('h_flip') and random.random() > 0.5:
+        img = cv2.flip(img, 1)
+        label = cv2.flip(label, 1)
+        applied_augs.append('h_flip')
+    
+    # 垂直翻转
+    if config.get('v_flip') and random.random() > 0.5:
+        img = cv2.flip(img, 0)
+        label = cv2.flip(label, 0)
+        applied_augs.append('v_flip')
+    
+    # 随机旋转
+    if config.get('rotate') and random.random() > 0.5:
+        angle = random.uniform(-30, 30)
+        M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1.0)
+        img = cv2.warpAffine(img, M, (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+        label = cv2.warpAffine(label, M, (w, h), flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+        applied_augs.append(f'rot:{angle:.1f}')
+    
+    # 随机亮度
+    if config.get('brightness') and random.random() > 0.5:
+        factor = random.uniform(0.8, 1.2)
+        img = np.clip(img * factor, 0, 255).astype(np.uint8)
+        applied_augs.append(f'bri:{factor:.2f}')
+    
+    # 随机对比度
+    if config.get('contrast') and random.random() > 0.5:
+        factor = random.uniform(0.8, 1.2)
+        mean = np.mean(img)
+        img = np.clip((img - mean) * factor + mean, 0, 255).astype(np.uint8)
+        applied_augs.append(f'con:{factor:.2f}')
+    
+    # 高斯模糊
+    if config.get('blur') and random.random() > 0.5:
+        ksize = random.choice([3, 5])
+        img = cv2.GaussianBlur(img, (ksize, ksize), 0)
+        applied_augs.append(f'blur:{ksize}')
+    
+    # 高斯噪声
+    if config.get('noise') and random.random() > 0.5:
+        mean = 0
+        sigma = random.uniform(5, 15)
+        gauss = np.random.normal(mean, sigma, img.shape).astype(np.float32)
+        img = np.clip(img.astype(np.float32) + gauss, 0, 255).astype(np.uint8)
+        applied_augs.append('noise')
+    
+    return img, label, applied_augs
+
+
+# ==================== 数据集 ====================
 class SegDataset(Dataset):
-    def __init__(self, img_dir, label_dir, size=(256, 256)):
-        self.size = size
-        self.img_paths = []
-        self.label_paths = []
-        for f in os.listdir(img_dir):
-            img_path = os.path.join(img_dir, f)
-            label_path = os.path.join(label_dir, f)
-            if os.path.exists(label_path):
-                self.img_paths.append(img_path)
-                self.label_paths.append(label_path)
-        print(f"找到 {len(self.img_paths)} 对匹配的图片和标签")
-
+    def __init__(self, image_dir, label_dir, img_names, img_size=256, augment=False):
+        self.img_size = img_size
+        self.augment = augment
+        self.img_paths = [os.path.join(image_dir, n) for n in img_names]
+        self.label_paths = [os.path.join(label_dir, n) for n in img_names]
+        self.names = img_names
+    
     def __len__(self):
-        return len(self.img_paths)
-
+        return len(self.names)
+    
     def __getitem__(self, idx):
         img = cv2.imread(self.img_paths[idx], cv2.IMREAD_GRAYSCALE)
-        img = cv2.resize(img, self.size)
-        img_tensor = torch.from_numpy(img).float().unsqueeze(0) / 255.0
-
         label = cv2.imread(self.label_paths[idx], cv2.IMREAD_GRAYSCALE)
-        if label is None:
-            raise FileNotFoundError(f"标签文件不存在: {self.label_paths[idx]}")
-        label = cv2.resize(label, self.size)
-        label_tensor = torch.from_numpy(label).float().unsqueeze(0) / 255.0
+        
+        if img.shape[0] != self.img_size or img.shape[1] != self.img_size:
+            img = cv2.resize(img, (self.img_size, self.img_size))
+            label = cv2.resize(label, (self.img_size, self.img_size))
+        
+        if self.augment:
+            img, label, _ = apply_augmentations(img, label, AUGMENTATION_CONFIG)
+        
+        img = img.astype(np.float32) / 255.0
+        label = (label > 0).astype(np.float32)
+        
+        img = torch.from_numpy(img).unsqueeze(0)
+        label = torch.from_numpy(label).unsqueeze(0)
+        
+        return img, label, self.names[idx]
 
-        return img_tensor, label_tensor, self.img_paths[idx]
+
+# ==================== 指标计算 ====================
+def calc_iou(pred, target, threshold=0.5):
+    pred = (pred > threshold).float()
+    intersection = (pred * target).sum()
+    union = pred.sum() + target.sum() - intersection
+    if union == 0:
+        return 1.0
+    return (intersection / union).item()
 
 
-if __name__ == "__main__":
-    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    EPOCHS = 5
-    BATCH_SIZE = 2
-    LR = 1e-3
-    IMG_SIZE = (160, 120)
+def calc_pixel_acc(pred, target, threshold=0.5):
+    pred = (pred > threshold).float()
+    correct = (pred == target).float().sum()
+    total = target.numel()
+    return (correct / total).item()
 
-    dataset = SegDataset(
-        'E:\\AICleanBot\\py_scripts\\dataset\\FRAME_QQVGA',
-        'E:\\AICleanBot\\py_scripts\\dataset\\FRAME_QQVGA_label',
-        IMG_SIZE
-    )
-    dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
-    model = UNetC().to(DEVICE)
-    optimizer = optim.Adam(model.parameters(), lr=LR)
-    criterion = nn.BCEWithLogitsLoss()
+# ==================== 可视化保存 ====================
+def save_visualization(img_tensor, pred_tensor, save_path):
+    img = (img_tensor.squeeze().cpu().numpy() * 255).astype(np.uint8)
+    pred = (pred_tensor.squeeze().cpu().numpy() > 0.5).astype(np.uint8) * 255
+    
+    img_bgr = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+    mask = pred > 0
+    alpha = 0.1
+    result = img_bgr.copy()
+    result[mask] = (img_bgr[mask].astype(float) * (1 - alpha) + np.array([128, 0, 128]) * alpha).astype(np.uint8)
+    
+    cv2.imwrite(save_path, result)
 
-    print(f'开始训练，共{EPOCHS}轮，设备：{DEVICE}')
-    for epoch in range(EPOCHS):
-        total_loss = 0.0
-        for imgs, labels, _ in dataloader:
+
+# ==================== 训练 ====================
+def train():
+    # 固定随机种子
+    SEED = 42
+    random.seed(SEED)
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
+    torch.cuda.manual_seed(SEED)
+    torch.cuda.manual_seed_all(SEED)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    
+    os.makedirs(PRED_DIR, exist_ok=True)
+    
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    save_dir = os.path.join(MODEL_DIR, timestamp)
+    os.makedirs(save_dir, exist_ok=True)
+    model_path = os.path.join(save_dir, 'best_model.pth')
+    
+    # 获取文件名
+    img_files = set(glob.glob(os.path.join(IMAGE_DIR, '*.[jp][pn]g')) + glob.glob(os.path.join(IMAGE_DIR, '*.bmp')))
+    label_files = set(glob.glob(os.path.join(LABEL_DIR, '*.[jp][pn]g')) + glob.glob(os.path.join(LABEL_DIR, '*.bmp')))
+    
+    img_names = {os.path.basename(p) for p in img_files}
+    label_names = {os.path.basename(p) for p in label_files}
+    common_names = sorted(list(img_names & label_names))
+    
+    random.shuffle(common_names)
+    
+    # 划分数据集
+    train_size = int(len(common_names) * TRAIN_RATIO)
+    train_names = common_names[:train_size]
+    val_names = common_names[train_size:]
+    
+    train_dataset = SegDataset(IMAGE_DIR, LABEL_DIR, train_names, IMAGE_SIZE, augment=True)
+    val_dataset = SegDataset(IMAGE_DIR, LABEL_DIR, val_names, IMAGE_SIZE, augment=False)
+    
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
+    val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=0)
+    
+    # 使用自定义模型
+    model = UNetMiniExp2().to(DEVICE)
+    
+    criterion = CombinedLoss()
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    
+    best_val_loss = float('inf')
+    no_improve_count = 0
+    
+    print(f"Device: {DEVICE}")
+    print(f"Total samples: {len(common_names)}")
+    print(f"Train samples: {len(train_names)} (Augmentation: ON)")
+    print(f"Val samples:   {len(val_names)}   (Augmentation: OFF)")
+    
+    if EPOCHS == 0:
+        print(f"训练模式: 早停模式 (patience={PATIENCE}, max_epochs={MAX_EPOCHS})")
+    else:
+        print(f"训练模式: 固定轮数 (epochs={EPOCHS})")
+    print("=" * 60)
+    
+    total_epochs = EPOCHS if EPOCHS > 0 else MAX_EPOCHS
+    
+    for epoch in range(total_epochs):
+        # ========== Train ==========
+        model.train()
+        train_loss = 0.0
+        train_iou = 0.0
+        train_acc = 0.0
+        
+        for imgs, labels, _ in tqdm(train_loader, desc=f"Epoch {epoch+1}/{total_epochs} [Train]"):
             imgs, labels = imgs.to(DEVICE), labels.to(DEVICE)
+            
             optimizer.zero_grad()
             outputs = model(imgs)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-            total_loss += loss.item()
-        print(f'Epoch {epoch + 1}/{EPOCHS}, Loss: {total_loss / len(dataloader):.4f}')
-
+            
+            train_loss += loss.item()
+            train_iou += calc_iou(torch.sigmoid(outputs), labels)
+            train_acc += calc_pixel_acc(torch.sigmoid(outputs), labels)
+        
+        train_loss /= len(train_loader)
+        train_iou /= len(train_loader)
+        train_acc /= len(train_loader)
+        
+        # ========== Validate ==========
+        model.eval()
+        val_loss = 0.0
+        val_iou = 0.0
+        val_acc = 0.0
+        
+        with torch.no_grad():
+            for imgs, labels, names in tqdm(val_loader, desc=f"Epoch {epoch+1}/{total_epochs} [Val]"):
+                imgs, labels = imgs.to(DEVICE), labels.to(DEVICE)
+                
+                outputs = model(imgs)
+                loss = criterion(outputs, labels)
+                
+                val_loss += loss.item()
+                val_iou += calc_iou(torch.sigmoid(outputs), labels)
+                val_acc += calc_pixel_acc(torch.sigmoid(outputs), labels)
+                
+                save_visualization(imgs[0], torch.sigmoid(outputs[0]), os.path.join(PRED_DIR, names[0]))
+        
+        val_loss /= len(val_loader)
+        val_iou /= len(val_loader)
+        val_acc /= len(val_loader)
+        
+        # ========== Print ==========
+        print(f"Epoch {epoch+1}/{total_epochs}")
+        print(f"  Train - Loss: {train_loss:.4f}, IoU: {train_iou:.4f}, Acc: {train_acc:.4f}")
+        print(f"  Val   - Loss: {val_loss:.4f}, IoU: {val_iou:.4f}, Acc: {val_acc:.4f}")
+        
+        # ========== Save Best Model & Early Stopping ==========
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            no_improve_count = 0
+            torch.save(model.state_dict(), model_path)
+            print(f"  >>> Best model saved: {model_path}")
+        else:
+            no_improve_count += 1
+            if EPOCHS == 0 and no_improve_count >= PATIENCE:
+                print(f"  >>> Early stopping triggered! No improvement for {PATIENCE} epochs")
+                break
+        
+        print("-" * 60)
+    
+    print(f"Training completed! Best val loss: {best_val_loss:.4f}")
+    
+    # ========== 导出ONNX ==========
+    print("\n正在导出ONNX模型...")
     model_cpu = model.cpu().eval()
-    print('模型已移至CPU，eval模式')
-
-    onnx_path = os.path.join('E:\\AICleanBot\\py_scripts\\models', 'unet_2class.onnx')
-    print('\n正在导出FP32 ONNX模型...')
+    onnx_path = os.path.join(save_dir, 'model.onnx')
+    
     torch.onnx.export(
         model_cpu,
-        torch.randn(1, 1, *IMG_SIZE),
+        torch.randn(1, 1, IMAGE_SIZE, IMAGE_SIZE),
         onnx_path,
         input_names=["input"],
         output_names=["output"],
@@ -116,4 +448,8 @@ if __name__ == "__main__":
             "output": {0: "batch", 2: "height", 3: "width"}
         }
     )
-    print(f'FP32 ONNX模型已导出：{onnx_path}')
+    print(f"ONNX模型已导出：{onnx_path}")
+
+
+if __name__ == '__main__':
+    train()

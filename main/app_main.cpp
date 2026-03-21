@@ -1,8 +1,5 @@
 #include <stdio.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -12,6 +9,7 @@
 #include "nvs_flash.h"
 #include "esp_camera.h"
 #include "driver/gpio.h"
+#include "esp_http_server.h"
 
 static const char *TAG = "CAM_SRV";
 
@@ -44,14 +42,6 @@ static const char *TAG = "CAM_SRV";
 #define CAM_PIN_VSYNC 6
 #define CAM_PIN_HREF  7
 #define CAM_PIN_PCLK  13
-
-// ===========================
-// 端口配置
-// ===========================
-#define TCP_PORT     5000
-
-static int s_client_socket = -1;
-static volatile bool s_running = true;
 
 // ===========================
 // WiFi AP 初始化
@@ -128,108 +118,93 @@ static void camera_init(void)
 }
 
 // ===========================
-// TCP 服务器任务（按需采集）
+// HTTP 处理函数：拍照
 // ===========================
-static void tcp_server_task(void *pvParameters)
+static esp_err_t capture_handler(httpd_req_t *req)
 {
-    struct sockaddr_in server_addr;
-    struct sockaddr_in client_addr;
-    socklen_t addr_len = sizeof(client_addr);
+    ESP_LOGI(TAG, "[HTTP] 收到拍照请求");
 
-    ESP_LOGI(TAG, "[TCP] 创建Socket...");
-    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_socket < 0) {
-        ESP_LOGE(TAG, "[TCP] Socket创建失败!");
-        vTaskDelete(NULL);
-        return;
-    }
-    
-    int opt = 1;
-    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_addr.sin_port = htons(TCP_PORT);
-
-    if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) != 0) {
-        ESP_LOGE(TAG, "[TCP] 绑定端口失败!");
-        close(server_socket);
-        vTaskDelete(NULL);
-        return;
+    camera_fb_t *fb = esp_camera_fb_get();
+    if (!fb) {
+        ESP_LOGE(TAG, "[Camera] 采集失败!");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Camera capture failed");
+        return ESP_FAIL;
     }
 
-    if (listen(server_socket, 1) != 0) {
-        ESP_LOGE(TAG, "[TCP] 监听失败!");
-        close(server_socket);
-        vTaskDelete(NULL);
-        return;
+    ESP_LOGI(TAG, "[Camera] 采集成功: %dx%d, 大小=%lu bytes", 
+             fb->width, fb->height, (unsigned long)fb->len);
+
+    // 设置响应头
+    httpd_resp_set_type(req, "application/octet-stream");
+    httpd_resp_set_hdr(req, "Content-Disposition", "attachment; filename=capture.bin");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+
+    // 发送帧头：4字节大端长度
+    uint32_t frame_size = fb->len;
+    uint8_t header[4];
+    header[0] = (frame_size >> 24) & 0xFF;
+    header[1] = (frame_size >> 16) & 0xFF;
+    header[2] = (frame_size >> 8) & 0xFF;
+    header[3] = frame_size & 0xFF;
+    httpd_resp_send_chunk(req, (char *)header, 4);
+
+    // 发送图像数据
+    httpd_resp_send_chunk(req, (char *)fb->buf, fb->len);
+    httpd_resp_send_chunk(req, NULL, 0);  // 结束响应
+
+    esp_camera_fb_return(fb);
+    ESP_LOGI(TAG, "[HTTP] 图像发送完成");
+
+    return ESP_OK;
+}
+
+// ===========================
+// HTTP 处理函数：测试连接
+// ===========================
+static esp_err_t ping_handler(httpd_req_t *req)
+{
+    httpd_resp_set_type(req, "text/plain");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_send(req, "OK", 2);
+    return ESP_OK;
+}
+
+// ===========================
+// HTTP 服务器启动
+// ===========================
+static httpd_handle_t start_webserver(void)
+{
+    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.lru_purge_enable = true;
+
+    ESP_LOGI(TAG, "[HTTP] 启动服务器，端口: %d", config.server_port);
+
+    httpd_handle_t server = NULL;
+    if (httpd_start(&server, &config) == ESP_OK) {
+        // 注册URI处理程序
+        httpd_uri_t capture_uri = {
+            .uri       = "/capture",
+            .method    = HTTP_GET,
+            .handler   = capture_handler,
+            .user_ctx  = NULL
+        };
+        httpd_register_uri_handler(server, &capture_uri);
+
+        httpd_uri_t ping_uri = {
+            .uri       = "/ping",
+            .method    = HTTP_GET,
+            .handler   = ping_handler,
+            .user_ctx  = NULL
+        };
+        httpd_register_uri_handler(server, &ping_uri);
+
+        ESP_LOGI(TAG, "[HTTP] 服务器启动成功");
+        ESP_LOGI(TAG, "[HTTP] 拍照地址: http://192.168.4.1/capture");
+        return server;
     }
 
-    ESP_LOGI(TAG, "[TCP] 监听端口: %d (等待客户端连接)", TCP_PORT);
-
-    while (s_running) {
-        ESP_LOGI(TAG, "[TCP] 等待客户端连接...");
-        s_client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addr_len);
-        
-        if (s_client_socket < 0) {
-            ESP_LOGW(TAG, "[TCP] accept异常");
-            continue;
-        }
-
-        ESP_LOGI(TAG, "[TCP] 客户端已连接: %s:%d", 
-                 inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-
-        char cmd_buf[32];
-        while (s_running) {
-            ESP_LOGI(TAG, "[TCP] 等待命令...");
-            int len = recv(s_client_socket, cmd_buf, sizeof(cmd_buf) - 1, 0);
-            if (len <= 0) {
-                ESP_LOGI(TAG, "[TCP] 客户端断开连接");
-                break;
-            }
-            cmd_buf[len] = '\0';
-
-            ESP_LOGI(TAG, "[TCP] 收到命令: \"%s\"", cmd_buf);
-
-            // 收到CAPTURE命令，采集一帧并返回
-            if (strcmp(cmd_buf, "CAPTURE") == 0) {
-                ESP_LOGI(TAG, "[Camera] 开始采集图像...");
-                camera_fb_t *fb = esp_camera_fb_get();
-                if (!fb) {
-                    ESP_LOGE(TAG, "[Camera] 采集失败!");
-                    continue;
-                }
-                ESP_LOGI(TAG, "[Camera] 采集成功: %dx%d, 大小=%lu bytes", 
-                         fb->width, fb->height, (unsigned long)fb->len);
-
-                // 发送帧头：4字节大端长度
-                uint32_t frame_size = fb->len;
-                uint8_t header[4];
-                header[0] = (frame_size >> 24) & 0xFF;
-                header[1] = (frame_size >> 16) & 0xFF;
-                header[2] = (frame_size >> 8) & 0xFF;
-                header[3] = frame_size & 0xFF;
-
-                int sent_header = send(s_client_socket, header, 4, 0);
-                ESP_LOGI(TAG, "[TCP] 发送帧头: %d bytes", sent_header);
-                
-                int sent_data = send(s_client_socket, fb->buf, fb->len, 0);
-                ESP_LOGI(TAG, "[TCP] 发送图像数据: %d bytes", sent_data);
-                
-                esp_camera_fb_return(fb);
-                ESP_LOGI(TAG, "[TCP] 图像发送完成!");
-            }
-        }
-
-        close(s_client_socket);
-        s_client_socket = -1;
-        ESP_LOGI(TAG, "[TCP] 连接已关闭");
-    }
-
-    close(server_socket);
-    ESP_LOGI(TAG, "[TCP] 服务器停止");
-    vTaskDelete(NULL);
+    ESP_LOGE(TAG, "[HTTP] 服务器启动失败!");
+    return NULL;
 }
 
 // ===========================
@@ -238,7 +213,7 @@ static void tcp_server_task(void *pvParameters)
 extern "C" void app_main(void)
 {
     ESP_LOGI(TAG, "========================================");
-    ESP_LOGI(TAG, "ESP32-S3 Camera Server (AP Mode)");
+    ESP_LOGI(TAG, "ESP32-S3 Camera Server (HTTP Mode)");
     ESP_LOGI(TAG, "========================================");
 
     // 初始化NVS
@@ -258,13 +233,12 @@ extern "C" void app_main(void)
     // 初始化摄像头
     camera_init();
 
-    // 创建TCP服务器任务
-    ESP_LOGI(TAG, "[系统] 启动TCP服务器...");
-    xTaskCreate(tcp_server_task, "tcp_server", 8192, NULL, 5, NULL);
+    // 启动HTTP服务器
+    start_webserver();
 
     ESP_LOGI(TAG, "========================================");
     ESP_LOGI(TAG, "系统启动完成!");
     ESP_LOGI(TAG, "热点: %s 密码: %s", AP_SSID, AP_PASSWORD);
-    ESP_LOGI(TAG, "连接后访问: 192.168.4.1:5000");
+    ESP_LOGI(TAG, "访问: http://192.168.4.1/capture 拍照");
     ESP_LOGI(TAG, "========================================");
 }
