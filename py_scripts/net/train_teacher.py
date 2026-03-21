@@ -37,7 +37,9 @@ AUG_VIS_FILENAME = 'aug_debug_batch.jpg'
 
 BATCH_SIZE = 8
 LEARNING_RATE = 1e-4
-EPOCHS = 5
+EPOCHS = 0  # 0=早停模式，>0=固定轮数
+PATIENCE = 10  # 早停耐心值（仅EPOCHS=0时生效）
+MAX_EPOCHS = 1000  # 最大训练轮数（仅EPOCHS=0时生效）
 IMAGE_SIZE = 256
 TRAIN_RATIO = 0.8
 
@@ -271,15 +273,24 @@ def train():
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     
     best_val_loss = float('inf')
+    no_improve_count = 0  # 早停计数器
     
     print(f"Device: {DEVICE}")
     print(f"Total samples: {len(common_names)}")
     print(f"Train samples: {len(train_names)} (Augmentation: ON)")
     print(f"Val samples:   {len(val_names)}   (Augmentation: OFF)")
     print(f"Augmentation Config: {AUGMENTATION_CONFIG}")
+    
+    if EPOCHS == 0:
+        print(f"训练模式: 早停模式 (patience={PATIENCE}, max_epochs={MAX_EPOCHS})")
+    else:
+        print(f"训练模式: 固定轮数 (epochs={EPOCHS})")
     print("=" * 60)
     
-    for epoch in range(EPOCHS):
+    # 确定训练轮数
+    total_epochs = EPOCHS if EPOCHS > 0 else MAX_EPOCHS
+    
+    for epoch in range(total_epochs):
         # ========== Train ==========
         model.train()
         train_loss = 0.0
@@ -336,15 +347,21 @@ def train():
         print(f"  Train - Loss: {train_loss:.4f}, IoU: {train_iou:.4f}, Acc: {train_acc:.4f}")
         print(f"  Val   - Loss: {val_loss:.4f}, IoU: {val_iou:.4f}, Acc: {val_acc:.4f}")
         
-        # ========== Save Best Model ==========
+        # ========== Save Best Model & Early Stopping ==========
         if val_loss < best_val_loss:
             best_val_loss = val_loss
+            no_improve_count = 0
             torch.save(model.state_dict(), model_path)
             print(f"  >>> Best model saved: {model_path}")
+        else:
+            no_improve_count += 1
+            if EPOCHS == 0 and no_improve_count >= PATIENCE:
+                print(f"  >>> Early stopping triggered! No improvement for {PATIENCE} epochs")
+                break
         
         print("-" * 60)
     
-    print("Training completed!")
+    print(f"Training completed! Best val loss: {best_val_loss:.4f}")
 
 
 if __name__ == '__main__':
