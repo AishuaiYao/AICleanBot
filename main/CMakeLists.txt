@@ -2,11 +2,8 @@ set(srcs app_main.cpp)
 
 set(requires
     esp_driver_gpio
-    esp_wifi
-    esp_netif
-    lwip
     nvs_flash
-    esp_http_server
+    bt
 )
 
 idf_component_register(SRCS ${srcs}

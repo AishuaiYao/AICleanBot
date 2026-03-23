@@ -3,23 +3,14 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
-#include "esp_wifi.h"
-#include "esp_netif.h"
-#include "esp_event.h"
 #include "nvs_flash.h"
 #include "esp_camera.h"
-#include "driver/gpio.h"
-#include "esp_http_server.h"
+#include "esp_wifi.h"
+#include "esp_event.h"
+#include "lwip/ip_addr.h"
+#include "lwip/sockets.h"
 
-static const char *TAG = "CAM_SRV";
-
-// ===========================
-// WiFi AP 配置
-// ===========================
-#define AP_SSID     "ESP32-CAM"
-#define AP_PASSWORD "12345678"
-#define AP_CHANNEL  1
-#define AP_MAX_CONN 4
+static const char *TAG = "CAM_TCP";
 
 // ===========================
 // 摄像头引脚定义
@@ -30,50 +21,29 @@ static const char *TAG = "CAM_SRV";
 #define CAM_PIN_SIOD  4
 #define CAM_PIN_SIOC  5
 
-#define CAM_PIN_D7    16  // Y9
-#define CAM_PIN_D6    17  // Y8
-#define CAM_PIN_D5    18  // Y7
-#define CAM_PIN_D4    12  // Y6
-#define CAM_PIN_D3    10  // Y5
-#define CAM_PIN_D2    8   // Y4
-#define CAM_PIN_D1    9   // Y3
-#define CAM_PIN_D0    11  // Y2
+#define CAM_PIN_D7    16
+#define CAM_PIN_D6    17
+#define CAM_PIN_D5    18
+#define CAM_PIN_D4    12
+#define CAM_PIN_D3    10
+#define CAM_PIN_D2    8
+#define CAM_PIN_D1    9
+#define CAM_PIN_D0    11
 
 #define CAM_PIN_VSYNC 6
 #define CAM_PIN_HREF  7
 #define CAM_PIN_PCLK  13
 
 // ===========================
-// WiFi AP 初始化
+// WiFi AP 配置
 // ===========================
-static void wifi_ap_init(void)
-{
-    ESP_LOGI(TAG, "[WiFi] 初始化网络接口...");
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-    esp_netif_create_default_wifi_ap();
+#define AP_SSID      "ESP32-CAM"
+#define AP_PASSWORD  "12345678"
+#define AP_CHANNEL   1
+#define AP_MAX_CONN  1
 
-    ESP_LOGI(TAG, "[WiFi] 初始化WiFi驱动...");
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-    wifi_config_t wifi_config = {};
-    strcpy((char *)wifi_config.ap.ssid, AP_SSID);
-    strcpy((char *)wifi_config.ap.password, AP_PASSWORD);
-    wifi_config.ap.ssid_len = strlen(AP_SSID);
-    wifi_config.ap.channel = AP_CHANNEL;
-    wifi_config.ap.max_connection = AP_MAX_CONN;
-    wifi_config.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
-
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_start());
-
-    ESP_LOGI(TAG, "[WiFi] AP热点已启动");
-    ESP_LOGI(TAG, "[WiFi] SSID: %s", AP_SSID);
-    ESP_LOGI(TAG, "[WiFi] 密码: %s", AP_PASSWORD);
-    ESP_LOGI(TAG, "[WiFi] IP: 192.168.4.1");
-}
+// TCP Server (微信小程序禁用: <1024, 8000-8100, 6000, 8888, 8443等)
+#define TCP_PORT     5000
 
 // ===========================
 // 摄像头初始化
@@ -81,14 +51,13 @@ static void wifi_ap_init(void)
 static void camera_init(void)
 {
     ESP_LOGI(TAG, "[Camera] 初始化摄像头...");
-    
+
     camera_config_t config = {};
     config.pin_pwdn = CAM_PIN_PWDN;
     config.pin_reset = CAM_PIN_RESET;
     config.pin_xclk = CAM_PIN_XCLK;
     config.pin_sccb_sda = CAM_PIN_SIOD;
     config.pin_sccb_scl = CAM_PIN_SIOC;
-
     config.pin_d7 = CAM_PIN_D7;
     config.pin_d6 = CAM_PIN_D6;
     config.pin_d5 = CAM_PIN_D5;
@@ -97,7 +66,6 @@ static void camera_init(void)
     config.pin_d2 = CAM_PIN_D2;
     config.pin_d1 = CAM_PIN_D1;
     config.pin_d0 = CAM_PIN_D0;
-
     config.pin_vsync = CAM_PIN_VSYNC;
     config.pin_href = CAM_PIN_HREF;
     config.pin_pclk = CAM_PIN_PCLK;
@@ -118,93 +86,125 @@ static void camera_init(void)
 }
 
 // ===========================
-// HTTP 处理函数：拍照
+// WiFi AP 初始化
 // ===========================
-static esp_err_t capture_handler(httpd_req_t *req)
+static void wifi_init_ap(void)
 {
-    ESP_LOGI(TAG, "[HTTP] 收到拍照请求");
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    esp_netif_create_default_wifi_ap();
 
-    camera_fb_t *fb = esp_camera_fb_get();
-    if (!fb) {
-        ESP_LOGE(TAG, "[Camera] 采集失败!");
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Camera capture failed");
-        return ESP_FAIL;
-    }
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-    ESP_LOGI(TAG, "[Camera] 采集成功: %dx%d, 大小=%lu bytes", 
-             fb->width, fb->height, (unsigned long)fb->len);
+    wifi_config_t wifi_config = {};
+    strncpy((char *)wifi_config.ap.ssid, AP_SSID, sizeof(wifi_config.ap.ssid) - 1);
+    strncpy((char *)wifi_config.ap.password, AP_PASSWORD, sizeof(wifi_config.ap.password) - 1);
+    wifi_config.ap.channel = AP_CHANNEL;
+    wifi_config.ap.max_connection = AP_MAX_CONN;
+    wifi_config.ap.authmode = WIFI_AUTH_WPA2_PSK;
 
-    // 设置响应头
-    httpd_resp_set_type(req, "application/octet-stream");
-    httpd_resp_set_hdr(req, "Content-Disposition", "attachment; filename=capture.bin");
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
 
-    // 发送帧头：4字节大端长度
-    uint32_t frame_size = fb->len;
-    uint8_t header[4];
-    header[0] = (frame_size >> 24) & 0xFF;
-    header[1] = (frame_size >> 16) & 0xFF;
-    header[2] = (frame_size >> 8) & 0xFF;
-    header[3] = frame_size & 0xFF;
-    httpd_resp_send_chunk(req, (char *)header, 4);
-
-    // 发送图像数据
-    httpd_resp_send_chunk(req, (char *)fb->buf, fb->len);
-    httpd_resp_send_chunk(req, NULL, 0);  // 结束响应
-
-    esp_camera_fb_return(fb);
-    ESP_LOGI(TAG, "[HTTP] 图像发送完成");
-
-    return ESP_OK;
+    ESP_LOGI(TAG, "[WiFi] AP已启动 SSID=%s 密码=%s IP=192.168.4.1", AP_SSID, AP_PASSWORD);
 }
 
 // ===========================
-// HTTP 处理函数：测试连接
+// 处理客户端连接
 // ===========================
-static esp_err_t ping_handler(httpd_req_t *req)
+static void handle_client(int client_sock)
 {
-    httpd_resp_set_type(req, "text/plain");
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_send(req, "OK", 2);
-    return ESP_OK;
+    ESP_LOGI(TAG, "[TCP] 客户端已连接");
+
+    char buf[64];
+
+    while (1) {
+        int len = recv(client_sock, buf, sizeof(buf) - 1, 0);
+        if (len <= 0) {
+            ESP_LOGI(TAG, "[TCP] 客户端断开");
+            break;
+        }
+        buf[len] = '\0';
+
+        ESP_LOGI(TAG, "[TCP] 收到命令: %s", buf);
+
+        if (strncmp(buf, "CAPTURE", 7) == 0) {
+            camera_fb_t *fb = esp_camera_fb_get();
+            if (!fb) {
+                ESP_LOGE(TAG, "[Camera] 采集失败!");
+                const char *err = "ERROR\n";
+                send(client_sock, err, strlen(err), 0);
+                continue;
+            }
+
+            ESP_LOGI(TAG, "[Camera] 采集成功: %dx%d, 大小=%lu bytes",
+                     fb->width, fb->height, (unsigned long)fb->len);
+
+            // 发送4字节帧头（大端长度）
+            uint8_t header[4];
+            uint32_t frame_size = fb->len;
+            header[0] = (frame_size >> 24) & 0xFF;
+            header[1] = (frame_size >> 16) & 0xFF;
+            header[2] = (frame_size >> 8) & 0xFF;
+            header[3] = frame_size & 0xFF;
+
+            send(client_sock, header, 4, 0);
+
+            // 分块发送图像数据
+            uint32_t offset = 0;
+            while (offset < fb->len) {
+                int chunk = fb->len - offset;
+                if (chunk > 1460) chunk = 1460;
+                int sent = send(client_sock, fb->buf + offset, chunk, 0);
+                if (sent < 0) {
+                    ESP_LOGE(TAG, "[TCP] 发送失败");
+                    break;
+                }
+                offset += sent;
+            }
+
+            ESP_LOGI(TAG, "[TCP] 图像发送完成, 共%lu bytes", (unsigned long)offset);
+            esp_camera_fb_return(fb);
+        }
+    }
+
+    close(client_sock);
 }
 
 // ===========================
-// HTTP 服务器启动
+// TCP Server 任务
 // ===========================
-static httpd_handle_t start_webserver(void)
+static void tcp_server_task(void *pvParameters)
 {
-    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    config.lru_purge_enable = true;
+    int server_sock = socket(AF_INET, SOCK_STREAM, 0);
 
-    ESP_LOGI(TAG, "[HTTP] 启动服务器，端口: %d", config.server_port);
+    int opt = 1;
+    setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-    httpd_handle_t server = NULL;
-    if (httpd_start(&server, &config) == ESP_OK) {
-        // 注册URI处理程序
-        httpd_uri_t capture_uri = {
-            .uri       = "/capture",
-            .method    = HTTP_GET,
-            .handler   = capture_handler,
-            .user_ctx  = NULL
-        };
-        httpd_register_uri_handler(server, &capture_uri);
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(TCP_PORT);
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-        httpd_uri_t ping_uri = {
-            .uri       = "/ping",
-            .method    = HTTP_GET,
-            .handler   = ping_handler,
-            .user_ctx  = NULL
-        };
-        httpd_register_uri_handler(server, &ping_uri);
+    bind(server_sock, (struct sockaddr *)&addr, sizeof(addr));
+    listen(server_sock, 1);
 
-        ESP_LOGI(TAG, "[HTTP] 服务器启动成功");
-        ESP_LOGI(TAG, "[HTTP] 拍照地址: http://192.168.4.1/capture");
-        return server;
+    ESP_LOGI(TAG, "[TCP] Server已启动, 端口=%d", TCP_PORT);
+
+    while (1) {
+        struct sockaddr_in client_addr;
+        socklen_t addr_len = sizeof(client_addr);
+        int client_sock = accept(server_sock, (struct sockaddr *)&client_addr, &addr_len);
+
+        if (client_sock >= 0) {
+            handle_client(client_sock);
+        }
     }
 
-    ESP_LOGE(TAG, "[HTTP] 服务器启动失败!");
-    return NULL;
+    close(server_sock);
+    vTaskDelete(NULL);
 }
 
 // ===========================
@@ -213,32 +213,24 @@ static httpd_handle_t start_webserver(void)
 extern "C" void app_main(void)
 {
     ESP_LOGI(TAG, "========================================");
-    ESP_LOGI(TAG, "ESP32-S3 Camera Server (HTTP Mode)");
+    ESP_LOGI(TAG, "ESP32 Camera Server (WiFi AP + TCP)");
     ESP_LOGI(TAG, "========================================");
 
-    // 初始化NVS
-    ESP_LOGI(TAG, "[系统] 初始化NVS存储...");
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_LOGW(TAG, "[系统] NVS需要擦除并重新初始化");
         ESP_ERROR_CHECK(nvs_flash_erase());
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
-    ESP_LOGI(TAG, "[系统] NVS初始化成功");
 
-    // 初始化WiFi AP
-    wifi_ap_init();
-
-    // 初始化摄像头
     camera_init();
+    wifi_init_ap();
 
-    // 启动HTTP服务器
-    start_webserver();
+    xTaskCreate(tcp_server_task, "tcp_server", 8192, NULL, 5, NULL);
 
     ESP_LOGI(TAG, "========================================");
     ESP_LOGI(TAG, "系统启动完成!");
-    ESP_LOGI(TAG, "热点: %s 密码: %s", AP_SSID, AP_PASSWORD);
-    ESP_LOGI(TAG, "访问: http://192.168.4.1/capture 拍照");
+    ESP_LOGI(TAG, "热点: %s  密码: %s", AP_SSID, AP_PASSWORD);
+    ESP_LOGI(TAG, "TCP端口: %d", TCP_PORT);
     ESP_LOGI(TAG, "========================================");
 }
