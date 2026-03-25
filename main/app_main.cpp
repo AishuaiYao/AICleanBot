@@ -209,11 +209,12 @@ static void handle_client(int client_sock)
             // ========== 图像预处理 ==========
             int64_t t3 = esp_timer_get_time();
             
-            // 分配输入缓冲区 (256x256)
-            uint8_t *input_data = (uint8_t *)malloc(INPUT_WIDTH * INPUT_HEIGHT);
+            // 获取模型输入 tensor
+            dl::TensorBase *input_tensor = g_model->get_input("input");
+            uint8_t *model_input = (uint8_t *)input_tensor->data;
             
-            // 缩放到256x256
-            resize_image(fb->buf, fb->width, fb->height, input_data, INPUT_WIDTH, INPUT_HEIGHT);
+            // 缩放到256x256 并填充到模型输入
+            resize_image(fb->buf, fb->width, fb->height, model_input, INPUT_WIDTH, INPUT_HEIGHT);
             
             int64_t t4 = esp_timer_get_time();
             ESP_LOGI(TAG, "[Preprocess] 缩放耗时%.1fms", (t4 - t3) / 1000.0);
@@ -221,19 +222,9 @@ static void handle_client(int client_sock)
             // ========== 模型推理 ==========
             int64_t t5 = esp_timer_get_time();
             
-            // 准备模型输入
-            dl::TensorBase *input_tensor = new dl::TensorBase({1, 1, INPUT_HEIGHT, INPUT_WIDTH}, 
-                                                               input_data, 
-                                                               0, 
-                                                               dl::DATA_TYPE_UINT8, 
-                                                               true);
-            
-            std::map<std::string, dl::TensorBase *> inputs;
-            inputs["input"] = input_tensor;
-            
             // 执行推理
-            g_model->run(inputs);
-            std::map<std::string, dl::TensorBase *> outputs = g_model->get_outputs();
+            g_model->run();
+            dl::TensorBase *output_tensor = g_model->get_output("output");
             
             int64_t t6 = esp_timer_get_time();
             ESP_LOGI(TAG, "[Inference] 模型推理耗时%.1fms", (t6 - t5) / 1000.0);
@@ -241,8 +232,7 @@ static void handle_client(int client_sock)
             // ========== 后处理 ==========
             int64_t t7 = esp_timer_get_time();
             
-            // 获取输出
-            dl::TensorBase *output_tensor = outputs["output"];
+            // 获取输出数据
             int8_t *output_data = (int8_t *)output_tensor->data;
             
             // 分配预测图缓冲区
@@ -307,11 +297,9 @@ static void handle_client(int client_sock)
                      (unsigned long)frame_size, (t10 - t9) / 1000.0, (t10 - t_start) / 1000.0);
             
             // 释放内存
-            free(input_data);
             free(pred_data);
             free(pred_resized);
             free(concat_data);
-            delete input_tensor;
             
             esp_camera_fb_return(fb);
         }
