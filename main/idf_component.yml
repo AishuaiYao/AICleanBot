@@ -2,3 +2,6 @@
 dependencies:
   espressif/esp32-camera:
     version: "^2.0.4"
+  espressif/esp-dl:
+    version: "^3.1.0"
+    override_path: "E:/aishuai/esp-dl/esp-dl"

@@ -1,0 +1,117 @@
+esp32: 
+I (14723) wifi_init: tcp rx win: 5760
+I (14733) wifi_init: tcp mss: 1440
+I (14733) wifi_init: WiFi IRAM OP enabled
+I (14743) wifi_init: WiFi RX IRAM OP enabled
+I (14743) phy_init: phy_version 680,a6008b2,Jun  4 2024,16:41:10
+I (14793) wifi:mode : softAP (3c:0f:02:d7:57:01)
+I (14793) wifi:Total power save buffer number: 8
+I (14793) wifi:Init max length of beacon: 752/752
+I (14793) wifi:Init max length of beacon: 752/752
+I (14793) CAM_TCP: [WiFi] AP已启动 SSID=ESP32-CAM 密码=12345678 IP=192.168.4.1
+I (14803) esp_netif_lwip: DHCP server started on interface WIFI_AP_DEF with IP: 192.168.4.1
+I (14813) CAM_TCP: [TCP] Server已启动, 端口=5000
+I (14823) CAM_TCP: ========================================
+I (14823) CAM_TCP: 系统启动完成!
+I (14833) CAM_TCP: 热点: ESP32-CAM  密码: 12345678
+I (14833) CAM_TCP: TCP端口: 5000
+I (14843) CAM_TCP: ========================================
+I (14843) main_task: Returned from app_main()
+I (29383) wifi:new:<1,0>, old:<1,1>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0
+I (29383) wifi:station: b2:16:a2:d7:8c:95 join, AID=1, bgn, 20
+I (29553) esp_netif_lwip: DHCP server assigned IP to a client, IP is: 192.168.4.2
+I (30073) wifi:<ba-add>idx:2 (ifx:1, b2:16:a2:d7:8c:95), tid:0, ssn:1058, winSize:64
+I (30113) wifi:<ba-del>idx:2, tid:0
+I (30133) wifi:<ba-add>idx:2 (ifx:1, b2:16:a2:d7:8c:95), tid:0, ssn:1070, winSize:64
+I (31073) wifi:<ba-add>idx:3 (ifx:1, b2:16:a2:d7:8c:95), tid:2, ssn:877, winSize:64
+I (32733) CAM_TCP: [TCP] 客户端已连接
+I (35293) CAM_TCP: [TCP] 收到命令: CAPTURE
+
+I (35293) CAM_TCP: [Camera] 采集成功: 160x120, 大小=19200 bytes, 耗时0.0ms
+I (35313) CAM_TCP: [Preprocess] 缩放耗时13.7ms
+E (35313) dl::Model: Assign input failed
+I (35313) CAM_TCP: [Inference] 模型推理耗时4.1ms
+I (35403) CAM_TCP: [Postprocess] 后处理耗时84.7ms
+I (35403) CAM_TCP: [Concat] 拼接耗时1.2ms
+I (35763) CAM_TCP: [TCP] 图像发送完成: 38400 bytes, 传输耗时366.1ms, 总耗时473.0ms
+I (49823) CAM_TCP: [TCP] 收到命令: CAPTURE
+
+I (49823) CAM_TCP: [Camera] 采集成功: 160x120, 大小=19200 bytes, 耗时0.0ms
+I (49833) CAM_TCP: [Preprocess] 缩放耗时14.5ms
+E (49843) dl::Model: Assign input failed
+I (49843) CAM_TCP: [Inference] 模型推理耗时4.1ms
+I (49923) CAM_TCP: [Postprocess] 后处理耗时84.3ms
+I (49923) CAM_TCP: [Concat] 拼接耗时1.2ms
+I (50093) CAM_TCP: [TCP] 图像发送完成: 38400 bytes, 传输耗时171.0ms, 总耗时278.3ms
+
+
+
+小程序：
+
+08:33:35| 页面显示
+08:33:18
+＜<< 已保存到手机相册
+08:33:18
+| >>> 保存到手机相册：
+wxfile://tmp_b8f30d78cf9de174a3f2f71099179900.png
+08:33:18
+| ＜<< 导出成功：
+wxfile://tmp_b8f30d78cf9de174a3f2f71099179900-png
+08:33:18
+>>> Canvas绘制完成，导出临时文件
+08:33:18
+>>> 处理图像，长度=38400
+08:33:18
+<<< 图像接收完成！共16包，38400字节
+08:33:18
+<<< 收到数据包：460 字节
+08:33:18
+<<< 收到数据包：1440 字节
+08:33:18
+<<< 收到数据包：260 字节
+08:33:18
+<<< 收到数据包：4320 字节
+08:33:18
+<<< 收到数据包：1440 字节
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

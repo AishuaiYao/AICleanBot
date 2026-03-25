@@ -1,35 +1,46 @@
-from sin_model import generate_data, SinPredictor
+import torch
 from torch.utils.data import DataLoader, TensorDataset
 from esp_ppq.api import espdl_quantize_onnx
 
 
 def collate_fn(batch):
     # TensorDataset 迭代的时候返回的是 Tuple(x, y), 量化的时候只需要x, 不需要label y。
-    batch = batch[0].to(DEVICE)
+    batch = batch[0]
     return batch
 
 
 if __name__ == "__main__":
-
-    ONNX_MODEL_PATH = "sin_model.onnx"
-    ESPDL_MODEL_PATH = "sin_model.espdl"
-    INPUT_SHAPE = [1, 1]  # 1 个输入特征
+    
+    ONNX_MODEL_PATH = r"E:\AICleanBot\py_scripts\models\20260321_220256\model.onnx"
+    ESPDL_MODEL_PATH = r"E:\AICleanBot\py_scripts\models\20260321_220256\model.espdl"
+    INPUT_SHAPE = [1, 1, 256, 256]  # 1 个输入, 1通道, 256x256
     TARGET = "esp32s3"  # 量化目标类型，可选 'c', 'esp32s3' or 'esp32p4'
     NUM_OF_BITS = 8  # 量化位数
     DEVICE = "cpu"  # 'cuda' or 'cpu', if you use cuda, please make sure that cuda is available
-
-    x, y = generate_data()
+    NUM_CALIB_SAMPLES = 32  # 校准样本数量
+    
+    # 生成校准数据（随机灰度图像）
+    print(f"生成 {NUM_CALIB_SAMPLES} 个校准样本...")
+    x = torch.rand(NUM_CALIB_SAMPLES, 1, 256, 256, dtype=torch.float32)
+    y = torch.zeros(NUM_CALIB_SAMPLES, 1, 256, 256, dtype=torch.float32)  # dummy labels
+    
     # dataloader shuffle必须设置为False。
     # 因为计算量化误差的时候会多次遍历数据集，如果shuffle是True的话，会得到错误的量化误差。
     dataset = TensorDataset(x, y)
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=False)
-
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+    
+    print(f"开始量化模型...")
+    print(f"输入模型: {ONNX_MODEL_PATH}")
+    print(f"输出模型: {ESPDL_MODEL_PATH}")
+    print(f"目标平台: {TARGET}")
+    print(f"量化位数: {NUM_OF_BITS} bit")
+    
     quant_ppq_graph = espdl_quantize_onnx(
         onnx_import_file=ONNX_MODEL_PATH,
         espdl_export_file=ESPDL_MODEL_PATH,
         calib_dataloader=dataloader,
-        calib_steps=32,  # 校准的步数
-        input_shape=INPUT_SHAPE,  # 输入形状，批次为 1
+        calib_steps=NUM_CALIB_SAMPLES,  # 校准的步数
+        input_shape=INPUT_SHAPE,  # 输入形状
         inputs=None,
         target=TARGET,  # 量化目标类型
         num_of_bits=NUM_OF_BITS,  # 量化位数
@@ -41,3 +52,5 @@ if __name__ == "__main__":
         export_test_values=True,
         verbose=1,  # 输出详细日志信息
     )
+    
+    print(f"\n量化完成！模型已保存至: {ESPDL_MODEL_PATH}")

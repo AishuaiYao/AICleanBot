@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -9,8 +10,16 @@
 #include "esp_event.h"
 #include "lwip/ip_addr.h"
 #include "lwip/sockets.h"
+#include "esp_timer.h"
+#include "dl_model_base.hpp"
 
 static const char *TAG = "CAM_TCP";
+
+// 声明嵌入的模型数据
+extern const uint8_t model_espdl[] asm("_binary_model_espdl_start");
+
+// 全局模型指针
+static dl::Model *g_model = nullptr;
 
 // ===========================
 // 摄像头引脚定义
@@ -44,6 +53,56 @@ static const char *TAG = "CAM_TCP";
 
 // TCP Server (微信小程序禁用: <1024, 8000-8100, 6000, 8888, 8443等)
 #define TCP_PORT     5000
+
+// 图像处理相关常量
+#define INPUT_WIDTH  256
+#define INPUT_HEIGHT 256
+#define OUTPUT_WIDTH 160
+#define OUTPUT_HEIGHT 120
+
+// ===========================
+// 图像处理函数
+// ===========================
+
+// 双线性插值缩放
+void resize_image(const uint8_t *src, int src_w, int src_h, uint8_t *dst, int dst_w, int dst_h)
+{
+    float x_ratio = (float)(src_w) / dst_w;
+    float y_ratio = (float)(src_h) / dst_h;
+    
+    for (int y = 0; y < dst_h; y++) {
+        for (int x = 0; x < dst_w; x++) {
+            float src_x = x * x_ratio;
+            float src_y = y * y_ratio;
+            
+            int x1 = (int)src_x;
+            int y1 = (int)src_y;
+            int x2 = (x1 + 1 < src_w) ? x1 + 1 : x1;
+            int y2 = (y1 + 1 < src_h) ? y1 + 1 : y1;
+            
+            float dx = src_x - x1;
+            float dy = src_y - y1;
+            
+            uint8_t p1 = src[y1 * src_w + x1];
+            uint8_t p2 = src[y1 * src_w + x2];
+            uint8_t p3 = src[y2 * src_w + x1];
+            uint8_t p4 = src[y2 * src_w + x2];
+            
+            float val = p1 * (1 - dx) * (1 - dy) + 
+                       p2 * dx * (1 - dy) + 
+                       p3 * (1 - dx) * dy + 
+                       p4 * dx * dy;
+            
+            dst[y * dst_w + x] = (uint8_t)(val + 0.5f);
+        }
+    }
+}
+
+// Sigmoid函数
+float sigmoid(float x)
+{
+    return 1.0f / (1.0f + expf(-x));
+}
 
 // ===========================
 // 摄像头初始化
@@ -131,20 +190,98 @@ static void handle_client(int client_sock)
         ESP_LOGI(TAG, "[TCP] 收到命令: %s", buf);
 
         if (strncmp(buf, "CAPTURE", 7) == 0) {
+            int64_t t_start = esp_timer_get_time();
+
+            int64_t t1 = esp_timer_get_time();
             camera_fb_t *fb = esp_camera_fb_get();
+            int64_t t2 = esp_timer_get_time();
+
             if (!fb) {
-                ESP_LOGE(TAG, "[Camera] 采集失败!");
+                ESP_LOGE(TAG, "[Camera] 采集失败! 耗时%.1fms", (t2 - t1) / 1000.0);
                 const char *err = "ERROR\n";
                 send(client_sock, err, strlen(err), 0);
                 continue;
             }
 
-            ESP_LOGI(TAG, "[Camera] 采集成功: %dx%d, 大小=%lu bytes",
-                     fb->width, fb->height, (unsigned long)fb->len);
+            ESP_LOGI(TAG, "[Camera] 采集成功: %dx%d, 大小=%lu bytes, 耗时%.1fms",
+                     fb->width, fb->height, (unsigned long)fb->len, (t2 - t1) / 1000.0);
 
-            // 发送4字节帧头（大端长度）
+            // ========== 图像预处理 ==========
+            int64_t t3 = esp_timer_get_time();
+            
+            // 分配输入缓冲区 (256x256)
+            uint8_t *input_data = (uint8_t *)malloc(INPUT_WIDTH * INPUT_HEIGHT);
+            
+            // 缩放到256x256
+            resize_image(fb->buf, fb->width, fb->height, input_data, INPUT_WIDTH, INPUT_HEIGHT);
+            
+            int64_t t4 = esp_timer_get_time();
+            ESP_LOGI(TAG, "[Preprocess] 缩放耗时%.1fms", (t4 - t3) / 1000.0);
+
+            // ========== 模型推理 ==========
+            int64_t t5 = esp_timer_get_time();
+            
+            // 准备模型输入
+            dl::TensorBase *input_tensor = new dl::TensorBase({1, 1, INPUT_HEIGHT, INPUT_WIDTH}, 
+                                                               input_data, 
+                                                               0, 
+                                                               dl::DATA_TYPE_UINT8, 
+                                                               true);
+            
+            std::map<std::string, dl::TensorBase *> inputs;
+            inputs["input"] = input_tensor;
+            
+            // 执行推理
+            g_model->run(inputs);
+            std::map<std::string, dl::TensorBase *> outputs = g_model->get_outputs();
+            
+            int64_t t6 = esp_timer_get_time();
+            ESP_LOGI(TAG, "[Inference] 模型推理耗时%.1fms", (t6 - t5) / 1000.0);
+            
+            // ========== 后处理 ==========
+            int64_t t7 = esp_timer_get_time();
+            
+            // 获取输出
+            dl::TensorBase *output_tensor = outputs["output"];
+            int8_t *output_data = (int8_t *)output_tensor->data;
+            
+            // 分配预测图缓冲区
+            uint8_t *pred_data = (uint8_t *)malloc(OUTPUT_WIDTH * OUTPUT_HEIGHT);
+            uint8_t *pred_resized = (uint8_t *)malloc(INPUT_WIDTH * INPUT_HEIGHT);
+            
+            // 后处理: sigmoid + 阈值分割
+            for (int i = 0; i < INPUT_WIDTH * INPUT_HEIGHT; i++) {
+                float val = sigmoid(output_data[i] / 128.0f);  // 反量化 + sigmoid
+                pred_resized[i] = (val > 0.5f) ? 255 : 0;
+            }
+            
+            // 缩放回160x120
+            resize_image(pred_resized, INPUT_WIDTH, INPUT_HEIGHT, pred_data, OUTPUT_WIDTH, OUTPUT_HEIGHT);
+            
+            int64_t t8 = esp_timer_get_time();
+            ESP_LOGI(TAG, "[Postprocess] 后处理耗时%.1fms", (t8 - t7) / 1000.0);
+            
+            // ========== 横向拼接 ==========
+            uint32_t concat_size = OUTPUT_WIDTH * 2 * OUTPUT_HEIGHT;  // 320x120
+            uint8_t *concat_data = (uint8_t *)malloc(concat_size);
+            
+            for (int y = 0; y < OUTPUT_HEIGHT; y++) {
+                // 左侧：原图
+                memcpy(concat_data + y * OUTPUT_WIDTH * 2, 
+                       fb->buf + y * OUTPUT_WIDTH, 
+                       OUTPUT_WIDTH);
+                // 右侧：预测图
+                memcpy(concat_data + y * OUTPUT_WIDTH * 2 + OUTPUT_WIDTH, 
+                       pred_data + y * OUTPUT_WIDTH, 
+                       OUTPUT_WIDTH);
+            }
+            
+            int64_t t9 = esp_timer_get_time();
+            ESP_LOGI(TAG, "[Concat] 拼接耗时%.1fms", (t9 - t8) / 1000.0);
+
+            // ========== 发送图像 ==========
             uint8_t header[4];
-            uint32_t frame_size = fb->len;
+            uint32_t frame_size = concat_size;
             header[0] = (frame_size >> 24) & 0xFF;
             header[1] = (frame_size >> 16) & 0xFF;
             header[2] = (frame_size >> 8) & 0xFF;
@@ -154,10 +291,10 @@ static void handle_client(int client_sock)
 
             // 分块发送图像数据
             uint32_t offset = 0;
-            while (offset < fb->len) {
-                int chunk = fb->len - offset;
+            while (offset < frame_size) {
+                int chunk = frame_size - offset;
                 if (chunk > 1460) chunk = 1460;
-                int sent = send(client_sock, fb->buf + offset, chunk, 0);
+                int sent = send(client_sock, concat_data + offset, chunk, 0);
                 if (sent < 0) {
                     ESP_LOGE(TAG, "[TCP] 发送失败");
                     break;
@@ -165,7 +302,17 @@ static void handle_client(int client_sock)
                 offset += sent;
             }
 
-            ESP_LOGI(TAG, "[TCP] 图像发送完成, 共%lu bytes", (unsigned long)offset);
+            int64_t t10 = esp_timer_get_time();
+            ESP_LOGI(TAG, "[TCP] 图像发送完成: %lu bytes, 传输耗时%.1fms, 总耗时%.1fms",
+                     (unsigned long)frame_size, (t10 - t9) / 1000.0, (t10 - t_start) / 1000.0);
+            
+            // 释放内存
+            free(input_data);
+            free(pred_data);
+            free(pred_resized);
+            free(concat_data);
+            delete input_tensor;
+            
             esp_camera_fb_return(fb);
         }
     }
@@ -222,6 +369,26 @@ extern "C" void app_main(void)
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
+
+    // 初始化模型
+    ESP_LOGI(TAG, "[Model] 加载模型...");
+    g_model = new dl::Model((const char *)model_espdl, fbs::MODEL_LOCATION_IN_FLASH_RODATA);
+    ESP_ERROR_CHECK(g_model->test());
+    g_model->profile();
+    
+    // 打印模型输入输出名称
+    auto &model_inputs = g_model->get_inputs();
+    auto &model_outputs = g_model->get_outputs();
+    ESP_LOGI(TAG, "[Model] 输入数量: %d", model_inputs.size());
+    for (auto &pair : model_inputs) {
+        ESP_LOGI(TAG, "[Model] 输入名称: %s", pair.first.c_str());
+    }
+    ESP_LOGI(TAG, "[Model] 输出数量: %d", model_outputs.size());
+    for (auto &pair : model_outputs) {
+        ESP_LOGI(TAG, "[Model] 输出名称: %s", pair.first.c_str());
+    }
+    
+    ESP_LOGI(TAG, "[Model] 模型加载成功");
 
     camera_init();
     wifi_init_ap();

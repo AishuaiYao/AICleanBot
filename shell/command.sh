@@ -1,6 +1,6 @@
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple Netron
 
-pip install-i https://pypi.tuna.tsinghua.edu.cn/simple torch esp-ppq 
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple esp-ppq 
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple segmentation_models_pytorch==0.5.0 torch==2.5.0 torchvision==0.20.0
 
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple torch==2.22
