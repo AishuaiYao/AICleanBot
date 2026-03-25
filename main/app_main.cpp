@@ -211,6 +211,13 @@ static void handle_client(int client_sock)
             
             // 获取模型输入 tensor
             dl::TensorBase *input_tensor = g_model->get_input("input");
+            std::vector<int> in_shape = input_tensor->get_shape();
+            ESP_LOGI(TAG, "[Input] Tensor shape: %d x %d x %d x %d", 
+                     in_shape.size() > 0 ? in_shape[0] : 0,
+                     in_shape.size() > 1 ? in_shape[1] : 0,
+                     in_shape.size() > 2 ? in_shape[2] : 0,
+                     in_shape.size() > 3 ? in_shape[3] : 0);
+            
             uint8_t *model_input = (uint8_t *)input_tensor->data;
             
             // 缩放到256x256 并填充到模型输入
@@ -231,6 +238,15 @@ static void handle_client(int client_sock)
             
             // ========== 后处理 ==========
             int64_t t7 = esp_timer_get_time();
+            
+            // 打印输出 tensor 信息
+            std::vector<int> out_shape = output_tensor->get_shape();
+            ESP_LOGI(TAG, "[Output] Tensor shape: %d x %d x %d x %d", 
+                     out_shape.size() > 0 ? out_shape[0] : 0,
+                     out_shape.size() > 1 ? out_shape[1] : 0,
+                     out_shape.size() > 2 ? out_shape[2] : 0,
+                     out_shape.size() > 3 ? out_shape[3] : 0);
+            ESP_LOGI(TAG, "[Output] Tensor size: %d, dtype: %d", output_tensor->size, output_tensor->dtype);
             
             // 获取输出数据
             int8_t *output_data = (int8_t *)output_tensor->data;
