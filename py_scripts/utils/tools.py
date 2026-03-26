@@ -13,7 +13,7 @@ import onnx
 def export_onnx(model, save_dir, input_shape=(1, 1, 120, 160), model_name='model.onnx'):
     """
     导出PyTorch模型为ONNX格式
-    :param model: PyTorch模型
+    :param model: PyTorch模型（已加载权重）
     :param save_dir: 保存目录
     :param input_shape: 输入形状 (N, C, H, W)
     :param model_name: 模型文件名
@@ -37,6 +37,25 @@ def export_onnx(model, save_dir, input_shape=(1, 1, 120, 160), model_name='model
     print(f"ONNX模型已导出：{onnx_path}")
     
     return onnx_path
+
+
+def export_pth_to_onnx(model_class, pth_path, save_dir, input_shape=(1, 1, 120, 160), model_name='model.onnx'):
+    """
+    从.pth权重文件导出ONNX模型（独立于训练流程）
+    :param model_class: 模型类（如UNetMiniExp2）
+    :param pth_path: .pth权重文件路径
+    :param save_dir: 保存目录
+    :param input_shape: 输入形状 (N, C, H, W)
+    :param model_name: 模型文件名
+    """
+    # 实例化模型
+    model = model_class()
+    
+    # 加载权重
+    model.load_state_dict(torch.load(pth_path, map_location='cpu'))
+    
+    # 导出
+    return export_onnx(model, save_dir, input_shape, model_name)
 
 
 def batch_rename_files(directory, start_num=1, digits=5):
@@ -265,10 +284,22 @@ if __name__ == "__main__":
     # target_directory = r"E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA"
     # batch_rename_files(target_directory, start_num=1, digits=5)
     # test_gpu()
+    
+    # 分析ONNX模型
+
+    # 从.pth导出ONNX示例
+    import sys
+    sys.path.append(r'E:\AICleanBot\py_scripts\net')
+    from train_student import UNetMiniExp2
+    export_pth_to_onnx(
+        UNetMiniExp2,
+        r"E:\AICleanBot\py_scripts\models\20260326_215346\best_model.pth",
+        r"E:\AICleanBot\py_scripts\models\20260326_215346",
+        input_shape=(1, 1, 120, 160)
+    )
 
     analyze_onnx_model(r"E:\AICleanBot\py_scripts\models\20260326_215346\model.onnx")
-
-
+    
 
 
 

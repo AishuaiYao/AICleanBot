@@ -9,9 +9,6 @@ import torch.optim as optim
 from tqdm import tqdm
 from datetime import datetime
 import random
-import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'utils'))
-from tools import export_onnx
 
 
 # ==================== 自定义U-Net模型 ====================
@@ -511,9 +508,8 @@ def train():
         print("-" * 60)
     
     print(f"Training completed! Best val loss: {best_val_loss:.4f}")
-    
-    # ========== 导出ONNX ==========
-    export_onnx(model, save_dir, input_shape=(1, 1, 120, 160))
+    print(f"模型已保存：{model_path}")
+    print(f"如需导出ONNX，请使用：tools.export_pth_to_onnx(UNetMiniExp3, model_path, save_dir)")
 
 
 if __name__ == '__main__':
