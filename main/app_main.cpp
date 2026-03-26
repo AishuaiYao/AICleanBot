@@ -55,48 +55,14 @@ static dl::Model *g_model = nullptr;
 #define TCP_PORT     5000
 
 // 图像处理相关常量
-#define INPUT_WIDTH  256
-#define INPUT_HEIGHT 256
+#define INPUT_WIDTH  160
+#define INPUT_HEIGHT 120
 #define OUTPUT_WIDTH 160
 #define OUTPUT_HEIGHT 120
 
 // ===========================
 // 图像处理函数
 // ===========================
-
-// 双线性插值缩放
-void resize_image(const uint8_t *src, int src_w, int src_h, uint8_t *dst, int dst_w, int dst_h)
-{
-    float x_ratio = (float)(src_w) / dst_w;
-    float y_ratio = (float)(src_h) / dst_h;
-    
-    for (int y = 0; y < dst_h; y++) {
-        for (int x = 0; x < dst_w; x++) {
-            float src_x = x * x_ratio;
-            float src_y = y * y_ratio;
-            
-            int x1 = (int)src_x;
-            int y1 = (int)src_y;
-            int x2 = (x1 + 1 < src_w) ? x1 + 1 : x1;
-            int y2 = (y1 + 1 < src_h) ? y1 + 1 : y1;
-            
-            float dx = src_x - x1;
-            float dy = src_y - y1;
-            
-            uint8_t p1 = src[y1 * src_w + x1];
-            uint8_t p2 = src[y1 * src_w + x2];
-            uint8_t p3 = src[y2 * src_w + x1];
-            uint8_t p4 = src[y2 * src_w + x2];
-            
-            float val = p1 * (1 - dx) * (1 - dy) + 
-                       p2 * dx * (1 - dy) + 
-                       p3 * (1 - dx) * dy + 
-                       p4 * dx * dy;
-            
-            dst[y * dst_w + x] = (uint8_t)(val + 0.5f);
-        }
-    }
-}
 
 // Sigmoid函数
 float sigmoid(float x)
@@ -220,11 +186,11 @@ static void handle_client(int client_sock)
             
             uint8_t *model_input = (uint8_t *)input_tensor->data;
             
-            // 缩放到256x256 并填充到模型输入
-            resize_image(fb->buf, fb->width, fb->height, model_input, INPUT_WIDTH, INPUT_HEIGHT);
+            // 直接复制原始图像到模型输入 (不resize)
+            memcpy(model_input, fb->buf, INPUT_WIDTH * INPUT_HEIGHT);
             
             int64_t t4 = esp_timer_get_time();
-            ESP_LOGI(TAG, "[Preprocess] 缩放耗时%.1fms", (t4 - t3) / 1000.0);
+            ESP_LOGI(TAG, "[Preprocess] 预处理耗时%.1fms", (t4 - t3) / 1000.0);
 
             // ========== 模型推理 ==========
             int64_t t5 = esp_timer_get_time();
@@ -253,16 +219,12 @@ static void handle_client(int client_sock)
             
             // 分配预测图缓冲区
             uint8_t *pred_data = (uint8_t *)malloc(OUTPUT_WIDTH * OUTPUT_HEIGHT);
-            uint8_t *pred_resized = (uint8_t *)malloc(INPUT_WIDTH * INPUT_HEIGHT);
             
-            // 后处理: sigmoid + 阈值分割
-            for (int i = 0; i < INPUT_WIDTH * INPUT_HEIGHT; i++) {
+            // 后处理: sigmoid + 阈值分割 (输出尺寸与输入相同，无需resize)
+            for (int i = 0; i < OUTPUT_WIDTH * OUTPUT_HEIGHT; i++) {
                 float val = sigmoid(output_data[i] / 128.0f);  // 反量化 + sigmoid
-                pred_resized[i] = (val > 0.5f) ? 255 : 0;
+                pred_data[i] = (val > 0.5f) ? 255 : 0;
             }
-            
-            // 缩放回160x120
-            resize_image(pred_resized, INPUT_WIDTH, INPUT_HEIGHT, pred_data, OUTPUT_WIDTH, OUTPUT_HEIGHT);
             
             int64_t t8 = esp_timer_get_time();
             ESP_LOGI(TAG, "[Postprocess] 后处理耗时%.1fms", (t8 - t7) / 1000.0);
@@ -314,8 +276,6 @@ static void handle_client(int client_sock)
             
             // 释放内存
             free(pred_data);
-            free(pred_resized);
-            free(concat_data);
             
             esp_camera_fb_return(fb);
         }

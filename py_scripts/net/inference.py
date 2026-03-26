@@ -27,18 +27,16 @@ def load_model(model_path):
     return model
 
 
-def preprocess(image_path, img_size=256):
+def preprocess(image_path):
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-    img_resized = cv2.resize(img, (img_size, img_size))
-    img_tensor = img_resized.astype(np.float32) / 255.0
+    img_tensor = img.astype(np.float32) / 255.0
     img_tensor = torch.from_numpy(img_tensor).unsqueeze(0).unsqueeze(0)
     return img_tensor.to(DEVICE), img
 
 
-def postprocess(output, original_size):
+def postprocess(output):
     pred = torch.sigmoid(output).squeeze().cpu().numpy()
     pred = (pred > 0.5).astype(np.uint8) * 255
-    pred = cv2.resize(pred, (original_size[1], original_size[0]))
     return pred
 
 
@@ -67,8 +65,7 @@ def infer(model_path, input_dir, output_dir, visual_dir):
             img_tensor, img_original = preprocess(img_path)
             output = model(img_tensor)
             
-            original_size = img_original.shape[:2]
-            pred = postprocess(output, original_size)
+            pred = postprocess(output)
             
             name = os.path.basename(img_path)
             cv2.imwrite(os.path.join(output_dir, name), pred)

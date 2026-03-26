@@ -18,7 +18,7 @@ pip install -i https://pypi.tuna.tsinghua.edu.cn/simple matplotlib
 python -c "import sys; print(sys.executable)"
 
 
-netron E:\AICleanBot\py_scripts\models\unet_2class.onnx
+netron E:\AICleanBot\py_scripts\models\20260326_215346\model.onnx
 
 
 

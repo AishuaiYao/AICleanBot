@@ -9,10 +9,14 @@ import torch.optim as optim
 from tqdm import tqdm
 from datetime import datetime
 import random
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'utils'))
+from tools import export_onnx
 
 
 # ==================== 自定义U-Net模型 ====================
 class DoubleConv(nn.Module):
+    """标准双卷积块"""
     def __init__(self, in_c, out_c):
         super().__init__()
         self.conv = nn.Sequential(
@@ -23,7 +27,33 @@ class DoubleConv(nn.Module):
             nn.BatchNorm2d(out_c),
             nn.ReLU(inplace=True)
         )
-    
+
+    def forward(self, x):
+        return self.conv(x)
+
+
+class DepthwiseSeparableConv(nn.Module):
+    """深度可分离卷积块: Depthwise + Pointwise"""
+    def __init__(self, in_c, out_c):
+        super().__init__()
+        self.conv = nn.Sequential(
+            # Depthwise: 每个通道独立卷积
+            nn.Conv2d(in_c, in_c, 3, 1, 1, groups=in_c, bias=False),
+            nn.BatchNorm2d(in_c),
+            nn.ReLU(inplace=True),
+            # Pointwise: 1x1卷积融合通道
+            nn.Conv2d(in_c, out_c, 1, 1, 0, bias=False),
+            nn.BatchNorm2d(out_c),
+            nn.ReLU(inplace=True),
+            # 第二组 Depthwise + Pointwise
+            nn.Conv2d(out_c, out_c, 3, 1, 1, groups=out_c, bias=False),
+            nn.BatchNorm2d(out_c),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_c, out_c, 1, 1, 0, bias=False),
+            nn.BatchNorm2d(out_c),
+            nn.ReLU(inplace=True)
+        )
+
     def forward(self, x):
         return self.conv(x)
 
@@ -37,10 +67,10 @@ class UNetMiniEXP1(nn.Module):
         self.enc2 = DoubleConv(8, 16)
         self.enc3 = DoubleConv(16, 32)
         self.pool = nn.MaxPool2d(2)
-        
+
         # Bottleneck
         self.bottleneck = DoubleConv(32, 64)
-        
+
         # Decoder
         self.up3 = nn.ConvTranspose2d(64, 32, 2, 2)
         self.dec3 = DoubleConv(64, 32)
@@ -48,37 +78,37 @@ class UNetMiniEXP1(nn.Module):
         self.dec2 = DoubleConv(32, 16)
         self.up1 = nn.ConvTranspose2d(16, 8, 2, 2)
         self.dec1 = DoubleConv(16, 8)
-        
+
         # Output
         self.out = nn.Conv2d(8, 1, 1)
-    
+
     def forward(self, x):
         # Encoder
-        e1 = self.enc1(x)                 # 8 channels
-        e2 = self.enc2(self.pool(e1))     # 16 channels
-        e3 = self.enc3(self.pool(e2))     # 32 channels
-        
+        e1 = self.enc1(x)
+        e2 = self.enc2(self.pool(e1))
+        e3 = self.enc3(self.pool(e2))
+
         # Bottleneck
-        b = self.bottleneck(self.pool(e3))  # 64 channels
-        
+        b = self.bottleneck(self.pool(e3))
+
         # Decoder with skip connections
         d3 = self.up3(b)
         d3 = torch.cat([d3, e3], dim=1)
         d3 = self.dec3(d3)
-        
+
         d2 = self.up2(d3)
         d2 = torch.cat([d2, e2], dim=1)
         d2 = self.dec2(d2)
-        
+
         d1 = self.up1(d2)
         d1 = torch.cat([d1, e1], dim=1)
         d1 = self.dec1(d1)
-        
+
         return self.out(d1)
 
 
 class UNetMiniExp2(nn.Module):
-    """增强版U-Net (约1MB)"""
+    """增强版U-Net (约1MB) - 标准卷积"""
     def __init__(self):
         super().__init__()
         # Encoder (通道数: 12 -> 24 -> 48)
@@ -86,10 +116,10 @@ class UNetMiniExp2(nn.Module):
         self.enc2 = DoubleConv(12, 24)
         self.enc3 = DoubleConv(24, 48)
         self.pool = nn.MaxPool2d(2)
-        
+
         # Bottleneck
         self.bottleneck = DoubleConv(48, 96)
-        
+
         # Decoder
         self.up3 = nn.ConvTranspose2d(96, 48, 2, 2)
         self.dec3 = DoubleConv(96, 48)
@@ -97,32 +127,89 @@ class UNetMiniExp2(nn.Module):
         self.dec2 = DoubleConv(48, 24)
         self.up1 = nn.ConvTranspose2d(24, 12, 2, 2)
         self.dec1 = DoubleConv(24, 12)
-        
+
         # Output
         self.out = nn.Conv2d(12, 1, 1)
-    
+
     def forward(self, x):
-        # Encoder (3层)
-        e1 = self.enc1(x)                   # 12 channels
-        e2 = self.enc2(self.pool(e1))       # 24 channels
-        e3 = self.enc3(self.pool(e2))       # 48 channels
-        
+        # Encoder
+        e1 = self.enc1(x)
+        e2 = self.enc2(self.pool(e1))
+        e3 = self.enc3(self.pool(e2))
+
         # Bottleneck
-        b = self.bottleneck(self.pool(e3))  # 96 channels
-        
+        b = self.bottleneck(self.pool(e3))
+
         # Decoder with skip connections
         d3 = self.up3(b)
         d3 = torch.cat([d3, e3], dim=1)
         d3 = self.dec3(d3)
-        
+
         d2 = self.up2(d3)
         d2 = torch.cat([d2, e2], dim=1)
         d2 = self.dec2(d2)
-        
+
         d1 = self.up1(d2)
         d1 = torch.cat([d1, e1], dim=1)
         d1 = self.dec1(d1)
-        
+
+        return self.out(d1)
+
+
+class UNetMiniExp3(nn.Module):
+    """深度可分离卷积 + 双线性插值上采样版U-Net"""
+    def __init__(self):
+        super().__init__()
+        # Encoder (通道数: 12 -> 24 -> 48)
+        self.enc1 = DepthwiseSeparableConv(1, 12)
+        self.enc2 = DepthwiseSeparableConv(12, 24)
+        self.enc3 = DepthwiseSeparableConv(24, 48)
+        self.pool = nn.MaxPool2d(2)
+
+        # Bottleneck
+        self.bottleneck = DepthwiseSeparableConv(48, 96)
+
+        # Decoder (使用双线性插值上采样 + 1x1卷积调整通道)
+        self.up3 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.conv3 = nn.Conv2d(96, 48, 1, 1, 0, bias=False)
+        self.dec3 = DepthwiseSeparableConv(96, 48)
+
+        self.up2 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.conv2 = nn.Conv2d(48, 24, 1, 1, 0, bias=False)
+        self.dec2 = DepthwiseSeparableConv(48, 24)
+
+        self.up1 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.conv1 = nn.Conv2d(24, 12, 1, 1, 0, bias=False)
+        self.dec1 = DepthwiseSeparableConv(24, 12)
+
+        # Output
+        self.out = nn.Conv2d(12, 1, 1)
+
+    def forward(self, x):
+        # Encoder
+        e1 = self.enc1(x)
+        e2 = self.enc2(self.pool(e1))
+        e3 = self.enc3(self.pool(e2))
+
+        # Bottleneck
+        b = self.bottleneck(self.pool(e3))
+
+        # Decoder with skip connections
+        d3 = self.up3(b)
+        d3 = self.conv3(d3)
+        d3 = torch.cat([d3, e3], dim=1)
+        d3 = self.dec3(d3)
+
+        d2 = self.up2(d3)
+        d2 = self.conv2(d2)
+        d2 = torch.cat([d2, e2], dim=1)
+        d2 = self.dec2(d2)
+
+        d1 = self.up1(d2)
+        d1 = self.conv1(d1)
+        d1 = torch.cat([d1, e1], dim=1)
+        d1 = self.dec1(d1)
+
         return self.out(d1)
 
 
@@ -336,7 +423,7 @@ def train():
     val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=0)
     
     # 使用自定义模型
-    model = UNetMiniExp2().to(DEVICE)
+    model = UNetMiniExp3().to(DEVICE)
     
     criterion = CombinedLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
@@ -426,23 +513,7 @@ def train():
     print(f"Training completed! Best val loss: {best_val_loss:.4f}")
     
     # ========== 导出ONNX ==========
-    print("\n正在导出ONNX模型...")
-    model_cpu = model.cpu().eval()
-    onnx_path = os.path.join(save_dir, 'model.onnx')
-    
-    torch.onnx.export(
-        model_cpu,
-        torch.randn(1, 1, 256, 256),  # 示例输入，dynamic_axes支持任意尺寸
-        onnx_path,
-        input_names=["input"],
-        output_names=["output"],
-        opset_version=11,
-        dynamic_axes={
-            "input": {0: "batch", 2: "height", 3: "width"},
-            "output": {0: "batch", 2: "height", 3: "width"}
-        }
-    )
-    print(f"ONNX模型已导出：{onnx_path}")
+    export_onnx(model, save_dir, input_shape=(1, 1, 120, 160))
 
 
 if __name__ == '__main__':

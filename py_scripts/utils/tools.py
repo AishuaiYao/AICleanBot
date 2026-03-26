@@ -10,6 +10,35 @@ import torch
 import onnx
 
 
+def export_onnx(model, save_dir, input_shape=(1, 1, 120, 160), model_name='model.onnx'):
+    """
+    导出PyTorch模型为ONNX格式
+    :param model: PyTorch模型
+    :param save_dir: 保存目录
+    :param input_shape: 输入形状 (N, C, H, W)
+    :param model_name: 模型文件名
+    """
+    model_cpu = model.cpu().eval()
+    onnx_path = os.path.join(save_dir, model_name)
+    
+    print(f"\n正在导出ONNX模型...")
+    torch.onnx.export(
+        model_cpu,
+        torch.randn(*input_shape),
+        onnx_path,
+        input_names=["input"],
+        output_names=["output"],
+        opset_version=11,
+        dynamic_axes={
+            "input": {0: "batch", 2: "height", 3: "width"},
+            "output": {0: "batch", 2: "height", 3: "width"}
+        }
+    )
+    print(f"ONNX模型已导出：{onnx_path}")
+    
+    return onnx_path
+
+
 def batch_rename_files(directory, start_num=1, digits=5):
     """
     极简版批量重命名：把目录下的png文件改成 000xx.png 格式
@@ -96,7 +125,7 @@ def test_gpu():
         print("✗ 测试失败！")
 
 
-def analyze_onnx_model(onnx_path, input_shape=(1, 1, 256, 256)):
+def analyze_onnx_model(onnx_path, input_shape=(1, 1, 120, 160)):
     """
     分析ONNX模型的参数量和计算量
     :param onnx_path: ONNX模型路径
@@ -109,6 +138,11 @@ def analyze_onnx_model(onnx_path, input_shape=(1, 1, 256, 256)):
     params = 0
     for init in graph.initializer:
         params += np.prod(init.dims)
+    
+    # 统计网络层类型
+    layer_stats = {}
+    for node in graph.node:
+        layer_stats[node.op_type] = layer_stats.get(node.op_type, 0) + 1
     
     # 计算量：估算各算子FLOPs
     flops = 0
@@ -218,14 +252,25 @@ def analyze_onnx_model(onnx_path, input_shape=(1, 1, 256, 256)):
     print(f"参数量: {params:,} ({params/1e6:.2f}M)")
     print(f"计算量: {flops/1e9:.2f} GFLOPs")
     print(f"{'='*50}")
+    print(f"网络层结构 (共{len(graph.node)}层):")
+    for op_type, count in sorted(layer_stats.items()):
+        print(f"  {op_type}: {count}")
+    print(f"{'='*50}")
     
     return params, flops
 
 
 if __name__ == "__main__":
-
-    test_gpu()
-
     # 默认：批量重命名
     # target_directory = r"E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA"
     # batch_rename_files(target_directory, start_num=1, digits=5)
+    # test_gpu()
+
+    analyze_onnx_model(r"E:\AICleanBot\py_scripts\models\20260326_215346\model.onnx")
+
+
+
+
+
+
+    

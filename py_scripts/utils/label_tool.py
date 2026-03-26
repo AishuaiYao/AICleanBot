@@ -7,8 +7,8 @@ import numpy as np
 scale_size = 700  # 展示用的缩放宽度（不影响最终保存）
 line_expand = 4  # 线段扩展像素（核心可调节，建议2-5，数字越大线段越粗）
 img_dir = r'E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA'  # 原始图片目录（完全保留，不修改）
-gray_save_dir = r'E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA'  # 缩放后灰度图的保存目录（256×256）
-label_save_dir = gray_save_dir + '_label'  # 绘制线段后的真值图保存目录（256×256）
+gray_save_dir = r'E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA'  # 灰度图保存目录（160×120）
+label_save_dir = gray_save_dir + '_label'  # 绘制线段后的真值图保存目录（160×120）
 
 # 全局变量
 click_points = []

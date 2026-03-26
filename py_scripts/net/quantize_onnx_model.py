@@ -13,7 +13,7 @@ if __name__ == "__main__":
     
     ONNX_MODEL_PATH = r"E:\AICleanBot\py_scripts\models\20260326_215346\model.onnx"
     ESPDL_MODEL_PATH = r"E:\AICleanBot\py_scripts\models\20260326_215346\model.espdl"
-    INPUT_SHAPE = [1, 1, 256, 256]  # 1 个输入, 1通道, 256x256
+    INPUT_SHAPE = [1, 1, 120, 160]  # 1 个输入, 1通道, 120x160 (HxW)
     TARGET = "esp32s3"  # 量化目标类型，可选 'c', 'esp32s3' or 'esp32p4'
     NUM_OF_BITS = 8  # 量化位数
     DEVICE = "cpu"  # 'cuda' or 'cpu', if you use cuda, please make sure that cuda is available
@@ -21,8 +21,8 @@ if __name__ == "__main__":
     
     # 生成校准数据（随机灰度图像）
     print(f"生成 {NUM_CALIB_SAMPLES} 个校准样本...")
-    x = torch.rand(NUM_CALIB_SAMPLES, 1, 256, 256, dtype=torch.float32)
-    y = torch.zeros(NUM_CALIB_SAMPLES, 1, 256, 256, dtype=torch.float32)  # dummy labels
+    x = torch.rand(NUM_CALIB_SAMPLES, 1, 120, 160, dtype=torch.float32)
+    y = torch.zeros(NUM_CALIB_SAMPLES, 1, 120, 160, dtype=torch.float32)  # dummy labels
     
     # dataloader shuffle必须设置为False。
     # 因为计算量化误差的时候会多次遍历数据集，如果shuffle是True的话，会得到错误的量化误差。
