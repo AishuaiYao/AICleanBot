@@ -64,7 +64,6 @@ LEARNING_RATE = 1e-4
 EPOCHS = 0  # 0=早停模式，>0=固定轮数
 PATIENCE = 10  # 早停耐心值（仅EPOCHS=0时生效）
 MAX_EPOCHS = 1000  # 最大训练轮数（仅EPOCHS=0时生效）
-IMAGE_SIZE = 256
 TRAIN_RATIO = 0.8
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -160,8 +159,7 @@ def apply_augmentations(img, label, config):
 
 # ==================== 数据集 ====================
 class SegDataset(Dataset):
-    def __init__(self, image_dir, label_dir, img_names, img_size=256, augment=False):
-        self.img_size = img_size
+    def __init__(self, image_dir, label_dir, img_names, augment=False):
         self.augment = augment
         
         # 只保留传入的文件名列表
@@ -177,11 +175,6 @@ class SegDataset(Dataset):
         img = cv2.imread(self.img_paths[idx], cv2.IMREAD_GRAYSCALE)
         label = cv2.imread(self.label_paths[idx], cv2.IMREAD_GRAYSCALE)
         
-        # Resize 到统一大小 (如果原始尺寸不一致)
-        if img.shape[0] != self.img_size or img.shape[1] != self.img_size:
-            img = cv2.resize(img, (self.img_size, self.img_size))
-            label = cv2.resize(label, (self.img_size, self.img_size))
-
         # 备份原始用于可视化
         img_origin = img.copy()
         label_origin = label.copy()
@@ -197,14 +190,15 @@ class SegDataset(Dataset):
 
         # 生成可视化拼接图 (如果开启)
         # 格式: [原图, 原Label, 增强图, 增强Label]
-        vis_img = np.zeros((self.img_size, self.img_size * 4), dtype=np.uint8)
+        h, w = img_origin.shape
+        vis_img = np.zeros((h, w * 4), dtype=np.uint8)
         if SAVE_AUG_VIS:
             vis_img = np.hstack([img_origin, label_origin, img_aug, label_aug])
             if applied_augs_list:
                 # 在增强图上方打印增强手段
                 text = ", ".join(applied_augs_list)
                 # 计算文字位置 (打印在第3张图即增强图的上方)
-                x_offset = self.img_size * 2 + 10
+                x_offset = w * 2 + 10
                 y_offset = 20
                 # 由于是灰度图，颜色只有0-255，为了清晰，可以用白色或者反色背景
                 cv2.putText(vis_img, text, (x_offset, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255), 1, cv2.LINE_AA)
@@ -290,8 +284,8 @@ def train():
     val_names = common_names[train_size:]
     
     # --- 3. 分别创建 Dataset (Train开启增强, Val关闭增强) ---
-    train_dataset = SegDataset(IMAGE_DIR, LABEL_DIR, train_names, IMAGE_SIZE, augment=True)
-    val_dataset = SegDataset(IMAGE_DIR, LABEL_DIR, val_names, IMAGE_SIZE, augment=False)
+    train_dataset = SegDataset(IMAGE_DIR, LABEL_DIR, train_names, augment=True)
+    val_dataset = SegDataset(IMAGE_DIR, LABEL_DIR, val_names, augment=False)
     
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
     val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=0)

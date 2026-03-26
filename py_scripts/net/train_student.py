@@ -165,7 +165,6 @@ LEARNING_RATE = 1e-4
 EPOCHS = 0
 PATIENCE = 10
 MAX_EPOCHS = 1000
-IMAGE_SIZE = 256
 TRAIN_RATIO = 0.8
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -240,8 +239,7 @@ def apply_augmentations(img, label, config):
 
 # ==================== 数据集 ====================
 class SegDataset(Dataset):
-    def __init__(self, image_dir, label_dir, img_names, img_size=256, augment=False):
-        self.img_size = img_size
+    def __init__(self, image_dir, label_dir, img_names, augment=False):
         self.augment = augment
         self.img_paths = [os.path.join(image_dir, n) for n in img_names]
         self.label_paths = [os.path.join(label_dir, n) for n in img_names]
@@ -253,10 +251,6 @@ class SegDataset(Dataset):
     def __getitem__(self, idx):
         img = cv2.imread(self.img_paths[idx], cv2.IMREAD_GRAYSCALE)
         label = cv2.imread(self.label_paths[idx], cv2.IMREAD_GRAYSCALE)
-        
-        if img.shape[0] != self.img_size or img.shape[1] != self.img_size:
-            img = cv2.resize(img, (self.img_size, self.img_size))
-            label = cv2.resize(label, (self.img_size, self.img_size))
         
         if self.augment:
             img, label, _ = apply_augmentations(img, label, AUGMENTATION_CONFIG)
@@ -335,8 +329,8 @@ def train():
     train_names = common_names[:train_size]
     val_names = common_names[train_size:]
     
-    train_dataset = SegDataset(IMAGE_DIR, LABEL_DIR, train_names, IMAGE_SIZE, augment=True)
-    val_dataset = SegDataset(IMAGE_DIR, LABEL_DIR, val_names, IMAGE_SIZE, augment=False)
+    train_dataset = SegDataset(IMAGE_DIR, LABEL_DIR, train_names, augment=True)
+    val_dataset = SegDataset(IMAGE_DIR, LABEL_DIR, val_names, augment=False)
     
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
     val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=0)
@@ -438,7 +432,7 @@ def train():
     
     torch.onnx.export(
         model_cpu,
-        torch.randn(1, 1, IMAGE_SIZE, IMAGE_SIZE),
+        torch.randn(1, 1, 256, 256),  # 示例输入，dynamic_axes支持任意尺寸
         onnx_path,
         input_names=["input"],
         output_names=["output"],

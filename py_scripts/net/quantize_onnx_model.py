@@ -11,8 +11,8 @@ def collate_fn(batch):
 
 if __name__ == "__main__":
     
-    ONNX_MODEL_PATH = r"E:\AICleanBot\py_scripts\models\20260321_220256\model.onnx"
-    ESPDL_MODEL_PATH = r"E:\AICleanBot\py_scripts\models\20260321_220256\model.espdl"
+    ONNX_MODEL_PATH = r"E:\AICleanBot\py_scripts\models\20260326_215346\model.onnx"
+    ESPDL_MODEL_PATH = r"E:\AICleanBot\py_scripts\models\20260326_215346\model.espdl"
     INPUT_SHAPE = [1, 1, 256, 256]  # 1 个输入, 1通道, 256x256
     TARGET = "esp32s3"  # 量化目标类型，可选 'c', 'esp32s3' or 'esp32p4'
     NUM_OF_BITS = 8  # 量化位数
