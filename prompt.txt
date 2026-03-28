@@ -1,5 +1,13 @@
 这是我的项目代码，请你仔细阅读然后和我讨论问题或者是完成需求。
-我的esp-idf工具在本地的目录是E:\aishuai\Espressif\frameworks\esp-idf-v5.3.1
+我依赖esp-idf环境（目录是E:\aishuai\Espressif\frameworks\esp-idf-v5.3.1），并且使用esp-dl（目录是E:/aishuai/esp-dl/esp-dl）组件进行深度学习模型部署。
+我的工作流程是
+1 使用E:\AICleanBot\py_scripts\net\train_student.py训练UNetMiniExp4模型
+2 使用E:\AICleanBot\py_scripts\utils\tools.py的export_pth_to_onnx转换为onnx模型
+3 使用E:\AICleanBot\py_scripts\net\quantize_onnx_model.py转换为esp32s3支持的espdl模型
+4 将模型放到E:\AICleanBot\main\models
+5 编写E:\AICleanBot\main\app_main.cpp调用模型进行推理
+6 编辑sdkconfig dependencies.lock.esp32s3 E:\AICleanBot\CMakeLists.txt E:\AICleanBot\main\CMakeLists.txt E:\AICleanBot\main\idf_component.yml进行配置
+7 build 烧录 
 要求：
 · 在实施优化代码之前请先跟我理清我的需求并告诉我你的方案，只有征得我的同意之后才去执行代码优化。
 · 你和我的交流要简洁准确不啰嗦。
@@ -10,8 +18,7 @@
 · 如果某些组件在我们的C++代码里不需要，请在CMakeLists.txt里删除相关的组件。
 · 你只能修改E:\AICleanBot目录中的文件，idf的组件源码不允许修改。
 需求/问题：
-我现在实验的模型是UNetMiniExp3，首先请你帮我分析我的模型结构是否合理，然后分析模型转换为适合ESP32-S3芯片的轻量级版本（espdl）的时候，需要进行速度优化的措施是否都有使用。
-最后可以阅读log.txt里的日志内容，里面是真实实验的日志，请你帮我分析log.txt里的日志内容，看看是否有哪些地方可以进行优化。
+我现在的实验模型是UNetMiniExp4，请你仔细阅读我的项目代码和所有相关的编译配置，帮我分析我部署到esp32s3的模型还有那些加速的配置没有使用。
 
 
 

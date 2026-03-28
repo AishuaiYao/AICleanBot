@@ -377,7 +377,8 @@ extern "C" void app_main(void)
     camera_init();
     wifi_init_ap();
 
-    xTaskCreate(tcp_server_task, "tcp_server", 8192, NULL, 5, NULL);
+    // TCP服务器任务绑定到Core 1，推理任务与WiFi底层(Core 0)分离
+    xTaskCreatePinnedToCore(tcp_server_task, "tcp_server", 8192, NULL, 5, NULL, 1);
 
     ESP_LOGI(TAG, "========================================");
     ESP_LOGI(TAG, "系统启动完成!");
