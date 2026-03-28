@@ -1,0 +1,408 @@
+PS E:\AICleanBot> $env:IDF_PATH = 'E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/';
+PS E:\AICleanBot>  & 'E:\aishuai\Espressif\python_env\idf5.3_py3.11_env\Scripts\python.exe' 'E:\aishuai\Espressif\frameworks\esp-idf-v5.3.1\tools\idf_monitor.py' -p COM8 -b 115200 --toolchain-prefix xtensa-esp32s3-elf- --make '''E:\aishuai\Espressif\python_env\idf5.3_py3.11_env\Scripts\python.exe'' ''E:\aishuai\Espressif\frameworks\esp-idf-v5.3.1\tools\idf.py''' --target esp32s3 'e:\AICleanBot\build\model_in_flash_rodata.elf'
+--- Warning: GDB cannot open serial ports accessed as COMx
+--- Using \\.\COM8 instead...
+--- esp-idf-monitor 1.5.0 on \\.\COM8 115200
+--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2820,len:0x1918
+load:0x403c8700,len:0x4
+load:0x403c8704,len:0xe5c
+load:0x403cb700,len:0x303c
+entry 0x403c893c
+I (27) boot: ESP-IDF v5.3.1-dirty 2nd stage bootloader
+I (27) boot: compile time Mar 28 2026 21:18:46
+I (27) boot: Multicore bootloader
+I (30) boot: chip revision: v0.2
+I (34) qio_mode: Enabling default flash chip QIO
+I (39) boot.esp32s3: Boot SPI Speed : 80MHz
+I (44) boot.esp32s3: SPI Mode       : QIO
+I (49) boot.esp32s3: SPI Flash Size : 8MB
+I (54) boot: Enabling RNG early entropy source...
+I (59) boot: Partition Table:
+I (63) boot: ## Label            Usage          Type ST Offset   Length
+I (70) boot:  0 nvs              WiFi data        01 02 00010000 00006000
+I (77) boot:  1 factory          factory app      00 00 00020000 0079e000
+I (85) boot: End of partition table
+I (89) esp_image: segment 0: paddr=00020020 vaddr=3c180020 size=6acach (437420) map
+I (164) esp_image: segment 1: paddr=0008acd4 vaddr=3fc9fe00 size=05344h ( 21316) load
+I (168) esp_image: segment 2: paddr=00090020 vaddr=42000020 size=170570h (1508720) map
+I (398) esp_image: segment 3: paddr=00200598 vaddr=3fca5144 size=022d8h (  8920) load
+I (400) esp_image: segment 4: paddr=00202878 vaddr=40378000 size=17da4h ( 97700) load
+I (433) boot: Loaded app from partition at offset 0x20000
+I (433) boot: Disabling RNG early entropy source...
+I (445) octal_psram: vendor id    : 0x0d (AP)
+I (445) octal_psram: dev id       : 0x02 (generation 3)
+I (445) octal_psram: density      : 0x03 (64 Mbit)
+I (450) octal_psram: good-die     : 0x01 (Pass)
+I (455) octal_psram: Latency      : 0x01 (Fixed)
+I (461) octal_psram: VCC          : 0x01 (3V)
+I (466) octal_psram: SRF          : 0x01 (Fast Refresh)
+I (472) octal_psram: BurstType    : 0x01 (Hybrid Wrap)
+I (478) octal_psram: BurstLen     : 0x01 (32 Byte)
+I (483) octal_psram: Readlatency  : 0x02 (10 cycles@Fixed)
+I (489) octal_psram: DriveStrength: 0x00 (1/1)
+I (495) MSPI Timing: PSRAM timing tuning index: 5
+I (500) esp_psram: Found 8MB PSRAM device
+I (504) esp_psram: Speed: 80MHz
+I (508) cpu_start: Multicore app
+I (797) esp_psram: SPI SRAM memory test OK
+I (806) cpu_start: Pro cpu start user code
+I (806) cpu_start: cpu freq: 240000000 Hz
+I (806) app_init: Application information:
+I (809) app_init: Project name:     model_in_flash_rodata
+I (815) app_init: App version:      05b48f3-dirty
+I (820) app_init: Compile time:     Mar 28 2026 21:18:05
+I (826) app_init: ELF file SHA256:  8a1514bf5...
+I (832) app_init: ESP-IDF:          v5.3.1-dirty
+I (837) efuse_init: Min chip rev:     v0.0
+I (842) efuse_init: Max chip rev:     v0.99
+I (847) efuse_init: Chip rev:         v0.2
+I (852) heap_init: Initializing. RAM available for dynamic allocation:
+I (859) heap_init: At 3FCAC3D8 len 0003D338 (244 KiB): RAM
+I (865) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (871) esp_psram: Adding pool of 8192K of PSRAM memory to heap allocator
+I (879) spi_flash: detected chip: boya
+I (883) spi_flash: flash io: qio
+W (887) spi_flash: Detected size(16384k) larger than the size in the binary image header(8192k). Using the size in the binary image header.
+W (900) i2c: This driver is an old driver, please migrate your application code to adapt `driver/i2c_master.h`
+I (911) sleep: Configure to isolate all GPIO pins in sleep state
+I (917) sleep: Enable automatic switching of GPIO sleep configuration
+I (925) main_task: Started on CPU0
+I (935) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+I (935) main_task: Calling app_main()
+I (945) CAM_TCP: ========================================
+I (945) CAM_TCP: ESP32 Camera Server (WiFi AP + TCP)
+I (955) CAM_TCP: ========================================
+I (975) CAM_TCP: [Init] Sigmoid查表初始化完成
+I (975) CAM_TCP: [Model] 加载模型...
+
+I (1705) dl::Model: Testing output output.
+I (1705) dl::Model: Test Pass!
+
+I (1705) dl::Model: model:main_graph, version:0
+I (1705) dl::Model: MODEL LOCATION IN FLASH RODATA
+I (1715) dl::Model: +----------------+--------------+-----------+-------------+
+I (1715) dl::Model: |                     memory summary                      |
+I (1725) dl::Model: +----------------+--------------+-----------+-------------+
+I (1735) dl::Model: |                | internal RAM | PSRAM     | FLASH       |
+I (1745) dl::Model: +----------------+--------------+-----------+-------------+
+I (1745) dl::Model: | fbs_model      |              |           | 118.39KB    |
+I (1755) dl::Model: |  -- parameter  |              |           |  -- 41.41KB |
+I (1765) dl::Model: +----------------+--------------+-----------+-------------+
+I (1775) dl::Model: | parameter_copy |              | 41.41KB   |             |
+I (1785) dl::Model: +----------------+--------------+-----------+-------------+
+I (1785) dl::Model: | variable       |              | 1125.00KB |             |
+I (1795) dl::Model: +----------------+--------------+-----------+-------------+
+I (1805) dl::Model: | others         | 15.50KB      | 10.01KB   |             |
+I (1815) dl::Model: +----------------+--------------+-----------+-------------+
+I (1825) dl::Model: | total          | 15.50KB      | 1176.41KB | 118.39KB    |
+I (1825) dl::Model: +----------------+--------------+-----------+-------------+
+
+I (2505) dl::Model: +------------------------------+---------+----------+
+I (2505) dl::Model: |                  module summary                   |
+I (2505) dl::Model: +------------------------------+---------+----------+
+I (2515) dl::Model: | name                         | type    | latency  |
+I (2525) dl::Model: +------------------------------+---------+----------+
+I (2535) dl::Model: | /enc1/conv/conv.0/Conv       | Conv    | 23420us  |
+I (2535) dl::Model: +------------------------------+---------+----------+
+I (2545) dl::Model: | /enc1/conv/conv.3/Conv       | Conv    | 64755us  |
+I (2555) dl::Model: +------------------------------+---------+----------+
+I (2565) dl::Model: | /enc1/conv/conv.6/Conv       | Conv    | 20974us  |
+I (2565) dl::Model: +------------------------------+---------+----------+
+I (2575) dl::Model: | /enc1/conv/conv.9/Conv       | Conv    | 65463us  |
+I (2585) dl::Model: +------------------------------+---------+----------+
+I (2595) dl::Model: | /pool/MaxPool                | MaxPool | 4728us   |
+I (2595) dl::Model: +------------------------------+---------+----------+
+I (2605) dl::Model: | /enc2/conv/conv.0/Conv       | Conv    | 5247us   |
+I (2615) dl::Model: +------------------------------+---------+----------+
+I (2625) dl::Model: | /enc2/conv/conv.3/Conv       | Conv    | 13665us  |
+I (2625) dl::Model: +------------------------------+---------+----------+
+I (2635) dl::Model: | /enc2/conv/conv.6/Conv       | Conv    | 7849us   |
+I (2645) dl::Model: +------------------------------+---------+----------+
+I (2655) dl::Model: | /enc2/conv/conv.9/Conv       | Conv    | 17058us  |
+I (2655) dl::Model: +------------------------------+---------+----------+
+I (2665) dl::Model: | /pool_1/MaxPool              | MaxPool | 2227us   |
+I (2675) dl::Model: +------------------------------+---------+----------+
+I (2685) dl::Model: | /enc3/conv/conv.0/Conv       | Conv    | 2066us   |
+I (2685) dl::Model: +------------------------------+---------+----------+
+I (2695) dl::Model: | /enc3/conv/conv.3/Conv       | Conv    | 2521us   |
+I (2705) dl::Model: +------------------------------+---------+----------+
+I (2715) dl::Model: | /enc3/conv/conv.6/Conv       | Conv    | 2016us   |
+I (2715) dl::Model: +------------------------------+---------+----------+
+I (2725) dl::Model: | /enc3/conv/conv.9/Conv       | Conv    | 2318us   |
+I (2735) dl::Model: +------------------------------+---------+----------+
+I (2745) dl::Model: | /pool_2/MaxPool              | MaxPool | 783us    |
+I (2745) dl::Model: +------------------------------+---------+----------+
+I (2755) dl::Model: | /bottleneck/conv/conv.0/Conv | Conv    | 388us    |
+I (2765) dl::Model: +------------------------------+---------+----------+
+I (2775) dl::Model: | /bottleneck/conv/conv.3/Conv | Conv    | 900us    |
+I (2775) dl::Model: +------------------------------+---------+----------+
+I (2785) dl::Model: | /bottleneck/conv/conv.6/Conv | Conv    | 591us    |
+I (2795) dl::Model: +------------------------------+---------+----------+
+I (2805) dl::Model: | /bottleneck/conv/conv.9/Conv | Conv    | 1441us   |
+I (2805) dl::Model: +------------------------------+---------+----------+
+I (2815) dl::Model: | /up3/Resize                  | Resize  | 2639us   |
+I (2825) dl::Model: +------------------------------+---------+----------+
+I (2835) dl::Model: | /conv3/Conv                  | Conv    | 3816us   |
+I (2835) dl::Model: +------------------------------+---------+----------+
+I (2845) dl::Model: | /Concat                      | Concat  | 3605us   |
+I (2855) dl::Model: +------------------------------+---------+----------+
+I (2865) dl::Model: | /dec3/conv/conv.0/Conv       | Conv    | 4290us   |
+I (2865) dl::Model: +------------------------------+---------+----------+
+I (2875) dl::Model: | /dec3/conv/conv.3/Conv       | Conv    | 3781us   |
+I (2885) dl::Model: +------------------------------+---------+----------+
+I (2895) dl::Model: | /dec3/conv/conv.6/Conv       | Conv    | 2282us   |
+I (2895) dl::Model: +------------------------------+---------+----------+
+I (2905) dl::Model: | /dec3/conv/conv.9/Conv       | Conv    | 2452us   |
+I (2915) dl::Model: +------------------------------+---------+----------+
+I (2925) dl::Model: | /up2/Resize                  | Resize  | 5208us   |
+I (2925) dl::Model: +------------------------------+---------+----------+
+I (2935) dl::Model: | /conv2/Conv                  | Conv    | 17393us  |
+I (2945) dl::Model: +------------------------------+---------+----------+
+I (2955) dl::Model: | /Concat_1                    | Concat  | 7830us   |
+I (2955) dl::Model: +------------------------------+---------+----------+
+I (2965) dl::Model: | /dec2/conv/conv.0/Conv       | Conv    | 9624us   |
+I (2975) dl::Model: +------------------------------+---------+----------+
+I (2975) dl::Model: | /dec2/conv/conv.3/Conv       | Conv    | 17562us  |
+I (2985) dl::Model: +------------------------------+---------+----------+
+I (2995) dl::Model: | /dec2/conv/conv.6/Conv       | Conv    | 7780us   |
+I (3005) dl::Model: +------------------------------+---------+----------+
+I (3005) dl::Model: | /dec2/conv/conv.9/Conv       | Conv    | 16789us  |
+I (3015) dl::Model: +------------------------------+---------+----------+
+I (3025) dl::Model: | /up1/Resize                  | Resize  | 11248us  |
+I (3035) dl::Model: +------------------------------+---------+----------+
+I (3035) dl::Model: | /conv1/Conv                  | Conv    | 79622us  |
+I (3045) dl::Model: +------------------------------+---------+----------+
+I (3055) dl::Model: | /Concat_2                    | Concat  | 20845us  |
+I (3065) dl::Model: +------------------------------+---------+----------+
+I (3065) dl::Model: | /dec1/conv/conv.0/Conv       | Conv    | 30777us  |
+I (3075) dl::Model: +------------------------------+---------+----------+
+I (3085) dl::Model: | /dec1/conv/conv.3/Conv       | Conv    | 80201us  |
+I (3095) dl::Model: +------------------------------+---------+----------+
+I (3095) dl::Model: | /dec1/conv/conv.6/Conv       | Conv    | 20800us  |
+I (3105) dl::Model: +------------------------------+---------+----------+
+I (3115) dl::Model: | /dec1/conv/conv.9/Conv       | Conv    | 65637us  |
+I (3125) dl::Model: +------------------------------+---------+----------+
+I (3125) dl::Model: | /out/Conv                    | Conv    | 11059us  |
+I (3135) dl::Model: +------------------------------+---------+----------+
+I (3145) dl::Model: | total                        |         | 663650us |
+I (3155) dl::Model: +------------------------------+---------+----------+
+
+I (3155) CAM_TCP: [Model] 输入数量: 1
+I (3165) CAM_TCP: [Model] 输入名称: input
+I (3165) CAM_TCP: [Model] 输出数量: 1
+I (3175) CAM_TCP: [Model] 输出名称: output
+I (3175) CAM_TCP: [Model] 模型加载成功
+I (3185) CAM_TCP: [Camera] 初始化摄像头...
+I (3185) s3 ll_cam: DMA Channel=0
+I (3195) cam_hal: cam init ok
+I (3195) sccb: pin_sda 4 pin_scl 5
+I (3205) sccb: sccb_i2c_port=1
+I (3215) camera: Camera PID=0x26 VER=0x42 MIDL=0x7f MIDH=0xa2
+I (3215) camera: Detected OV2640 camera
+I (3215) camera: Detected camera at address=0x30
+I (3295) cam_hal: PSRAM DMA mode disabled
+I (3295) s3 ll_cam: node_size: 3840, nodes_per_line: 1, lines_per_node: 12
+I (3295) s3 ll_cam: dma_half_buffer_min:  3840, dma_half_buffer:  7680, lines_per_half_buffer: 24, dma_buffer_size: 30720
+I (3305) cam_hal: buffer_size: 30720, half_buffer_size: 7680, node_buffer_size: 3840, node_cnt: 8, total_cnt: 5
+I (3315) cam_hal: Allocating 19200 Byte frame buffer in PSRAM
+I (3325) cam_hal: cam config ok
+I (3325) ov2640: Set PLL: clk_2x: 1, clk_div: 3, pclk_auto: 1, pclk_div: 8
+I (3395) CAM_TCP: [Camera] 初始化成功 (QQVGA 160x120 灰度)
+I (3395) pp: pp rom version: e7ae62f
+I (3395) net80211: net80211 rom version: e7ae62f
+I (3415) wifi:wifi driver task: 3fcbca8c, prio:23, stack:6656, core=0
+I (3415) wifi:wifi firmware version: ccaebfa
+I (3415) wifi:wifi certification version: v7.0
+I (3415) wifi:config NVS flash: enabled
+I (3425) wifi:config nano formating: disabled
+I (3425) wifi:Init data frame dynamic rx buffer num: 32
+I (3435) wifi:Init static rx mgmt buffer num: 5
+I (3435) wifi:Init management short buffer num: 32
+I (3435) wifi:Init static tx buffer num: 16
+I (3445) wifi:Init tx cache buffer num: 32
+I (3445) wifi:Init static tx FG buffer num: 2
+I (3455) wifi:Init static rx buffer size: 1600
+I (3455) wifi:Init static rx buffer num: 10
+I (3455) wifi:Init dynamic rx buffer num: 32
+cam_hal: FB-SIZE: 15360 != 19200
+I (3465) wifi_init: rx ba win: 6
+I (3465) wifi_init: accept mbox: 6
+I (3475) wifi_init: tcpip mbox: 32
+I (3475) wifi_init: udp mbox: 6
+I (3485) wifi_init: tcp mbox: 6
+I (3485) wifi_init: tcp tx win: 5760
+I (3485) wifi_init: cam_hal: FB-SIZE: 15360 != 19200
+tcp rx win: 5760
+I (3495) wifi_init: tcp mss: 1440
+I (3505) wifi_init: WiFi IRAM OP enabled
+I (3505) wifi_init: WiFi RX IRAM OP enabled
+I (3515) phy_init: phy_version 680,a6008b2,Jun  4 2024,16:41:10
+W (3555) phy_init: saving new calibration data because of checksum failure, mode(0)
+I (3595) wifi:mode : softAP (3c:0f:02:d7:57:01)
+I (3595) wifi:Total power save buffer number: 8
+I (3595) wifi:Init max length of beacon: 752/752
+I (3595) wifi:Init max length of beacon: 752/752
+I (3605) CAM_TCP: [WiFi] AP已启动 SSID=ESP32-CAM 密码=12345678 IP=192.168.4.1
+I (3605) esp_netif_lwip: DHCP server started on interface WIFI_AP_DEF with IP: 192.168.4.1
+I (3625) CAM_TCP: ========================================
+I (3625) CAM_TCP: [TCP] Server已启动, 端口=5000
+I (3625) CAM_TCP: 系统启动完成!
+I (3635) CAM_TCP: 热点: ESP32-CAM  密码: 12345678
+I (3645) CAM_TCP: TCP端口: 5000
+I (3645) CAM_TCP: ========================================
+I (3655) main_task: Returned from app_main()
+I (17425) wifi:new:<1,0>, old:<1,1>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0
+I (17425) wifi:station: ca:8f:b6:8b:60:8e join, AID=1, bgn, 20
+I (18665) esp_netif_lwip: DHCP server assigned IP to a client, IP is: 192.168.4.2
+I (20635) wifi:<ba-add>idx:2 (ifx:1, ca:8f:b6:8b:60:8e), tid:0, ssn:2301, winSize:64
+I (22765) CAM_TCP: [TCP] 客户端已连接
+I (24135) CAM_TCP: [TCP] 收到命令: CAPTURE
+
+I (24135) CAM_TCP: [Camera] 采集成功: 160x120, 大小=19200 bytes, 耗时0.0ms
+I (24145) CAM_TCP: [Input] Tensor shape: 1 x 120 x 160 x 1
+I (24145) CAM_TCP: [Preprocess] 预处理耗时6.4ms
+I (24815) CAM_TCP: [Inference] 模型推理耗时665.8ms
+I (24825) CAM_TCP: [Output] Tensor shape: 1 x 120 x 160 x 1
+I (24825) CAM_TCP: [Output] Tensor size: 19200, dtype: 3
+I (24825) CAM_TCP: [Postprocess] 后处理耗时7.9ms
+I (24835) CAM_TCP: [Concat] 拼接耗时5.7ms
+I (25145) CAM_TCP: [TCP] 图像发送完成: 38400 bytes, 传输耗时316.0ms, 总耗时1010.0ms
+I (25885) CAM_TCP: [TCP] 收到命令: CAPTURE
+
+I (25885) CAM_TCP: [Camera] 采集成功: 160x120, 大小=19200 bytes, 耗时0.0ms
+I (25895) CAM_TCP: [Input] Tensor shape: 1 x 120 x 160 x 1
+I (25895) CAM_TCP: [Preprocess] 预处理耗时6.5ms
+I (26565) CAM_TCP: [Inference] 模型推理耗时665.4ms
+I (26565) CAM_TCP: [Output] Tensor shape: 1 x 120 x 160 x 1
+I (26565) CAM_TCP: [Output] Tensor size: 19200, dtype: 3
+I (26575) CAM_TCP: [Postprocess] 后处理耗时7.9ms
+I (26585) CAM_TCP: [Concat] 拼接耗时5.7ms
+I (26785) CAM_TCP: [TCP] 图像发送完成: 38400 bytes, 传输耗时206.2ms, 总耗时899.8ms
+I (27125) wifi:<ba-add>idx:3 (ifx:1, ca:8f:b6:8b:60:8e), tid:2, ssn:3755, winSize:64
+I (28375) CAM_TCP: [TCP] 收到命令: CAPTURE
+
+I (28375) CAM_TCP: [Camera] 采集成功: 160x120, 大小=19200 bytes, 耗时0.0ms
+I (28385) CAM_TCP: [Input] Tensor shape: 1 x 120 x 160 x 1
+I (28385) CAM_TCP: [Preprocess] 预处理耗时6.5ms
+I (29065) CAM_TCP: [Inference] 模型推理耗时665.9ms
+I (29065) CAM_TCP: [Output] Tensor shape: 1 x 120 x 160 x 1
+I (29065) CAM_TCP: [Output] Tensor size: 19200, dtype: 3
+I (29065) CAM_TCP: [Postprocess] 后处理耗时7.9ms
+I (29075) CAM_TCP: [Concat] 拼接耗时5.7ms
+I (29365) CAM_TCP: [TCP] 图像发送完成: 38400 bytes, 传输耗时286.5ms, 总耗时980.6ms
+I (30445) CAM_TCP: [TCP] 收到命令: CAPTURE
+
+I (30445) CAM_TCP: [Camera] 采集成功: 160x120, 大小=19200 bytes, 耗时0.0ms
+I (30445) CAM_TCP: [Input] Tensor shape: 1 x 120 x 160 x 1
+I (30455) CAM_TCP: [Preprocess] 预处理耗时6.6ms
+I (31125) CAM_TCP: [Inference] 模型推理耗时665.6ms
+I (31125) CAM_TCP: [Output] Tensor shape: 1 x 120 x 160 x 1
+I (31125) CAM_TCP: [Output] Tensor size: 19200, dtype: 3
+I (31135) CAM_TCP: [Postprocess] 后处理耗时7.9ms
+I (31135) CAM_TCP: [Concat] 拼接耗时5.7ms
+I (31345) CAM_TCP: [TCP] 图像发送完成: 38400 bytes, 传输耗时209.9ms, 总耗时903.7ms
+I (32395) CAM_TCP: [TCP] 收到命令: CAPTURE
+
+I (32395) CAM_TCP: [Camera] 采集成功: 160x120, 大小=19200 bytes, 耗时0.0ms
+I (32395) CAM_TCP: [Input] Tensor shape: 1 x 120 x 160 x 1
+I (32405) CAM_TCP: [Preprocess] 预处理耗时6.5ms
+I (33075) CAM_TCP: [Inference] 模型推理耗时665.5ms
+I (33075) CAM_TCP: [Output] Tensor shape: 1 x 120 x 160 x 1
+I (33075) CAM_TCP: [Output] Tensor size: 19200, dtype: 3
+I (33085) CAM_TCP: [Postprocess] 后处理耗时7.9ms
+I (33085) CAM_TCP: [Concat] 拼接耗时5.7ms
+I (33355) CAM_TCP: [TCP] 图像发送完成: 38400 bytes, 传输耗时261.1ms, 总耗时954.8ms
+I (34015) CAM_TCP: [TCP] 收到命令: CAPTURE
+
+I (34015) CAM_TCP: [Camera] 采集成功: 160x120, 大小=19200 bytes, 耗时0.0ms
+I (34015) CAM_TCP: [Input] Tensor shape: 1 x 120 x 160 x 1
+I (34025) CAM_TCP: [Preprocess] 预处理耗时6.6ms
+I (34695) CAM_TCP: [Inference] 模型推理耗时664.4ms
+I (34695) CAM_TCP: [Output] Tensor shape: 1 x 120 x 160 x 1
+I (34695) CAM_TCP: [Output] Tensor size: 19200, dtype: 3
+I (34705) CAM_TCP: [Postprocess] 后处理耗时7.9ms
+I (34705) CAM_TCP: [Concat] 拼接耗时5.7ms
+I (34965) CAM_TCP: [TCP] 图像发送完成: 38400 bytes, 传输耗时252.4ms, 总耗时945.0ms
+I (35575) CAM_TCP: [TCP] 收到命令: CAPTURE
+
+I (35575) CAM_TCP: [Camera] 采集成功: 160x120, 大小=19200 bytes, 耗时0.0ms
+I (35575) CAM_TCP: [Input] Tensor shape: 1 x 120 x 160 x 1
+I (35585) CAM_TCP: [Preprocess] 预处理耗时6.5ms
+I (36255) CAM_TCP: [Inference] 模型推理耗时666.2ms
+I (36255) CAM_TCP: [Output] Tensor shape: 1 x 120 x 160 x 1
+I (36255) CAM_TCP: [Output] Tensor size: 19200, dtype: 3
+I (36265) CAM_TCP: [Postprocess] 后处理耗时8.0ms
+I (36265) CAM_TCP: [Concat] 拼接耗时5.6ms
+I (36655) CAM_TCP: [TCP] 图像发送完成: 38400 bytes, 传输耗时390.7ms, 总耗时1085.1ms
+I (37185) CAM_TCP: [TCP] 收到命令: CAPTURE
+
+I (37185) CAM_TCP: [Camera] 采集成功: 160x120, 大小=19200 bytes, 耗时0.0ms
+I (37185) CAM_TCP: [Input] Tensor shape: 1 x 120 x 160 x 1
+I (37195) CAM_TCP: [Preprocess] 预处理耗时6.5ms
+I (37865) CAM_TCP: [Inference] 模型推理耗时665.6ms
+I (37865) CAM_TCP: [Output] Tensor shape: 1 x 120 x 160 x 1
+I (37865) CAM_TCP: [Output] Tensor size: 19200, dtype: 3
+I (37875) CAM_TCP: [Postprocess] 后处理耗时7.9ms
+I (37875) CAM_TCP: [Concat] 拼接耗时5.7ms
+I (38345) CAM_TCP: [TCP] 图像发送完成: 38400 bytes, 传输耗时461.7ms, 总耗时1155.5ms
+I (38935) CAM_TCP: [TCP] 收到命令: CAPTURE
+
+I (38935) CAM_TCP: [Camera] 采集成功: 160x120, 大小=19200 bytes, 耗时0.0ms
+I (38935) CAM_TCP: [Input] Tensor shape: 1 x 120 x 160 x 1
+I (38945) CAM_TCP: [Preprocess] 预处理耗时6.5ms
+I (39615) CAM_TCP: [Inference] 模型推理耗时665.5ms
+I (39615) CAM_TCP: [Output] Tensor shape: 1 x 120 x 160 x 1
+I (39615) CAM_TCP: [Output] Tensor size: 19200, dtype: 3
+I (39625) CAM_TCP: [Postprocess] 后处理耗时7.9ms
+I (39625) CAM_TCP: [Concat] 拼接耗时5.7ms
+I (39805) CAM_TCP: [TCP] 图像发送完成: 38400 bytes, 传输耗时176.0ms, 总耗时869.7ms
+I (40515) CAM_TCP: [TCP] 收到命令: CAPTURE
+
+I (40515) CAM_TCP: [Camera] 采集成功: 160x120, 大小=19200 bytes, 耗时0.0ms
+I (40515) CAM_TCP: [Input] Tensor shape: 1 x 120 x 160 x 1
+I (40525) CAM_TCP: [Preprocess] 预处理耗时6.5ms
+I (41195) CAM_TCP: [Inference] 模型推理耗时664.5ms
+I (41195) CAM_TCP: [Output] Tensor shape: 1 x 120 x 160 x 1
+I (41195) CAM_TCP: [Output] Tensor size: 19200, dtype: 3
+I (41205) CAM_TCP: [Postprocess] 后处理耗时7.9ms
+I (41205) CAM_TCP: [Concat] 拼接耗时5.7ms
+I (41495) CAM_TCP: [TCP] 图像发送完成: 38400 bytes, 传输耗时286.5ms, 总耗时979.1ms
+I (42115) CAM_TCP: [TCP] 收到命令: CAPTURE
+
+I (42115) CAM_TCP: [Camera] 采集成功: 160x120, 大小=19200 bytes, 耗时0.0ms
+I (42115) CAM_TCP: [Input] Tensor shape: 1 x 120 x 160 x 1
+I (42125) CAM_TCP: [Preprocess] 预处理耗时6.5ms
+I (42795) CAM_TCP: [Inference] 模型推理耗时665.4ms
+I (42795) CAM_TCP: [Output] Tensor shape: 1 x 120 x 160 x 1
+I (42795) CAM_TCP: [Output] Tensor size: 19200, dtype: 3
+I (42805) CAM_TCP: [Postprocess] 后处理耗时7.9ms
+I (42805) CAM_TCP: [Concat] 拼接耗时5.8ms
+I (43065) CAM_TCP: [TCP] 图像发送完成: 38400 bytes, 传输耗时255.4ms, 总耗时949.1ms
+I (43645) CAM_TCP: [TCP] 收到命令: CAPTURE
+
+I (43645) CAM_TCP: [Camera] 采集成功: 160x120, 大小=19200 bytes, 耗时0.0ms
+I (43645) CAM_TCP: [Input] Tensor shape: 1 x 120 x 160 x 1
+I (43655) CAM_TCP: [Preprocess] 预处理耗时6.5ms
+I (44325) CAM_TCP: [Inference] 模型推理耗时664.9ms
+I (44325) CAM_TCP: [Output] Tensor shape: 1 x 120 x 160 x 1
+I (44325) CAM_TCP: [Output] Tensor size: 19200, dtype: 3
+I (44335) CAM_TCP: [Postprocess] 后处理耗时7.9ms
+I (44345) CAM_TCP: [Concat] 拼接耗时5.7ms
+I (44505) CAM_TCP: [TCP] 图像发送完成: 38400 bytes, 传输耗时164.4ms, 总耗时857.5ms
+I (45485) CAM_TCP: [TCP] 收到命令: CAPTURE
+
+I (45485) CAM_TCP: [Camera] 采集成功: 160x120, 大小=19200 bytes, 耗时0.0ms
+I (45485) CAM_TCP: [Input] Tensor shape: 1 x 120 x 160 x 1
+I (45495) CAM_TCP: [Preprocess] 预处理耗时6.5ms
+I (46165) CAM_TCP: [Inference] 模型推理耗时665.3ms
+I (46165) CAM_TCP: [Output] Tensor shape: 1 x 120 x 160 x 1
+I (46165) CAM_TCP: [Output] Tensor size: 19200, dtype: 3
+I (46165) CAM_TCP: [Postprocess] 后处理耗时7.9ms
+I (46175) CAM_TCP: [Concat] 拼接耗时5.8ms
+I (46615) CAM_TCP: [TCP] 图像发送完成: 38400 bytes, 传输耗时435.9ms, 总耗时1129.5ms

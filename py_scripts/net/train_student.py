@@ -267,6 +267,133 @@ class UNetMiniExp4(nn.Module):
         return self.out(d1)
 
 
+class UNetMiniExp5(nn.Module):
+    """深度可分离卷积 + 最近邻插值上采样版U-Net（ESP32-S3优化版 - 通道数对齐8倍数）
+    
+    通道数设计原则：所有卷积层的输入/输出通道数都是8的倍数
+    这样可以启用esp-dl的优化汇编实现（要求通道数%8==0且内存16字节对齐）
+    预计推理速度提升30-50%
+    """
+    def __init__(self):
+        super().__init__()
+        # Encoder (通道数: 16 -> 32 -> 64，都是8的倍数)
+        self.enc1 = DepthwiseSeparableConv(1, 16)
+        self.enc2 = DepthwiseSeparableConv(16, 32)
+        self.enc3 = DepthwiseSeparableConv(32, 64)
+        self.pool = nn.MaxPool2d(2)
+
+        # Bottleneck (128 = 8的倍数)
+        self.bottleneck = DepthwiseSeparableConv(64, 128)
+
+        # Decoder (使用最近邻插值上采样 + 1x1卷积调整通道)
+        self.up3 = nn.Upsample(scale_factor=2, mode='nearest')
+        self.conv3 = nn.Conv2d(128, 64, 1, 1, 0, bias=False)
+        self.dec3 = DepthwiseSeparableConv(128, 64)
+
+        self.up2 = nn.Upsample(scale_factor=2, mode='nearest')
+        self.conv2 = nn.Conv2d(64, 32, 1, 1, 0, bias=False)
+        self.dec2 = DepthwiseSeparableConv(64, 32)
+
+        self.up1 = nn.Upsample(scale_factor=2, mode='nearest')
+        self.conv1 = nn.Conv2d(32, 16, 1, 1, 0, bias=False)
+        self.dec1 = DepthwiseSeparableConv(32, 16)
+
+        # Output
+        self.out = nn.Conv2d(16, 1, 1)
+
+    def forward(self, x):
+        # Encoder
+        e1 = self.enc1(x)
+        e2 = self.enc2(self.pool(e1))
+        e3 = self.enc3(self.pool(e2))
+
+        # Bottleneck
+        b = self.bottleneck(self.pool(e3))
+
+        # Decoder with skip connections
+        d3 = self.up3(b)
+        d3 = self.conv3(d3)
+        d3 = torch.cat([d3, e3], dim=1)
+        d3 = self.dec3(d3)
+
+        d2 = self.up2(d3)
+        d2 = self.conv2(d2)
+        d2 = torch.cat([d2, e2], dim=1)
+        d2 = self.dec2(d2)
+
+        d1 = self.up1(d2)
+        d1 = self.conv1(d1)
+        d1 = torch.cat([d1, e1], dim=1)
+        d1 = self.dec1(d1)
+
+        return self.out(d1)
+
+
+class UNetMiniExp6(nn.Module):
+    """混合卷积版U-Net（高分辨率层用普通卷积，低分辨率层用深度可分离卷积）
+    
+    优化策略：
+    1. 通道数对齐8的倍数（启用esp-dl优化）
+    2. 高分辨率层（enc1, dec1）使用DoubleConv，避免Pointwise卷积瓶颈
+    3. 低分辨率层保持DepthwiseSeparableConv，减少参数量
+    
+    预计推理速度比Exp5更快（高分辨率层无Pointwise瓶颈）
+    """
+    def __init__(self):
+        super().__init__()
+        # Encoder - enc1用DoubleConv，enc2/enc3用DepthwiseSeparableConv
+        self.enc1 = DoubleConv(1, 16)                    # 高分辨率：普通卷积
+        self.enc2 = DepthwiseSeparableConv(16, 32)       # 中分辨率：深度可分离
+        self.enc3 = DepthwiseSeparableConv(32, 64)       # 低分辨率：深度可分离
+        self.pool = nn.MaxPool2d(2)
+
+        # Bottleneck
+        self.bottleneck = DepthwiseSeparableConv(64, 128)
+
+        # Decoder - dec1用DoubleConv，dec2/dec3用DepthwiseSeparableConv
+        self.up3 = nn.Upsample(scale_factor=2, mode='nearest')
+        self.conv3 = nn.Conv2d(128, 64, 1, 1, 0, bias=False)
+        self.dec3 = DepthwiseSeparableConv(128, 64)      # 低分辨率
+
+        self.up2 = nn.Upsample(scale_factor=2, mode='nearest')
+        self.conv2 = nn.Conv2d(64, 32, 1, 1, 0, bias=False)
+        self.dec2 = DepthwiseSeparableConv(64, 32)       # 中分辨率
+
+        self.up1 = nn.Upsample(scale_factor=2, mode='nearest')
+        self.conv1 = nn.Conv2d(32, 16, 1, 1, 0, bias=False)
+        self.dec1 = DoubleConv(32, 16)                   # 高分辨率：普通卷积
+
+        # Output
+        self.out = nn.Conv2d(16, 1, 1)
+
+    def forward(self, x):
+        # Encoder
+        e1 = self.enc1(x)
+        e2 = self.enc2(self.pool(e1))
+        e3 = self.enc3(self.pool(e2))
+
+        # Bottleneck
+        b = self.bottleneck(self.pool(e3))
+
+        # Decoder with skip connections
+        d3 = self.up3(b)
+        d3 = self.conv3(d3)
+        d3 = torch.cat([d3, e3], dim=1)
+        d3 = self.dec3(d3)
+
+        d2 = self.up2(d3)
+        d2 = self.conv2(d2)
+        d2 = torch.cat([d2, e2], dim=1)
+        d2 = self.dec2(d2)
+
+        d1 = self.up1(d2)
+        d1 = self.conv1(d1)
+        d1 = torch.cat([d1, e1], dim=1)
+        d1 = self.dec1(d1)
+
+        return self.out(d1)
+
+
 # ==================== Focal Loss ====================
 class FocalLoss(nn.Module):
     def __init__(self, alpha=0.75, gamma=2.0):
@@ -476,7 +603,7 @@ def train():
     val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=0)
     
     # 使用自定义模型
-    model = UNetMiniExp4().to(DEVICE)
+    model = UNetMiniExp6().to(DEVICE)
     
     criterion = CombinedLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
@@ -565,7 +692,7 @@ def train():
     
     print(f"Training completed! Best val loss: {best_val_loss:.4f}")
     print(f"模型已保存：{model_path}")
-    print(f"如需导出ONNX，请使用：tools.export_pth_to_onnx(UNetMiniExp4, model_path, save_dir)")
+    print(f"如需导出ONNX，请使用：tools.export_pth_to_onnx(UNetMiniExp6, model_path, save_dir)")
 
 
 if __name__ == '__main__':
