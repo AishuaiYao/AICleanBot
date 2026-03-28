@@ -210,6 +210,63 @@ class UNetMiniExp3(nn.Module):
         return self.out(d1)
 
 
+class UNetMiniExp4(nn.Module):
+    """深度可分离卷积 + 最近邻插值上采样版U-Net（ESP32-S3优化版）"""
+    def __init__(self):
+        super().__init__()
+        # Encoder (通道数: 12 -> 24 -> 48)
+        self.enc1 = DepthwiseSeparableConv(1, 12)
+        self.enc2 = DepthwiseSeparableConv(12, 24)
+        self.enc3 = DepthwiseSeparableConv(24, 48)
+        self.pool = nn.MaxPool2d(2)
+
+        # Bottleneck
+        self.bottleneck = DepthwiseSeparableConv(48, 96)
+
+        # Decoder (使用最近邻插值上采样 + 1x1卷积调整通道)
+        self.up3 = nn.Upsample(scale_factor=2, mode='nearest')
+        self.conv3 = nn.Conv2d(96, 48, 1, 1, 0, bias=False)
+        self.dec3 = DepthwiseSeparableConv(96, 48)
+
+        self.up2 = nn.Upsample(scale_factor=2, mode='nearest')
+        self.conv2 = nn.Conv2d(48, 24, 1, 1, 0, bias=False)
+        self.dec2 = DepthwiseSeparableConv(48, 24)
+
+        self.up1 = nn.Upsample(scale_factor=2, mode='nearest')
+        self.conv1 = nn.Conv2d(24, 12, 1, 1, 0, bias=False)
+        self.dec1 = DepthwiseSeparableConv(24, 12)
+
+        # Output
+        self.out = nn.Conv2d(12, 1, 1)
+
+    def forward(self, x):
+        # Encoder
+        e1 = self.enc1(x)
+        e2 = self.enc2(self.pool(e1))
+        e3 = self.enc3(self.pool(e2))
+
+        # Bottleneck
+        b = self.bottleneck(self.pool(e3))
+
+        # Decoder with skip connections
+        d3 = self.up3(b)
+        d3 = self.conv3(d3)
+        d3 = torch.cat([d3, e3], dim=1)
+        d3 = self.dec3(d3)
+
+        d2 = self.up2(d3)
+        d2 = self.conv2(d2)
+        d2 = torch.cat([d2, e2], dim=1)
+        d2 = self.dec2(d2)
+
+        d1 = self.up1(d2)
+        d1 = self.conv1(d1)
+        d1 = torch.cat([d1, e1], dim=1)
+        d1 = self.dec1(d1)
+
+        return self.out(d1)
+
+
 # ==================== Focal Loss ====================
 class FocalLoss(nn.Module):
     def __init__(self, alpha=0.75, gamma=2.0):
@@ -420,7 +477,7 @@ def train():
     val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=0)
     
     # 使用自定义模型
-    model = UNetMiniExp3().to(DEVICE)
+    model = UNetMiniExp4().to(DEVICE)
     
     criterion = CombinedLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
@@ -509,7 +566,7 @@ def train():
     
     print(f"Training completed! Best val loss: {best_val_loss:.4f}")
     print(f"模型已保存：{model_path}")
-    print(f"如需导出ONNX，请使用：tools.export_pth_to_onnx(UNetMiniExp3, model_path, save_dir)")
+    print(f"如需导出ONNX，请使用：tools.export_pth_to_onnx(UNetMiniExp4, model_path, save_dir)")
 
 
 if __name__ == '__main__':

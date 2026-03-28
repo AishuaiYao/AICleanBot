@@ -290,15 +290,15 @@ if __name__ == "__main__":
     # 从.pth导出ONNX示例
     import sys
     sys.path.append(r'E:\AICleanBot\py_scripts\net')
-    from train_student import UNetMiniExp3
+    from train_student import UNetMiniExp4
     export_pth_to_onnx(
-        UNetMiniExp3,
-        r"E:\AICleanBot\py_scripts\models\20260326_222904\best_model.pth",
-        r"E:\AICleanBot\py_scripts\models\20260326_222904",
+        UNetMiniExp4,
+        r"E:\AICleanBot\py_scripts\models\20260328_174732\best_model.pth",
+        r"E:\AICleanBot\py_scripts\models\20260328_174732",
         input_shape=(1, 1, 120, 160)
     )
 
-    analyze_onnx_model(r"E:\AICleanBot\py_scripts\models\20260326_222904\model.onnx")
+    analyze_onnx_model(r"E:\AICleanBot\py_scripts\models\20260328_174732\model.onnx")
     
 
 
