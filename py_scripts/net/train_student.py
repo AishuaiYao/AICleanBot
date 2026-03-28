@@ -435,7 +435,6 @@ def save_visualization(img_tensor, pred_tensor, save_path):
     
     cv2.imwrite(save_path, result)
 
-
 # ==================== 训练 ====================
 def train():
     # 固定随机种子

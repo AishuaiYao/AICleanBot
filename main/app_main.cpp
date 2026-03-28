@@ -61,10 +61,26 @@ static dl::Model *g_model = nullptr;
 #define OUTPUT_HEIGHT 120
 
 // ===========================
+// Sigmoid查表优化
+// ===========================
+static uint8_t sigmoid_lut[256];  // sigmoid查表（256字节）
+
+// 初始化sigmoid查表
+static void init_sigmoid_lut(void)
+{
+    for (int i = 0; i < 256; i++) {
+        int8_t q = (int8_t)i;  // int8量化值: -128~127
+        float x = q / 128.0f;  // 反量化
+        float sig = 1.0f / (1.0f + expf(-x));
+        sigmoid_lut[i] = (sig > 0.5f) ? 255 : 0;  // 直接存储二值结果
+    }
+}
+
+// ===========================
 // 图像处理函数
 // ===========================
 
-// Sigmoid函数
+// Sigmoid函数（保留备用）
 float sigmoid(float x)
 {
     return 1.0f / (1.0f + expf(-x));
@@ -220,10 +236,10 @@ static void handle_client(int client_sock)
             // 分配预测图缓冲区
             uint8_t *pred_data = (uint8_t *)malloc(OUTPUT_WIDTH * OUTPUT_HEIGHT);
             
-            // 后处理: sigmoid + 阈值分割 (输出尺寸与输入相同，无需resize)
+            // 后处理: sigmoid查表 + 阈值分割 (输出尺寸与输入相同，无需resize)
             for (int i = 0; i < OUTPUT_WIDTH * OUTPUT_HEIGHT; i++) {
-                float val = sigmoid(output_data[i] / 128.0f);  // 反量化 + sigmoid
-                pred_data[i] = (val > 0.5f) ? 255 : 0;
+                uint8_t idx = (uint8_t)(output_data[i] + 128);  // int8转uint8索引(0~255)
+                pred_data[i] = sigmoid_lut[idx];  // 直接查表
             }
             
             int64_t t8 = esp_timer_get_time();
@@ -333,6 +349,10 @@ extern "C" void app_main(void)
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
+
+    // 初始化sigmoid查表
+    init_sigmoid_lut();
+    ESP_LOGI(TAG, "[Init] Sigmoid查表初始化完成");
 
     // 初始化模型
     ESP_LOGI(TAG, "[Model] 加载模型...");
