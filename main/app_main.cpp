@@ -159,6 +159,19 @@ static void handle_client(int client_sock)
 {
     ESP_LOGI(TAG, "[TCP] 客户端已连接");
 
+    // ========== 握手协议 ==========
+    char handshake_buf[64];
+    int handshake_len = recv(client_sock, handshake_buf, sizeof(handshake_buf) - 1, 0);
+    if (handshake_len <= 0 || strncmp(handshake_buf, "HELLO", 5) != 0) {
+        ESP_LOGI(TAG, "[TCP] 握手失败");
+        close(client_sock);
+        return;
+    }
+
+    const char *device_info = "LinePatrol V1|😊\n";
+    send(client_sock, device_info, strlen(device_info), 0);
+    ESP_LOGI(TAG, "[TCP] 握手成功: %s", device_info);
+
     char buf[64];
 
     while (1) {
