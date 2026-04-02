@@ -313,6 +313,56 @@ static void handle_client(int client_sock)
             
             esp_camera_fb_return(fb);
         }
+        else if (strncmp(buf, "STREAM", 6) == 0) {
+            ESP_LOGI(TAG, "[Stream] 开始数据采集模式");
+            
+            bool streaming = true;
+            while (streaming) {
+                camera_fb_t *fb = esp_camera_fb_get();
+                if (!fb) {
+                    ESP_LOGE(TAG, "[Stream] 采集失败");
+                    continue;
+                }
+
+                // 发送图像头
+                uint8_t header[4];
+                uint32_t frame_size = INPUT_WIDTH * INPUT_HEIGHT;
+                header[0] = (frame_size >> 24) & 0xFF;
+                header[1] = (frame_size >> 16) & 0xFF;
+                header[2] = (frame_size >> 8) & 0xFF;
+                header[3] = frame_size & 0xFF;
+                send(client_sock, header, 4, 0);
+
+                // 发送原图
+                uint32_t offset = 0;
+                while (offset < frame_size) {
+                    int chunk = frame_size - offset;
+                    if (chunk > 1460) chunk = 1460;
+                    int sent = send(client_sock, fb->buf + offset, chunk, 0);
+                    if (sent < 0) {
+                        ESP_LOGE(TAG, "[Stream] 发送失败");
+                        streaming = false;
+                        break;
+                    }
+                    offset += sent;
+                }
+
+                esp_camera_fb_return(fb);
+
+                // 非阻塞检查STOP命令
+                int len = recv(client_sock, buf, sizeof(buf) - 1, MSG_DONTWAIT);
+                if (len > 0) {
+                    buf[len] = '\0';
+                    if (strncmp(buf, "STOP", 4) == 0) {
+                        ESP_LOGI(TAG, "[Stream] 收到STOP命令，停止采集");
+                        streaming = false;
+                    }
+                }
+
+                // 小延时，避免占满CPU
+                vTaskDelay(pdMS_TO_TICKS(10));
+            }
+        }
     }
 
     close(client_sock);
