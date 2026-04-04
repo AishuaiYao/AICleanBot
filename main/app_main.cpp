@@ -53,12 +53,18 @@ static dl::Model *g_model = nullptr;
 
 // TCP Server (微信小程序禁用: <1024, 8000-8100, 6000, 8888, 8443等)
 #define TCP_PORT     5000
+#define UDP_PORT     5001
 
 // 图像处理相关常量
 #define INPUT_WIDTH  160
 #define INPUT_HEIGHT 120
 #define OUTPUT_WIDTH 160
 #define OUTPUT_HEIGHT 120
+
+// UDP 视频流相关
+static int g_udp_sock = -1;
+static struct sockaddr_in g_udp_client_addr;
+static bool g_udp_client_ready = false;
 
 // ===========================
 // Sigmoid查表优化
@@ -150,6 +156,32 @@ static void wifi_init_ap(void)
     ESP_ERROR_CHECK(esp_wifi_start());
 
     ESP_LOGI(TAG, "[WiFi] AP已启动 SSID=%s 密码=%s IP=192.168.4.1", AP_SSID, AP_PASSWORD);
+}
+
+// ===========================
+// UDP 初始化
+// ===========================
+static void udp_init(void)
+{
+    g_udp_sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (g_udp_sock < 0) {
+        ESP_LOGE(TAG, "[UDP] 创建socket失败");
+        return;
+    }
+
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(UDP_PORT);
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    if (bind(g_udp_sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+        ESP_LOGE(TAG, "[UDP] bind失败");
+        close(g_udp_sock);
+        g_udp_sock = -1;
+        return;
+    }
+
+    ESP_LOGI(TAG, "[UDP] UDP socket已启动, 端口=%d", UDP_PORT);
 }
 
 // ===========================
@@ -313,38 +345,123 @@ static void handle_client(int client_sock)
             
             esp_camera_fb_return(fb);
         }
-        else if (strncmp(buf, "STREAM", 6) == 0) {
-            ESP_LOGI(TAG, "[Stream] 开始数据采集模式");
+        else if (strncmp(buf, "UDP_HELLO", 9) == 0) {
+            // 解析客户端UDP端口: UDP_HELLO:端口
+            int client_udp_port = 0;
+            char *port_str = strchr(buf, ':');
+            if (port_str) {
+                client_udp_port = atoi(port_str + 1);
+            }
             
+            ESP_LOGI(TAG, "========== UDP_HELLO ==========");
+            ESP_LOGI(TAG, "[UDP] 收到UDP_HELLO, 端口=%d", client_udp_port);
+            ESP_LOGI(TAG, "[UDP] UDP socket状态: %s", g_udp_sock >= 0 ? "OK" : "FAILED");
+            
+            if (client_udp_port > 0 && g_udp_sock >= 0) {
+                // 获取客户端IP (从TCP连接中获取)
+                struct sockaddr_in tcp_client_addr;
+                socklen_t addr_len = sizeof(tcp_client_addr);
+                getpeername(client_sock, (struct sockaddr *)&tcp_client_addr, &addr_len);
+                
+                // 设置UDP目标地址
+                g_udp_client_addr.sin_family = AF_INET;
+                g_udp_client_addr.sin_addr = tcp_client_addr.sin_addr;
+                g_udp_client_addr.sin_port = htons(client_udp_port);
+                g_udp_client_ready = true;
+                
+                ESP_LOGI(TAG, "[UDP] 客户端UDP地址: %s:%d", 
+                         inet_ntoa(g_udp_client_addr.sin_addr), client_udp_port);
+                ESP_LOGI(TAG, "[UDP] UDP客户端就绪!");
+                ESP_LOGI(TAG, "================================");
+                
+                // 回复确认
+                send(client_sock, "UDP_OK\n", 7, 0);
+            } else {
+                ESP_LOGE(TAG, "[UDP] UDP_HELLO处理失败: port=%d, sock=%d", 
+                         client_udp_port, g_udp_sock);
+            }
+        }
+        else if (strncmp(buf, "STREAM", 6) == 0) {
+            ESP_LOGI(TAG, "========== STREAM 开始 ==========");
+            ESP_LOGI(TAG, "[Stream] UDP状态: ready=%d, sock=%d", g_udp_client_ready, g_udp_sock);
+            
+            if (!g_udp_client_ready || g_udp_sock < 0) {
+                ESP_LOGE(TAG, "[Stream] UDP未就绪，请先发送UDP_HELLO");
+                send(client_sock, "UDP_NOT_READY\n", 14, 0);
+                ESP_LOGI(TAG, "================================");
+                continue;
+            }
+            
+            ESP_LOGI(TAG, "[Stream] UDP目标: %s:%d", 
+                     inet_ntoa(g_udp_client_addr.sin_addr), 
+                     ntohs(g_udp_client_addr.sin_port));
+            ESP_LOGI(TAG, "[Stream] 帧大小: %d bytes, 分片数: 4", INPUT_WIDTH * INPUT_HEIGHT);
+            ESP_LOGI(TAG, "================================");
+            
+            int frame_count = 0;
             bool streaming = true;
+            int64_t stream_start_time = esp_timer_get_time();
+            
+            // 分片参数
+            const uint32_t frame_size = INPUT_WIDTH * INPUT_HEIGHT;  // 19200
+            const int total_chunks = 4;
+            const int chunk_size = 5000;  // 每分片最大5000字节
+            const int last_chunk_size = frame_size - chunk_size * (total_chunks - 1);  // 4200
+            
             while (streaming) {
+                int64_t frame_start = esp_timer_get_time();
+                
                 camera_fb_t *fb = esp_camera_fb_get();
                 if (!fb) {
-                    ESP_LOGE(TAG, "[Stream] 采集失败");
+                    ESP_LOGE(TAG, "[Stream] 帧%d: 采集失败", frame_count);
                     continue;
                 }
 
-                // 发送图像头
-                uint8_t header[4];
-                uint32_t frame_size = INPUT_WIDTH * INPUT_HEIGHT;
-                header[0] = (frame_size >> 24) & 0xFF;
-                header[1] = (frame_size >> 16) & 0xFF;
-                header[2] = (frame_size >> 8) & 0xFF;
-                header[3] = frame_size & 0xFF;
-                send(client_sock, header, 4, 0);
-
-                // 发送原图
-                uint32_t offset = 0;
-                while (offset < frame_size) {
-                    int chunk = frame_size - offset;
-                    if (chunk > 1460) chunk = 1460;
-                    int sent = send(client_sock, fb->buf + offset, chunk, 0);
-                    if (sent < 0) {
-                        ESP_LOGE(TAG, "[Stream] 发送失败");
-                        streaming = false;
-                        break;
+                // UDP分片发送
+                int chunks_sent = 0;
+                for (int i = 0; i < total_chunks; i++) {
+                    // 计算当前分片数据大小和偏移
+                    int current_chunk_size = (i == total_chunks - 1) ? last_chunk_size : chunk_size;
+                    int offset = i * chunk_size;
+                    
+                    // 分片缓冲区: [帧号2字节][总分片数1字节][分片索引1字节][数据]
+                    uint8_t *chunk_buf = (uint8_t *)malloc(4 + current_chunk_size);
+                    if (chunk_buf) {
+                        // 协议头
+                        chunk_buf[0] = (frame_count >> 8) & 0xFF;    // 帧号高字节
+                        chunk_buf[1] = frame_count & 0xFF;           // 帧号低字节
+                        chunk_buf[2] = total_chunks;                  // 总分片数
+                        chunk_buf[3] = i;                             // 当前分片索引
+                        
+                        // 复制数据
+                        memcpy(chunk_buf + 4, fb->buf + offset, current_chunk_size);
+                        
+                        // 发送UDP分片
+                        int sent = sendto(g_udp_sock, chunk_buf, 4 + current_chunk_size, 0,
+                                          (struct sockaddr *)&g_udp_client_addr, 
+                                          sizeof(g_udp_client_addr));
+                        
+                        if (sent > 0) {
+                            chunks_sent++;
+                        }
+                        free(chunk_buf);
                     }
-                    offset += sent;
+                }
+                
+                int64_t frame_end = esp_timer_get_time();
+                float frame_time = (frame_end - frame_start) / 1000.0f;
+                
+                if (chunks_sent == total_chunks) {
+                    frame_count++;
+                    // 每10帧打印一次状态
+                    if (frame_count % 10 == 0) {
+                        float fps = frame_count * 1000.0f / ((frame_end - stream_start_time) / 1000.0f);
+                        ESP_LOGI(TAG, "[Stream] 帧%d: 发送%d分片, 耗时%.1fms, FPS=%.1f", 
+                                 frame_count, chunks_sent, frame_time, fps);
+                    }
+                } else {
+                    ESP_LOGE(TAG, "[Stream] 帧%d: 分片发送不完整 %d/%d", 
+                             frame_count, chunks_sent, total_chunks);
                 }
 
                 esp_camera_fb_return(fb);
@@ -354,13 +471,22 @@ static void handle_client(int client_sock)
                 if (len > 0) {
                     buf[len] = '\0';
                     if (strncmp(buf, "STOP", 4) == 0) {
-                        ESP_LOGI(TAG, "[Stream] 收到STOP命令，停止采集");
+                        int64_t stream_end = esp_timer_get_time();
+                        float total_time = (stream_end - stream_start_time) / 1000.0f;
+                        float avg_fps = frame_count * 1000.0f / total_time;
+                        
+                        ESP_LOGI(TAG, "========== STREAM 停止 ==========");
+                        ESP_LOGI(TAG, "[Stream] 收到STOP命令");
+                        ESP_LOGI(TAG, "[Stream] 总帧数: %d", frame_count);
+                        ESP_LOGI(TAG, "[Stream] 总时长: %.1fms", total_time);
+                        ESP_LOGI(TAG, "[Stream] 平均FPS: %.1f", avg_fps);
+                        ESP_LOGI(TAG, "================================");
                         streaming = false;
                     }
                 }
 
-                // 小延时，避免占满CPU
-                vTaskDelay(pdMS_TO_TICKS(10));
+                // 小延时，控制帧率
+                vTaskDelay(pdMS_TO_TICKS(20));
             }
         }
     }
@@ -444,6 +570,7 @@ extern "C" void app_main(void)
 
     camera_init();
     wifi_init_ap();
+    udp_init();
 
     // TCP服务器任务绑定到Core 1，推理任务与WiFi底层(Core 0)分离
     xTaskCreatePinnedToCore(tcp_server_task, "tcp_server", 8192, NULL, 5, NULL, 1);
@@ -451,6 +578,6 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "========================================");
     ESP_LOGI(TAG, "系统启动完成!");
     ESP_LOGI(TAG, "热点: %s  密码: %s", AP_SSID, AP_PASSWORD);
-    ESP_LOGI(TAG, "TCP端口: %d", TCP_PORT);
+    ESP_LOGI(TAG, "TCP端口: %d  UDP端口: %d", TCP_PORT, UDP_PORT);
     ESP_LOGI(TAG, "========================================");
 }
