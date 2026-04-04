@@ -404,9 +404,9 @@ static void handle_client(int client_sock)
             
             // 分片参数
             const uint32_t frame_size = INPUT_WIDTH * INPUT_HEIGHT;  // 19200
-            const int total_chunks = 4;
-            const int chunk_size = 5000;  // 每分片最大5000字节
-            const int last_chunk_size = frame_size - chunk_size * (total_chunks - 1);  // 4200
+            const int total_chunks = 3;
+            const int chunk_size = 8000;  // 每分片最大8000字节
+            const int last_chunk_size = frame_size - chunk_size * (total_chunks - 1);  // 3200
             
             while (streaming) {
                 int64_t frame_start = esp_timer_get_time();
