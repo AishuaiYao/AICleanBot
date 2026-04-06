@@ -453,8 +453,8 @@ static void handle_client(int client_sock)
                 
                 if (chunks_sent == total_chunks) {
                     frame_count++;
-                    // 每10帧打印一次状态
-                    if (frame_count % 10 == 0) {
+                    // 每100帧打印一次状态
+                    if (frame_count % 100 == 0) {
                         float fps = frame_count * 1000.0f / ((frame_end - stream_start_time) / 1000.0f);
                         ESP_LOGI(TAG, "[Stream] 帧%d: 发送%d分片, 耗时%.1fms, FPS=%.1f", 
                                  frame_count, chunks_sent, frame_time, fps);
@@ -466,10 +466,12 @@ static void handle_client(int client_sock)
 
                 esp_camera_fb_return(fb);
 
-                // 非阻塞检查STOP命令
+                // 非阻塞检查命令
                 int len = recv(client_sock, buf, sizeof(buf) - 1, MSG_DONTWAIT);
                 if (len > 0) {
                     buf[len] = '\0';
+                    ESP_LOGI(TAG, "[TCP] 收到命令: %s", buf);
+                    
                     if (strncmp(buf, "STOP", 4) == 0) {
                         int64_t stream_end = esp_timer_get_time();
                         float total_time = (stream_end - stream_start_time) / 1000.0f;
@@ -482,6 +484,10 @@ static void handle_client(int client_sock)
                         ESP_LOGI(TAG, "[Stream] 平均FPS: %.1f", avg_fps);
                         ESP_LOGI(TAG, "================================");
                         streaming = false;
+                    }
+                    else if (strncmp(buf, "MOTOR_", 6) == 0) {
+                        ESP_LOGI(TAG, "[Motor] 收到电机命令: %s", buf);
+                        // TODO: 执行电机控制
                     }
                 }
 
