@@ -11,6 +11,8 @@
 #include "lwip/ip_addr.h"
 #include "lwip/sockets.h"
 #include "esp_timer.h"
+#include "driver/ledc.h"
+#include "driver/gpio.h"
 #include "dl_model_base.hpp"
 
 static const char *TAG = "CAM_TCP";
@@ -42,6 +44,26 @@ static dl::Model *g_model = nullptr;
 #define CAM_PIN_VSYNC 6
 #define CAM_PIN_HREF  7
 #define CAM_PIN_PCLK  13
+
+// ===========================
+// 电机引脚定义 (TB6612FNG)
+// ===========================
+#define MOTOR_A_PWM   GPIO_NUM_1    // GPIO1  - PWMA
+#define MOTOR_A_IN1   GPIO_NUM_2    // GPIO2  - AIN1
+#define MOTOR_A_IN2   GPIO_NUM_42   // GPIO42 - AIN2
+
+#define MOTOR_B_PWM   GPIO_NUM_41   // GPIO41 - PWMB
+#define MOTOR_B_IN1   GPIO_NUM_40   // GPIO40 - BIN1
+#define MOTOR_B_IN2   GPIO_NUM_39   // GPIO39 - BIN2
+
+// LEDC PWM 配置
+#define MOTOR_LEDC_TIMER      LEDC_TIMER_1
+#define MOTOR_LEDC_MODE       LEDC_LOW_SPEED_MODE
+#define MOTOR_LEDC_RESOLUTION LEDC_TIMER_8_BIT
+#define MOTOR_LEDC_FREQ       1000  // 1kHz
+
+#define MOTOR_A_CHANNEL       LEDC_CHANNEL_1
+#define MOTOR_B_CHANNEL       LEDC_CHANNEL_2
 
 // ===========================
 // WiFi AP 配置
@@ -90,6 +112,97 @@ static void init_sigmoid_lut(void)
 float sigmoid(float x)
 {
     return 1.0f / (1.0f + expf(-x));
+}
+
+// ===========================
+// 电机控制函数
+// ===========================
+
+// 初始化电机GPIO和PWM
+static void motor_init(void)
+{
+    // 配置LEDC定时器
+    ledc_timer_config_t timer_conf = {};
+    timer_conf.speed_mode = MOTOR_LEDC_MODE;
+    timer_conf.duty_resolution = MOTOR_LEDC_RESOLUTION;
+    timer_conf.timer_num = MOTOR_LEDC_TIMER;
+    timer_conf.freq_hz = MOTOR_LEDC_FREQ;
+    timer_conf.clk_cfg = LEDC_AUTO_CLK;
+    ledc_timer_config(&timer_conf);
+
+    // 配置电机A PWM通道
+    ledc_channel_config_t motor_a_conf = {};
+    motor_a_conf.gpio_num = MOTOR_A_PWM;
+    motor_a_conf.speed_mode = MOTOR_LEDC_MODE;
+    motor_a_conf.channel = MOTOR_A_CHANNEL;
+    motor_a_conf.intr_type = LEDC_INTR_DISABLE;
+    motor_a_conf.timer_sel = MOTOR_LEDC_TIMER;
+    motor_a_conf.duty = 0;
+    motor_a_conf.hpoint = 0;
+    ledc_channel_config(&motor_a_conf);
+
+    // 配置电机B PWM通道
+    ledc_channel_config_t motor_b_conf = {};
+    motor_b_conf.gpio_num = MOTOR_B_PWM;
+    motor_b_conf.speed_mode = MOTOR_LEDC_MODE;
+    motor_b_conf.channel = MOTOR_B_CHANNEL;
+    motor_b_conf.intr_type = LEDC_INTR_DISABLE;
+    motor_b_conf.timer_sel = MOTOR_LEDC_TIMER;
+    motor_b_conf.duty = 0;
+    motor_b_conf.hpoint = 0;
+    ledc_channel_config(&motor_b_conf);
+
+    // 配置方向控制GPIO
+    gpio_config_t io_conf = {};
+    io_conf.pin_bit_mask = (1ULL << MOTOR_A_IN1) | (1ULL << MOTOR_A_IN2) |
+                           (1ULL << MOTOR_B_IN1) | (1ULL << MOTOR_B_IN2);
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    gpio_config(&io_conf);
+
+    // 初始状态：停止
+    gpio_set_level(MOTOR_A_IN1, 0);
+    gpio_set_level(MOTOR_A_IN2, 0);
+    gpio_set_level(MOTOR_B_IN1, 0);
+    gpio_set_level(MOTOR_B_IN2, 0);
+
+    ESP_LOGI(TAG, "[Motor] 初始化完成");
+}
+
+// 电机A正转
+static void motor_a_forward(uint8_t speed)
+{
+    gpio_set_level(MOTOR_A_IN1, 1);
+    gpio_set_level(MOTOR_A_IN2, 0);
+    ledc_set_duty(MOTOR_LEDC_MODE, MOTOR_A_CHANNEL, speed);
+    ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_A_CHANNEL);
+    ESP_LOGI(TAG, "[MotorA] 正转 速度=%d", speed);
+}
+
+// 电机B正转
+static void motor_b_forward(uint8_t speed)
+{
+    gpio_set_level(MOTOR_B_IN1, 1);
+    gpio_set_level(MOTOR_B_IN2, 0);
+    ledc_set_duty(MOTOR_LEDC_MODE, MOTOR_B_CHANNEL, speed);
+    ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_B_CHANNEL);
+    ESP_LOGI(TAG, "[MotorB] 正转 速度=%d", speed);
+}
+
+// 停止所有电机
+static void motor_stop(void)
+{
+    gpio_set_level(MOTOR_A_IN1, 0);
+    gpio_set_level(MOTOR_A_IN2, 0);
+    gpio_set_level(MOTOR_B_IN1, 0);
+    gpio_set_level(MOTOR_B_IN2, 0);
+    ledc_set_duty(MOTOR_LEDC_MODE, MOTOR_A_CHANNEL, 0);
+    ledc_set_duty(MOTOR_LEDC_MODE, MOTOR_B_CHANNEL, 0);
+    ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_A_CHANNEL);
+    ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_B_CHANNEL);
+    ESP_LOGI(TAG, "[Motor] 停止");
 }
 
 // ===========================
@@ -221,7 +334,16 @@ static void handle_client(int client_sock)
 
         ESP_LOGI(TAG, "[TCP] 收到命令: %s", buf);
 
-        if (strncmp(buf, "CAPTURE", 7) == 0) {
+        if (strncmp(buf, "MOTOR_LEFT", 10) == 0) {
+            motor_a_forward(200);  // 默认速度200 (0-255)
+        }
+        else if (strncmp(buf, "MOTOR_RIGHT", 11) == 0) {
+            motor_b_forward(200);  // 默认速度200 (0-255)
+        }
+        else if (strncmp(buf, "MOTOR_STOP", 10) == 0) {
+            motor_stop();
+        }
+        else if (strncmp(buf, "CAPTURE", 7) == 0) {
             int64_t t_start = esp_timer_get_time();
 
             int64_t t1 = esp_timer_get_time();
@@ -485,9 +607,14 @@ static void handle_client(int client_sock)
                         ESP_LOGI(TAG, "================================");
                         streaming = false;
                     }
-                    else if (strncmp(buf, "MOTOR_", 6) == 0) {
-                        ESP_LOGI(TAG, "[Motor] 收到电机命令: %s", buf);
-                        // TODO: 执行电机控制
+                    else if (strncmp(buf, "MOTOR_LEFT", 10) == 0) {
+                        motor_a_forward(200);
+                    }
+                    else if (strncmp(buf, "MOTOR_RIGHT", 11) == 0) {
+                        motor_b_forward(200);
+                    }
+                    else if (strncmp(buf, "MOTOR_STOP", 10) == 0) {
+                        motor_stop();
                     }
                 }
 
@@ -575,6 +702,7 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "[Model] 模型加载成功");
 
     camera_init();
+    motor_init();
     wifi_init_ap();
     udp_init();
 
