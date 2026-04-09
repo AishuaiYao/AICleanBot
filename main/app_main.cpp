@@ -88,6 +88,9 @@ static int g_udp_sock = -1;
 static struct sockaddr_in g_udp_client_addr;
 static bool g_udp_client_ready = false;
 
+// 电机控制相关
+static uint8_t g_motor_base_speed = 0;  // 基础速度PWM值 (0-255)
+
 // ===========================
 // Sigmoid查表优化
 // ===========================
@@ -334,14 +337,36 @@ static void handle_client(int client_sock)
 
         ESP_LOGI(TAG, "[TCP] 收到命令: %s", buf);
 
-        if (strncmp(buf, "MOTOR_LEFT", 10) == 0) {
-            motor_a_forward(200);  // 默认速度200 (0-255)
+        if (strncmp(buf, "START", 5) == 0) {
+            ESP_LOGI(TAG, "[Motor] 收到START命令，等待速度值");
+        }
+        else if (strncmp(buf, "SPEED:", 6) == 0) {
+            int speed = atoi(buf + 6);
+            if (speed >= 1 && speed <= 10) {
+                g_motor_base_speed = speed * 25;  // 1-10映射到25-250
+                motor_a_forward(g_motor_base_speed);
+                motor_b_forward(g_motor_base_speed);
+                ESP_LOGI(TAG, "[Motor] 速度设置为%d, PWM=%d", speed, g_motor_base_speed);
+            }
+        }
+        else if (strncmp(buf, "MOTOR_LEFT", 10) == 0) {
+            motor_a_forward(g_motor_base_speed);
+            motor_b_forward(g_motor_base_speed / 2);
+            ESP_LOGI(TAG, "[Motor] 左转: A=%d, B=%d", g_motor_base_speed, g_motor_base_speed / 2);
         }
         else if (strncmp(buf, "MOTOR_RIGHT", 11) == 0) {
-            motor_b_forward(200);  // 默认速度200 (0-255)
+            motor_b_forward(g_motor_base_speed);
+            motor_a_forward(g_motor_base_speed / 2);
+            ESP_LOGI(TAG, "[Motor] 右转: A=%d, B=%d", g_motor_base_speed / 2, g_motor_base_speed);
         }
         else if (strncmp(buf, "MOTOR_STOP", 10) == 0) {
+            motor_a_forward(g_motor_base_speed);
+            motor_b_forward(g_motor_base_speed);
+            ESP_LOGI(TAG, "[Motor] 直行: A=%d, B=%d", g_motor_base_speed, g_motor_base_speed);
+        }
+        else if (strncmp(buf, "STOP", 4) == 0) {
             motor_stop();
+            g_motor_base_speed = 0;
         }
         else if (strncmp(buf, "CAPTURE", 7) == 0) {
             int64_t t_start = esp_timer_get_time();
@@ -599,6 +624,9 @@ static void handle_client(int client_sock)
                         float total_time = (stream_end - stream_start_time) / 1000.0f;
                         float avg_fps = frame_count * 1000.0f / total_time;
                         
+                        motor_stop();
+                        g_motor_base_speed = 0;
+                        
                         ESP_LOGI(TAG, "========== STREAM 停止 ==========");
                         ESP_LOGI(TAG, "[Stream] 收到STOP命令");
                         ESP_LOGI(TAG, "[Stream] 总帧数: %d", frame_count);
@@ -607,14 +635,29 @@ static void handle_client(int client_sock)
                         ESP_LOGI(TAG, "================================");
                         streaming = false;
                     }
+                    else if (strncmp(buf, "SPEED:", 6) == 0) {
+                        int speed = atoi(buf + 6);
+                        if (speed >= 1 && speed <= 10) {
+                            g_motor_base_speed = speed * 25;
+                            motor_a_forward(g_motor_base_speed);
+                            motor_b_forward(g_motor_base_speed);
+                            ESP_LOGI(TAG, "[Motor] 速度设置为%d, PWM=%d", speed, g_motor_base_speed);
+                        }
+                    }
                     else if (strncmp(buf, "MOTOR_LEFT", 10) == 0) {
-                        motor_a_forward(200);
+                        motor_a_forward(g_motor_base_speed);
+                        motor_b_forward(g_motor_base_speed / 2);
+                        ESP_LOGI(TAG, "[Motor] 左转: A=%d, B=%d", g_motor_base_speed, g_motor_base_speed / 2);
                     }
                     else if (strncmp(buf, "MOTOR_RIGHT", 11) == 0) {
-                        motor_b_forward(200);
+                        motor_b_forward(g_motor_base_speed);
+                        motor_a_forward(g_motor_base_speed / 2);
+                        ESP_LOGI(TAG, "[Motor] 右转: A=%d, B=%d", g_motor_base_speed / 2, g_motor_base_speed);
                     }
                     else if (strncmp(buf, "MOTOR_STOP", 10) == 0) {
-                        motor_stop();
+                        motor_a_forward(g_motor_base_speed);
+                        motor_b_forward(g_motor_base_speed);
+                        ESP_LOGI(TAG, "[Motor] 直行: A=%d, B=%d", g_motor_base_speed, g_motor_base_speed);
                     }
                 }
 
