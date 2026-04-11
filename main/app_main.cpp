@@ -646,6 +646,13 @@ static void handle_client(int client_sock)
                             ESP_LOGI(TAG, "[Motor] 启动速度%d%%, PWM=%d", speed, g_motor_base_speed);
                         }
                     }
+                    else if (strncmp(buf, "STOP_STREAM", 11) == 0) {
+                        motor_stop();
+                        g_motor_base_speed = 0;
+                        g_motor_running = false;
+                        streaming = false;
+                        ESP_LOGI(TAG, "[Stream] 收到STOP_STREAM命令，停止视频流");
+                    }
                     else if (strncmp(buf, "STOP", 4) == 0) {
                         motor_stop();
                         g_motor_base_speed = 0;
