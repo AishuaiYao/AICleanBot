@@ -338,9 +338,15 @@ static void handle_client(int client_sock)
 
         ESP_LOGI(TAG, "[TCP] 收到命令: %s", buf);
 
-        if (strncmp(buf, "START", 5) == 0) {
-            g_motor_running = true;
-            ESP_LOGI(TAG, "[Motor] 收到START命令，电机已启动");
+        if (strncmp(buf, "START:", 6) == 0) {
+            int speed = atoi(buf + 6);
+            if (speed >= 1 && speed <= 20) {
+                g_motor_running = true;
+                g_motor_base_speed = speed * 255 / 100;
+                motor_a_forward(g_motor_base_speed);
+                motor_b_forward(g_motor_base_speed);
+                ESP_LOGI(TAG, "[Motor] 启动速度%d%%, PWM=%d", speed, g_motor_base_speed);
+            }
         }
         else if (strncmp(buf, "SPEED:", 6) == 0) {
             if (!g_motor_running) {
@@ -631,9 +637,15 @@ static void handle_client(int client_sock)
                     buf[len] = '\0';
                     ESP_LOGI(TAG, "[TCP] 收到命令: %s", buf);
                     
-                    if (strncmp(buf, "START", 5) == 0) {
-                        g_motor_running = true;
-                        ESP_LOGI(TAG, "[Motor] 收到START命令，电机已启动");
+                    if (strncmp(buf, "START:", 6) == 0) {
+                        int speed = atoi(buf + 6);
+                        if (speed >= 1 && speed <= 20) {
+                            g_motor_running = true;
+                            g_motor_base_speed = speed * 255 / 100;
+                            motor_a_forward(g_motor_base_speed);
+                            motor_b_forward(g_motor_base_speed);
+                            ESP_LOGI(TAG, "[Motor] 启动速度%d%%, PWM=%d", speed, g_motor_base_speed);
+                        }
                     }
                     else if (strncmp(buf, "STOP", 4) == 0) {
                         motor_stop();
