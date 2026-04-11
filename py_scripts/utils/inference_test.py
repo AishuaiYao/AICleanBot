@@ -186,8 +186,8 @@ def main():
     
     # 输入输出目录 (相对于脚本位置)
     script_dir = Path(__file__).parent
-    input_dir = script_dir / "../test_images"
-    output_dir = script_dir / "../test_results"
+    input_dir = script_dir / "test_images"
+    output_dir = script_dir / "test_results"
     os.makedirs(output_dir, exist_ok=True)
     
     print("=" * 50)
