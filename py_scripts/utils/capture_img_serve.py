@@ -1,3 +1,12 @@
+"""
+ESP32 图像采集服务端
+部署位置: ESP32端
+运行环境: MicroPython (需要摄像头驱动支持)
+功能: 创建WiFi热点，启动TCP服务器，采集并发送摄像头图像
+
+配套客户端: capture_img_client.py (PC端)
+"""
+
 import network
 import time
 import socket

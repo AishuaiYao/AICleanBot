@@ -1,3 +1,11 @@
+"""
+ESP32 图像采集客户端
+部署位置: PC端 (Windows/Linux/Mac)
+功能: 连接ESP32服务端，接收摄像头图像并保存
+
+配套服务端: capture_img_serve.py (ESP32端)
+"""
+
 import socket
 import struct
 import numpy as np

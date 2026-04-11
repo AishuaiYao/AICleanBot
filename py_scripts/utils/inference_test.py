@@ -1,6 +1,13 @@
 """
-ESP32 模型测试客户端
-功能：发送图片到ESP32进行推理，接收二值图结果并拼接保存
+ESP32 模型推理测试客户端
+部署位置: PC端 (Windows/Linux/Mac)
+功能: 发送图片到ESP32进行推理，接收二值图结果并拼接保存
+
+配套服务端: E:\AICleanBot\main\inference_test.cpp (ESP32端)
+使用方式:
+    1. 编译烧录 inference_test.cpp 到 ESP32
+    2. 连接 ESP32 WiFi 热点
+    3. 运行此脚本进行模型推理测试
 """
 
 import socket
