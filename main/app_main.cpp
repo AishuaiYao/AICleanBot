@@ -91,6 +91,8 @@ static bool g_udp_client_ready = false;
 // 电机控制相关
 static uint8_t g_motor_base_speed = 0;  // 基础速度PWM值 (0-255)
 static bool g_motor_running = false;    // 电机运行状态
+static uint8_t g_motor_a_pwm = 0;       // 电机A实际PWM值
+static uint8_t g_motor_b_pwm = 0;       // 电机B实际PWM值
 
 // ===========================
 // Sigmoid查表优化
@@ -182,6 +184,7 @@ static void motor_a_forward(uint8_t speed)
     gpio_set_level(MOTOR_A_IN2, 0);
     ledc_set_duty(MOTOR_LEDC_MODE, MOTOR_A_CHANNEL, speed);
     ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_A_CHANNEL);
+    g_motor_a_pwm = speed;  // 更新实际PWM值
     ESP_LOGI(TAG, "[MotorA] 正转 速度=%d", speed);
 }
 
@@ -192,6 +195,7 @@ static void motor_b_forward(uint8_t speed)
     gpio_set_level(MOTOR_B_IN2, 0);
     ledc_set_duty(MOTOR_LEDC_MODE, MOTOR_B_CHANNEL, speed);
     ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_B_CHANNEL);
+    g_motor_b_pwm = speed;  // 更新实际PWM值
     ESP_LOGI(TAG, "[MotorB] 正转 速度=%d", speed);
 }
 
@@ -206,6 +210,8 @@ static void motor_stop(void)
     ledc_set_duty(MOTOR_LEDC_MODE, MOTOR_B_CHANNEL, 0);
     ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_A_CHANNEL);
     ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_B_CHANNEL);
+    g_motor_a_pwm = 0;  // 重置PWM值
+    g_motor_b_pwm = 0;  // 重置PWM值
     ESP_LOGI(TAG, "[Motor] 停止");
 }
 
@@ -588,8 +594,22 @@ static void handle_client(int client_sock)
                     int current_chunk_size = (i == total_chunks - 1) ? last_chunk_size : chunk_size;
                     int offset = i * chunk_size;
                     
-                    // 分片缓冲区: [帧号2字节][总分片数1字节][分片索引1字节][数据]
-                    uint8_t *chunk_buf = (uint8_t *)malloc(4 + current_chunk_size);
+                    // 第一分片包含电机PWM值
+                    uint8_t *chunk_buf;
+                    int header_size;
+                    
+                    if (i == 0) {
+                        // 第一分片：[帧号2B][总分片1B][索引1B][电机A 1B][电机B 1B][数据...]
+                        chunk_buf = (uint8_t *)malloc(6 + current_chunk_size);
+                        header_size = 6;
+                        chunk_buf[4] = g_motor_a_pwm;  // 电机A PWM值
+                        chunk_buf[5] = g_motor_b_pwm;  // 电机B PWM值
+                    } else {
+                        // 其他分片：[帧号2B][总分片1B][索引1B][数据...]
+                        chunk_buf = (uint8_t *)malloc(4 + current_chunk_size);
+                        header_size = 4;
+                    }
+                    
                     if (chunk_buf) {
                         // 协议头
                         chunk_buf[0] = (frame_count >> 8) & 0xFF;    // 帧号高字节
@@ -598,10 +618,10 @@ static void handle_client(int client_sock)
                         chunk_buf[3] = i;                             // 当前分片索引
                         
                         // 复制数据
-                        memcpy(chunk_buf + 4, fb->buf + offset, current_chunk_size);
+                        memcpy(chunk_buf + header_size, fb->buf + offset, current_chunk_size);
                         
                         // 发送UDP分片
-                        int sent = sendto(g_udp_sock, chunk_buf, 4 + current_chunk_size, 0,
+                        int sent = sendto(g_udp_sock, chunk_buf, header_size + current_chunk_size, 0,
                                           (struct sockaddr *)&g_udp_client_addr, 
                                           sizeof(g_udp_client_addr));
                         
