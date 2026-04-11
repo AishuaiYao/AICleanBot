@@ -90,6 +90,7 @@ static bool g_udp_client_ready = false;
 
 // 电机控制相关
 static uint8_t g_motor_base_speed = 0;  // 基础速度PWM值 (0-255)
+static bool g_motor_running = false;    // 电机运行状态
 
 // ===========================
 // Sigmoid查表优化
@@ -338,15 +339,20 @@ static void handle_client(int client_sock)
         ESP_LOGI(TAG, "[TCP] 收到命令: %s", buf);
 
         if (strncmp(buf, "START", 5) == 0) {
-            ESP_LOGI(TAG, "[Motor] 收到START命令，等待速度值");
+            g_motor_running = true;
+            ESP_LOGI(TAG, "[Motor] 收到START命令，电机已启动");
         }
         else if (strncmp(buf, "SPEED:", 6) == 0) {
+            if (!g_motor_running) {
+                ESP_LOGI(TAG, "[Motor] 电机未启动，忽略SPEED命令");
+                continue;
+            }
             int speed = atoi(buf + 6);
-            if (speed >= 1 && speed <= 10) {
-                g_motor_base_speed = speed * 25;  // 1-10映射到25-250
+            if (speed >= 1 && speed <= 20) {
+                g_motor_base_speed = speed * 255 / 100;  // 1-20映射到PWM百分比
                 motor_a_forward(g_motor_base_speed);
                 motor_b_forward(g_motor_base_speed);
-                ESP_LOGI(TAG, "[Motor] 速度设置为%d, PWM=%d", speed, g_motor_base_speed);
+                ESP_LOGI(TAG, "[Motor] 速度设置为%d%%, PWM=%d", speed, g_motor_base_speed);
             }
         }
         else if (strncmp(buf, "MOTOR_LEFT", 10) == 0) {
@@ -367,6 +373,8 @@ static void handle_client(int client_sock)
         else if (strncmp(buf, "STOP", 4) == 0) {
             motor_stop();
             g_motor_base_speed = 0;
+            g_motor_running = false;
+            ESP_LOGI(TAG, "[Motor] 收到STOP命令，电机已停止");
         }
         else if (strncmp(buf, "CAPTURE", 7) == 0) {
             int64_t t_start = esp_timer_get_time();
@@ -620,28 +628,22 @@ static void handle_client(int client_sock)
                     ESP_LOGI(TAG, "[TCP] 收到命令: %s", buf);
                     
                     if (strncmp(buf, "STOP", 4) == 0) {
-                        int64_t stream_end = esp_timer_get_time();
-                        float total_time = (stream_end - stream_start_time) / 1000.0f;
-                        float avg_fps = frame_count * 1000.0f / total_time;
-                        
                         motor_stop();
                         g_motor_base_speed = 0;
-                        
-                        ESP_LOGI(TAG, "========== STREAM 停止 ==========");
-                        ESP_LOGI(TAG, "[Stream] 收到STOP命令");
-                        ESP_LOGI(TAG, "[Stream] 总帧数: %d", frame_count);
-                        ESP_LOGI(TAG, "[Stream] 总时长: %.1fms", total_time);
-                        ESP_LOGI(TAG, "[Stream] 平均FPS: %.1f", avg_fps);
-                        ESP_LOGI(TAG, "================================");
-                        streaming = false;
+                        g_motor_running = false;
+                        ESP_LOGI(TAG, "[Motor] 收到STOP命令，电机已停止");
                     }
                     else if (strncmp(buf, "SPEED:", 6) == 0) {
+                        if (!g_motor_running) {
+                            ESP_LOGI(TAG, "[Motor] 电机未启动，忽略SPEED命令");
+                            continue;
+                        }
                         int speed = atoi(buf + 6);
-                        if (speed >= 1 && speed <= 10) {
-                            g_motor_base_speed = speed * 25;
+                        if (speed >= 1 && speed <= 20) {
+                            g_motor_base_speed = speed * 255 / 100;
                             motor_a_forward(g_motor_base_speed);
                             motor_b_forward(g_motor_base_speed);
-                            ESP_LOGI(TAG, "[Motor] 速度设置为%d, PWM=%d", speed, g_motor_base_speed);
+                            ESP_LOGI(TAG, "[Motor] 速度设置为%d%%, PWM=%d", speed, g_motor_base_speed);
                         }
                     }
                     else if (strncmp(buf, "MOTOR_LEFT", 10) == 0) {
