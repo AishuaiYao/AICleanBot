@@ -281,24 +281,24 @@ def analyze_onnx_model(onnx_path, input_shape=(1, 1, 120, 160)):
 
 if __name__ == "__main__":
     # 默认：批量重命名
-    # target_directory = r"E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA"
-    # batch_rename_files(target_directory, start_num=1, digits=5)
+    target_directory = r"E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA"
+    batch_rename_files(target_directory, start_num=1, digits=5)
     # test_gpu()
     
     # 分析ONNX模型
 
-    # 从.pth导出ONNX示例
-    import sys
-    sys.path.append(r'E:\AICleanBot\py_scripts\net')
-    from train_student import UNetMiniExp7
-    export_pth_to_onnx(
-        UNetMiniExp7,
-        r"E:\AICleanBot\py_scripts\models\20260329_161858_UNetMiniExp7\best_model.pth",
-        r"E:\AICleanBot\py_scripts\models\20260329_161858_UNetMiniExp7",
-        input_shape=(1, 1, 120, 160)
-    )
+    # # 从.pth导出ONNX示例
+    # import sys
+    # sys.path.append(r'E:\AICleanBot\py_scripts\net')
+    # from train_student import UNetMiniExp7
+    # export_pth_to_onnx(
+    #     UNetMiniExp7,
+    #     r"E:\AICleanBot\py_scripts\models\20260329_161858_UNetMiniExp7\best_model.pth",
+    #     r"E:\AICleanBot\py_scripts\models\20260329_161858_UNetMiniExp7",
+    #     input_shape=(1, 1, 120, 160)
+    # )
 
-    analyze_onnx_model(r"E:\AICleanBot\py_scripts\models\20260329_161858_UNetMiniExp7\model.onnx")
+    # analyze_onnx_model(r"E:\AICleanBot\py_scripts\models\20260329_161858_UNetMiniExp7\model.onnx")
     
 
 

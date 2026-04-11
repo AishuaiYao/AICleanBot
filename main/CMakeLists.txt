@@ -1,4 +1,6 @@
-set(srcs    app_main.cpp)
+# set(srcs    app_main.cpp)
+set(srcs    test_model.cpp)
+
 
 set(requires
     esp-dl
