@@ -365,10 +365,14 @@ static void handle_client(int client_sock)
             motor_a_forward(g_motor_base_speed / 2);
             ESP_LOGI(TAG, "[Motor] 右转: A=%d, B=%d", g_motor_base_speed / 2, g_motor_base_speed);
         }
-        else if (strncmp(buf, "MOTOR_STOP", 10) == 0) {
+        else if (strncmp(buf, "MOTOR_FORWARD", 13) == 0) {
             motor_a_forward(g_motor_base_speed);
             motor_b_forward(g_motor_base_speed);
             ESP_LOGI(TAG, "[Motor] 直行: A=%d, B=%d", g_motor_base_speed, g_motor_base_speed);
+        }
+        else if (strncmp(buf, "MOTOR_STOP", 10) == 0) {
+            motor_stop();
+            ESP_LOGI(TAG, "[Motor] 停止");
         }
         else if (strncmp(buf, "STOP", 4) == 0) {
             motor_stop();
@@ -627,7 +631,11 @@ static void handle_client(int client_sock)
                     buf[len] = '\0';
                     ESP_LOGI(TAG, "[TCP] 收到命令: %s", buf);
                     
-                    if (strncmp(buf, "STOP", 4) == 0) {
+                    if (strncmp(buf, "START", 5) == 0) {
+                        g_motor_running = true;
+                        ESP_LOGI(TAG, "[Motor] 收到START命令，电机已启动");
+                    }
+                    else if (strncmp(buf, "STOP", 4) == 0) {
                         motor_stop();
                         g_motor_base_speed = 0;
                         g_motor_running = false;
@@ -656,10 +664,14 @@ static void handle_client(int client_sock)
                         motor_a_forward(g_motor_base_speed / 2);
                         ESP_LOGI(TAG, "[Motor] 右转: A=%d, B=%d", g_motor_base_speed / 2, g_motor_base_speed);
                     }
-                    else if (strncmp(buf, "MOTOR_STOP", 10) == 0) {
+                    else if (strncmp(buf, "MOTOR_FORWARD", 13) == 0) {
                         motor_a_forward(g_motor_base_speed);
                         motor_b_forward(g_motor_base_speed);
                         ESP_LOGI(TAG, "[Motor] 直行: A=%d, B=%d", g_motor_base_speed, g_motor_base_speed);
+                    }
+                    else if (strncmp(buf, "MOTOR_STOP", 10) == 0) {
+                        motor_stop();
+                        ESP_LOGI(TAG, "[Motor] 停止");
                     }
                 }
 
