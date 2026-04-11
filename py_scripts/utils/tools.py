@@ -1,6 +1,9 @@
 """
-极简工具脚本 - 仅保留核心功能
+工具脚本集合
+功能: 提供模型导出、文件重命名、GPU测试、模型分析、标签可视化等常用工具函数
+部署位置: PC端 (Windows/Linux/Mac)
 """
+
 import os
 import re
 import glob
@@ -13,10 +16,18 @@ import onnx
 def export_onnx(model, save_dir, input_shape=(1, 1, 120, 160), model_name='model.onnx'):
     """
     导出PyTorch模型为ONNX格式
-    :param model: PyTorch模型（已加载权重）
-    :param save_dir: 保存目录
-    :param input_shape: 输入形状 (N, C, H, W)
-    :param model_name: 模型文件名
+    
+    功能:
+        将已加载权重的PyTorch模型导出为ONNX格式，用于模型部署
+    
+    入参:
+        model: torch.nn.Module - PyTorch模型（已加载权重）
+        save_dir: str - 保存目录路径
+        input_shape: tuple - 输入形状 (N, C, H, W)，默认 (1, 1, 120, 160)
+        model_name: str - 模型文件名，默认 'model.onnx'
+    
+    出参:
+        str - ONNX模型文件的完整路径
     """
     model_cpu = model.cpu().eval()
     onnx_path = os.path.join(save_dir, model_name)
@@ -41,12 +52,20 @@ def export_onnx(model, save_dir, input_shape=(1, 1, 120, 160), model_name='model
 
 def export_pth_to_onnx(model_class, pth_path, save_dir, input_shape=(1, 1, 120, 160), model_name='model.onnx'):
     """
-    从.pth权重文件导出ONNX模型（独立于训练流程）
-    :param model_class: 模型类（如UNetMiniExp2）
-    :param pth_path: .pth权重文件路径
-    :param save_dir: 保存目录
-    :param input_shape: 输入形状 (N, C, H, W)
-    :param model_name: 模型文件名
+    从.pth权重文件导出ONNX模型
+    
+    功能:
+        从.pth权重文件加载模型并导出为ONNX格式（独立于训练流程）
+    
+    入参:
+        model_class: type - 模型类（如UNetMiniExp2）
+        pth_path: str - .pth权重文件路径
+        save_dir: str - 保存目录路径
+        input_shape: tuple - 输入形状 (N, C, H, W)，默认 (1, 1, 120, 160)
+        model_name: str - 模型文件名，默认 'model.onnx'
+    
+    出参:
+        str - ONNX模型文件的完整路径
     """
     # 实例化模型
     model = model_class()
@@ -60,10 +79,18 @@ def export_pth_to_onnx(model_class, pth_path, save_dir, input_shape=(1, 1, 120, 
 
 def batch_rename_files(directory, start_num=1, digits=5):
     """
-    极简版批量重命名：把目录下的png文件改成 000xx.png 格式
-    :param directory: 目标文件夹路径
-    :param start_num: 起始编号
-    :param digits: 编号位数（比如5位就是00001）
+    批量重命名PNG文件为数字编号格式
+    
+    功能:
+        将目录下所有PNG文件按自然排序后重命名为数字编号格式（如 00001.png）
+    
+    入参:
+        directory: str - 目标文件夹路径
+        start_num: int - 起始编号，默认 1
+        digits: int - 编号位数（如5位表示00001），默认 5
+    
+    出参:
+        None
     """
     # 1. 获取所有png文件并自然排序
     png_files = glob.glob(os.path.join(directory, "*.png"))
@@ -87,20 +114,30 @@ def test_gpu():
     """
     测试GPU可用性
     
-    === GPU测试报告 ===
-    CUDA可用: True
-    GPU数量: 1
+    功能:
+        检测CUDA环境并打印GPU信息，执行简单计算测试验证GPU是否正常工作
+    
+    入参:
+        None
+    
+    出参:
+        None (打印GPU测试报告到控制台)
+    
+    输出示例:
+        === GPU测试报告 ===
+        CUDA可用: True
+        GPU数量: 1
 
-    --- GPU 0 ---
-    型号: NVIDIA GeForce GTX 1650
-    显存总量: 4.00 GB
-    计算能力: 7.5
+        --- GPU 0 ---
+        型号: NVIDIA GeForce GTX 1650
+        显存总量: 4.00 GB
+        计算能力: 7.5
 
-    CUDA版本: 12.1
-    PyTorch版本: 2.5.0+cu121
+        CUDA版本: 12.1
+        PyTorch版本: 2.5.0+cu121
 
-    正在执行GPU计算测试...
-    ✓ 测试通过！GPU工作正常
+        正在执行GPU计算测试...
+        ✓ 测试通过！GPU工作正常
     """
     print("\n=== GPU测试报告 ===")
     
@@ -147,8 +184,31 @@ def test_gpu():
 def analyze_onnx_model(onnx_path, input_shape=(1, 1, 120, 160)):
     """
     分析ONNX模型的参数量和计算量
-    :param onnx_path: ONNX模型路径
-    :param input_shape: 输入形状 (N, C, H, W)
+    
+    功能:
+        解析ONNX模型结构，统计参数量、计算量（FLOPs）和网络层类型
+    
+    入参:
+        onnx_path: str - ONNX模型文件路径
+        input_shape: tuple - 输入形状 (N, C, H, W)，默认 (1, 1, 120, 160)
+    
+    出参:
+        tuple - (params, flops)
+            params: int - 参数总数
+            flops: float - 计算量（FLOPs）
+    
+    输出示例:
+        ==================================================
+        ONNX模型分析: model.onnx
+        ==================================================
+        参数量: 1,234,567 (1.23M)
+        计算量: 0.45 GFLOPs
+        ==================================================
+        网络层结构 (共42层):
+          Conv: 10
+          BatchNormalization: 8
+          Relu: 8
+        ==================================================
     """
     model = onnx.load(onnx_path)
     graph = model.graph
@@ -277,6 +337,74 @@ def analyze_onnx_model(onnx_path, input_shape=(1, 1, 120, 160)):
     print(f"{'='*50}")
     
     return params, flops
+
+
+def visualize_labels(image_dir, label_dir=None, output_dir=None):
+    """
+    可视化标签图像
+    
+    功能:
+        将原图与标签图叠加显示，用于验证标注质量
+        标签区域以紫色半透明覆盖显示
+    
+    入参:
+        image_dir: str - 原图目录路径
+        label_dir: str - 标签图目录路径，默认为 image_dir + '_label'
+        output_dir: str - 输出目录路径，默认为 image_dir + '_visual'
+    
+    出参:
+        None (结果保存到 output_dir)
+    
+    输出示例:
+        总图片数：100
+        总label数：100
+        共有的图片数：100
+        --------------------------------------------------
+        [1/100] 00001.png
+        [2/100] 00002.png
+        ...
+        完成，保存在：output_dir
+    """
+    if label_dir is None:
+        label_dir = image_dir + '_label'
+    if output_dir is None:
+        output_dir = image_dir + '_visual'
+    
+    os.makedirs(output_dir, exist_ok=True)
+    
+    img_paths = glob.glob(os.path.join(image_dir, '*.[jp][pn]g')) + glob.glob(os.path.join(image_dir, '*.bmp'))
+    img_names = [os.path.basename(p) for p in img_paths]
+    
+    label_paths = glob.glob(os.path.join(label_dir, '*.[jp][pn]g')) + glob.glob(os.path.join(label_dir, '*.bmp'))
+    label_names = [os.path.basename(p) for p in label_paths]
+    
+    common_names = sorted(set(img_names) & set(label_names))
+    total = len(common_names)
+    
+    print(f"总图片数：{len(img_names)}")
+    print(f"总label数：{len(label_names)}")
+    print(f"共有的图片数：{total}")
+    print("-" * 50)
+    
+    for idx, img_name in enumerate(common_names):
+        img_path = os.path.join(image_dir, img_name)
+        label_path = os.path.join(label_dir, img_name)
+        output_path = os.path.join(output_dir, img_name)
+        
+        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        label = cv2.imread(label_path, cv2.IMREAD_GRAYSCALE)
+        
+        img_bgr = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        
+        mask = (label > 0)
+        alpha = 0.1
+        result = img_bgr.copy()
+        result[mask] = (img_bgr[mask].astype(float) * (1 - alpha) + np.array([128, 0, 128]) * alpha).astype(np.uint8)
+        
+        cv2.imwrite(output_path, result)
+        print(f"[{idx + 1}/{total}] {img_name}")
+    
+    print(f"完成，保存在：{output_dir}")
 
 
 if __name__ == "__main__":
