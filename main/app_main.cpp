@@ -379,11 +379,6 @@ static void handle_client(int client_sock)
             motor_b_forward(g_motor_base_speed);
             ESP_LOGI(TAG, "[Motor] 直行: A=%d, B=%d", g_motor_base_speed, g_motor_base_speed);
         }
-        else if (strncmp(buf, "MOTOR_STOP", 10) == 0) {
-            motor_stop();
-            g_motor_running = false;
-            ESP_LOGI(TAG, "[Motor] 停止");
-        }
         else if (strncmp(buf, "STOP", 4) == 0) {
             motor_stop();
             g_motor_base_speed = 0;
@@ -687,11 +682,6 @@ static void handle_client(int client_sock)
                         motor_a_forward(g_motor_base_speed);
                         motor_b_forward(g_motor_base_speed);
                         ESP_LOGI(TAG, "[Motor] 直行: A=%d, B=%d", g_motor_base_speed, g_motor_base_speed);
-                    }
-                    else if (strncmp(buf, "MOTOR_STOP", 10) == 0) {
-                        motor_stop();
-                        g_motor_running = false;
-                        ESP_LOGI(TAG, "[Motor] 停止");
                     }
                 }
 
