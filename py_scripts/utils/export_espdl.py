@@ -1,9 +1,20 @@
 import os
 import sys
+import random
+import numpy as np
 from datetime import datetime
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 from esp_ppq.api import espdl_quantize_onnx
+
+# 固定随机种子，确保可复现
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+torch.cuda.manual_seed_all(SEED)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 
 class Tee:
