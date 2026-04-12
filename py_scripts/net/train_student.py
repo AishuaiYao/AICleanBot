@@ -633,7 +633,7 @@ class TrainingPlotter:
         self.train_acc, self.val_acc = [], []
         
         plt.ion()
-        self.fig, self.axes = plt.subplots(1, 3, figsize=(15, 4))
+        self.fig, self.axes = plt.subplots(3, 1, figsize=(8, 12))
         self.fig.suptitle('Training Progress', fontsize=12)
         
     def update(self, epoch, train_loss, val_loss, train_iou, val_iou, train_acc, val_acc):
@@ -685,42 +685,37 @@ class TrainingPlotter:
         fig_dir = os.path.join(os.path.dirname(self.save_dir), '..', 'figure', os.path.basename(self.save_dir))
         os.makedirs(fig_dir, exist_ok=True)
         
-        # 保存Loss曲线
-        fig_loss, ax_loss = plt.subplots(figsize=(8, 5))
-        ax_loss.plot(self.epochs, self.train_loss, 'b-', label='Train', linewidth=2)
-        ax_loss.plot(self.epochs, self.val_loss, 'r-', label='Val', linewidth=2)
-        ax_loss.set_xlabel('Epoch', fontsize=11)
-        ax_loss.set_ylabel('Loss', fontsize=11)
-        ax_loss.set_title('Loss Curve', fontsize=12)
-        ax_loss.legend(fontsize=10)
-        ax_loss.grid(True, alpha=0.3)
-        fig_loss.savefig(os.path.join(fig_dir, 'loss_curve.png'), dpi=150, bbox_inches='tight')
-        plt.close(fig_loss)
+        # 保存三合一竖排图像
+        fig, axes = plt.subplots(3, 1, figsize=(8, 12))
         
-        # 保存IoU曲线
-        fig_iou, ax_iou = plt.subplots(figsize=(8, 5))
-        ax_iou.plot(self.epochs, self.train_iou, 'b-', label='Train', linewidth=2)
-        ax_iou.plot(self.epochs, self.val_iou, 'r-', label='Val', linewidth=2)
-        ax_iou.set_xlabel('Epoch', fontsize=11)
-        ax_iou.set_ylabel('IoU', fontsize=11)
-        ax_iou.set_title('IoU Curve', fontsize=12)
-        ax_iou.legend(fontsize=10)
-        ax_iou.grid(True, alpha=0.3)
-        fig_iou.savefig(os.path.join(fig_dir, 'iou_curve.png'), dpi=150, bbox_inches='tight')
-        plt.close(fig_iou)
+        # Loss曲线
+        axes[0].plot(self.epochs, self.train_loss, 'b-', label='Train', linewidth=2)
+        axes[0].plot(self.epochs, self.val_loss, 'r-', label='Val', linewidth=2)
+        axes[0].set_ylabel('Loss', fontsize=11)
+        axes[0].set_title('Loss Curve', fontsize=12)
+        axes[0].legend(fontsize=10)
+        axes[0].grid(True, alpha=0.3)
         
-        # 保存Acc曲线
-        fig_acc, ax_acc = plt.subplots(figsize=(8, 5))
-        ax_acc.plot(self.epochs, self.train_acc, 'b-', label='Train', linewidth=2)
-        ax_acc.plot(self.epochs, self.val_acc, 'r-', label='Val', linewidth=2)
-        ax_acc.set_xlabel('Epoch', fontsize=11)
-        ax_acc.set_ylabel('Accuracy', fontsize=11)
-        ax_acc.set_title('Accuracy Curve', fontsize=12)
-        ax_acc.legend(fontsize=10)
-        ax_acc.grid(True, alpha=0.3)
-        fig_acc.savefig(os.path.join(fig_dir, 'acc_curve.png'), dpi=150, bbox_inches='tight')
-        plt.close(fig_acc)
+        # IoU曲线
+        axes[1].plot(self.epochs, self.train_iou, 'b-', label='Train', linewidth=2)
+        axes[1].plot(self.epochs, self.val_iou, 'r-', label='Val', linewidth=2)
+        axes[1].set_ylabel('IoU', fontsize=11)
+        axes[1].set_title('IoU Curve', fontsize=12)
+        axes[1].legend(fontsize=10)
+        axes[1].grid(True, alpha=0.3)
         
+        # Acc曲线
+        axes[2].plot(self.epochs, self.train_acc, 'b-', label='Train', linewidth=2)
+        axes[2].plot(self.epochs, self.val_acc, 'r-', label='Val', linewidth=2)
+        axes[2].set_xlabel('Epoch', fontsize=11)
+        axes[2].set_ylabel('Accuracy', fontsize=11)
+        axes[2].set_title('Accuracy Curve', fontsize=12)
+        axes[2].legend(fontsize=10)
+        axes[2].grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        fig.savefig(os.path.join(fig_dir, 'training_curves.png'), dpi=150, bbox_inches='tight')
+        plt.close(fig)
         plt.close(self.fig)
         return fig_dir
 
