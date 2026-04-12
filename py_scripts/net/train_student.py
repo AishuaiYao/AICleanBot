@@ -763,7 +763,7 @@ def train():
     model_path = os.path.join(save_dir, 'best_model.pth')
     
     # 创建日志文件
-    log_dir = r'E:\AICleanBot\logs'
+    log_dir = r'E:\AICleanBot\logs\train'
     os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(log_dir, f'{timestamp}_{model_name}.txt')
     tee = Tee(log_path)
