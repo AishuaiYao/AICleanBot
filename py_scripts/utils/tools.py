@@ -102,8 +102,9 @@ def batch_rename_files(directory, start_num=1, digits=5):
     sorted_files = sorted(file_names, key=natural_sort)
     
     # 2. 批量重命名
-    for idx, old_name in enumerate(sorted_files, start_num):
-        new_name = f"{idx:0{digits}d}.png"  # 生成新名字
+    start_num = 540
+    for idx, old_name in enumerate(sorted_files):
+        new_name = f"{start_num + idx:0{digits}d}.png"  # 生成新名字
         old_path = os.path.join(directory, old_name)
         new_path = os.path.join(directory, new_name)
         os.rename(old_path, new_path)
@@ -411,10 +412,16 @@ if __name__ == "__main__":
     # 默认：批量重命名
     target_directory = r"E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA"
     batch_rename_files(target_directory, start_num=1, digits=5)
+
+    # 可视化标签
+    # images = r'E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA'
+    # labels = r'E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA_label'
+    # visualize_labels(images, labels)
+
+    # 测试gpu
     # test_gpu()
     
     # 分析ONNX模型
-
     # # 从.pth导出ONNX示例
     # import sys
     # sys.path.append(r'E:\AICleanBot\py_scripts\net')
@@ -426,8 +433,10 @@ if __name__ == "__main__":
     #     input_shape=(1, 1, 120, 160)
     # )
 
+    # 分析ONNX模型示例
     # analyze_onnx_model(r"E:\AICleanBot\py_scripts\models\20260329_161858_UNetMiniExp7\model.onnx")
     
+
 
 
 

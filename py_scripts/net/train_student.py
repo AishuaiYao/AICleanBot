@@ -9,6 +9,7 @@ import torch.optim as optim
 from tqdm import tqdm
 from datetime import datetime
 import random
+import matplotlib.pyplot as plt
 
 
 # ==================== 自定义U-Net模型 ====================
@@ -621,6 +622,108 @@ def save_visualization(img_tensor, pred_tensor, save_path):
     
     cv2.imwrite(save_path, result)
 
+
+# ==================== 实时绘图类 ====================
+class TrainingPlotter:
+    def __init__(self, save_dir):
+        self.save_dir = save_dir
+        self.epochs = []
+        self.train_loss, self.val_loss = [], []
+        self.train_iou, self.val_iou = [], []
+        self.train_acc, self.val_acc = [], []
+        
+        plt.ion()
+        self.fig, self.axes = plt.subplots(1, 3, figsize=(15, 4))
+        self.fig.suptitle('Training Progress', fontsize=12)
+        
+    def update(self, epoch, train_loss, val_loss, train_iou, val_iou, train_acc, val_acc):
+        self.epochs.append(epoch + 1)
+        self.train_loss.append(train_loss)
+        self.val_loss.append(val_loss)
+        self.train_iou.append(train_iou)
+        self.val_iou.append(val_iou)
+        self.train_acc.append(train_acc)
+        self.val_acc.append(val_acc)
+        
+        # 清空并重绘
+        for ax in self.axes:
+            ax.clear()
+        
+        # Loss曲线
+        self.axes[0].plot(self.epochs, self.train_loss, 'b-', label='Train', linewidth=2)
+        self.axes[0].plot(self.epochs, self.val_loss, 'r-', label='Val', linewidth=2)
+        self.axes[0].set_xlabel('Epoch')
+        self.axes[0].set_ylabel('Loss')
+        self.axes[0].set_title('Loss Curve')
+        self.axes[0].legend()
+        self.axes[0].grid(True, alpha=0.3)
+        
+        # IoU曲线
+        self.axes[1].plot(self.epochs, self.train_iou, 'b-', label='Train', linewidth=2)
+        self.axes[1].plot(self.epochs, self.val_iou, 'r-', label='Val', linewidth=2)
+        self.axes[1].set_xlabel('Epoch')
+        self.axes[1].set_ylabel('IoU')
+        self.axes[1].set_title('IoU Curve')
+        self.axes[1].legend()
+        self.axes[1].grid(True, alpha=0.3)
+        
+        # Acc曲线
+        self.axes[2].plot(self.epochs, self.train_acc, 'b-', label='Train', linewidth=2)
+        self.axes[2].plot(self.epochs, self.val_acc, 'r-', label='Val', linewidth=2)
+        self.axes[2].set_xlabel('Epoch')
+        self.axes[2].set_ylabel('Accuracy')
+        self.axes[2].set_title('Accuracy Curve')
+        self.axes[2].legend()
+        self.axes[2].grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        plt.draw()
+        plt.pause(0.1)
+    
+    def save(self):
+        plt.ioff()
+        fig_dir = os.path.join(os.path.dirname(self.save_dir), '..', 'figure', os.path.basename(self.save_dir))
+        os.makedirs(fig_dir, exist_ok=True)
+        
+        # 保存Loss曲线
+        fig_loss, ax_loss = plt.subplots(figsize=(8, 5))
+        ax_loss.plot(self.epochs, self.train_loss, 'b-', label='Train', linewidth=2)
+        ax_loss.plot(self.epochs, self.val_loss, 'r-', label='Val', linewidth=2)
+        ax_loss.set_xlabel('Epoch', fontsize=11)
+        ax_loss.set_ylabel('Loss', fontsize=11)
+        ax_loss.set_title('Loss Curve', fontsize=12)
+        ax_loss.legend(fontsize=10)
+        ax_loss.grid(True, alpha=0.3)
+        fig_loss.savefig(os.path.join(fig_dir, 'loss_curve.png'), dpi=150, bbox_inches='tight')
+        plt.close(fig_loss)
+        
+        # 保存IoU曲线
+        fig_iou, ax_iou = plt.subplots(figsize=(8, 5))
+        ax_iou.plot(self.epochs, self.train_iou, 'b-', label='Train', linewidth=2)
+        ax_iou.plot(self.epochs, self.val_iou, 'r-', label='Val', linewidth=2)
+        ax_iou.set_xlabel('Epoch', fontsize=11)
+        ax_iou.set_ylabel('IoU', fontsize=11)
+        ax_iou.set_title('IoU Curve', fontsize=12)
+        ax_iou.legend(fontsize=10)
+        ax_iou.grid(True, alpha=0.3)
+        fig_iou.savefig(os.path.join(fig_dir, 'iou_curve.png'), dpi=150, bbox_inches='tight')
+        plt.close(fig_iou)
+        
+        # 保存Acc曲线
+        fig_acc, ax_acc = plt.subplots(figsize=(8, 5))
+        ax_acc.plot(self.epochs, self.train_acc, 'b-', label='Train', linewidth=2)
+        ax_acc.plot(self.epochs, self.val_acc, 'r-', label='Val', linewidth=2)
+        ax_acc.set_xlabel('Epoch', fontsize=11)
+        ax_acc.set_ylabel('Accuracy', fontsize=11)
+        ax_acc.set_title('Accuracy Curve', fontsize=12)
+        ax_acc.legend(fontsize=10)
+        ax_acc.grid(True, alpha=0.3)
+        fig_acc.savefig(os.path.join(fig_dir, 'acc_curve.png'), dpi=150, bbox_inches='tight')
+        plt.close(fig_acc)
+        
+        plt.close(self.fig)
+        return fig_dir
+
 # ==================== 训练 ====================
 def train():
     # 固定随机种子
@@ -636,7 +739,7 @@ def train():
     os.makedirs(PRED_DIR, exist_ok=True)
     
     # 模型名称
-    model_name = 'UNetMiniExp7'
+    model_name = 'UNetMiniExp5'
     
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     save_dir = os.path.join(MODEL_DIR, f'{timestamp}_{model_name}')
@@ -665,13 +768,14 @@ def train():
     val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=0)
     
     # 使用自定义模型
-    model = UNetMiniExp7().to(DEVICE)
+    model = UNetMiniExp5().to(DEVICE)
     
     criterion = CombinedLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     
     best_val_loss = float('inf')
     no_improve_count = 0
+    plotter = TrainingPlotter(save_dir)
     
     print(f"Device: {DEVICE}")
     print(f"Total samples: {len(common_names)}")
@@ -738,6 +842,9 @@ def train():
         print(f"  Train - Loss: {train_loss:.4f}, IoU: {train_iou:.4f}, Acc: {train_acc:.4f}")
         print(f"  Val   - Loss: {val_loss:.4f}, IoU: {val_iou:.4f}, Acc: {val_acc:.4f}")
         
+        # ========== Update Plot ==========
+        plotter.update(epoch, train_loss, val_loss, train_iou, val_iou, train_acc, val_acc)
+        
         # ========== Save Best Model & Early Stopping ==========
         if val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -752,9 +859,11 @@ def train():
         
         print("-" * 60)
     
+    fig_dir = plotter.save()
     print(f"Training completed! Best val loss: {best_val_loss:.4f}")
     print(f"模型已保存：{model_path}")
-    print(f"如需导出ONNX，请使用：tools.export_pth_to_onnx(UNetMiniExp7, model_path, save_dir)")
+    print(f"训练曲线已保存：{fig_dir}")
+    print(f"如需导出ONNX，请使用：tools.export_pth_to_onnx({model_name}, model_path, save_dir)")
 
 
 if __name__ == '__main__':

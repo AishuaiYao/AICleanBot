@@ -1,13 +1,13 @@
 这是我的项目代码，请你仔细阅读然后和我讨论问题或者是完成需求。
 我依赖esp-idf环境（目录是E:\aishuai\Espressif\frameworks\esp-idf-v5.3.1），并且使用esp-dl（目录是E:/aishuai/esp-dl/esp-dl）组件进行深度学习模型部署。
 我的工作流程是
-1 使用E:\AICleanBot\py_scripts\net\train_student.py训练UNetMiniExp4模型
+1 使用E:\AICleanBot\py_scripts\net\train_student.py训练模型
 2 使用E:\AICleanBot\py_scripts\utils\tools.py的export_pth_to_onnx转换为onnx模型
 3 使用E:\AICleanBot\py_scripts\net\quantize_onnx_model.py转换为esp32s3支持的espdl模型
 4 将模型放到E:\AICleanBot\main\models
-5 编写E:\AICleanBot\main\app_main.cpp调用模型进行推理
+5 编写E:\AICleanBot\main\inference_test.cpp调用模型进行推理
 6 编辑sdkconfig dependencies.lock.esp32s3 E:\AICleanBot\CMakeLists.txt E:\AICleanBot\main\CMakeLists.txt E:\AICleanBot\main\idf_component.yml进行配置
-7 build 烧录 
+7 build 烧录到esp32s3实验
 要求：
 · 在实施优化代码之前请先跟我理清我的需求并告诉我你的方案，只有征得我的同意之后才去执行代码优化。
 · 你和我的交流要简洁准确不啰嗦。
@@ -18,5 +18,6 @@
 · 如果某些组件在我们的C++代码里不需要，请在CMakeLists.txt里删除相关的组件。
 · 你只能修改E:\AICleanBot目录中的文件，idf的组件源码不允许修改。
 需求/问题：
-我现在的实验模型是UNetMiniExp4，然后最新的日志文件是E:\AICleanBot\logs\UNetMiniExp4_sigmoid_LTO_2core.txt。
-请你仔细阅读我的项目代码和所有相关的编译配置，帮我分析日志里记录的网络结构的各部分耗时哪里还可以优化。
+    请你在E:\AICleanBot\py_scripts\net\train_student.py添加新功能，在训练的时候实时通过窗口绘制loss和iuo和acc的三个曲线，
+    训练完毕后在E:\AICleanBot\py_scripts\figure目录下新建对应模型的目录，将三个图像保存到对应的目录下。
+    
