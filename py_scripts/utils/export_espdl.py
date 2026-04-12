@@ -1,6 +1,8 @@
 import os
 import sys
+import glob
 import random
+import cv2
 import numpy as np
 from datetime import datetime
 import torch
@@ -45,6 +47,7 @@ if __name__ == "__main__":
     NUM_OF_BITS = 8  # 量化位数
     DEVICE = "cpu"  # 'cuda' or 'cpu', if you use cuda, please make sure that cuda is available
     NUM_CALIB_SAMPLES = 32  # 校准样本数量
+    IMAGE_DIR = r"E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA"  # 校准图像目录
     
     # 设置日志保存
     LOG_DIR = r"E:\AICleanBot\logs\quantize"
@@ -56,10 +59,20 @@ if __name__ == "__main__":
     original_stdout = sys.stdout
     sys.stdout = Tee(original_stdout, log_file)
     
-    # 生成校准数据（随机灰度图像）
-    print(f"生成 {NUM_CALIB_SAMPLES} 个校准样本...")
-    x = torch.rand(NUM_CALIB_SAMPLES, 1, 120, 160, dtype=torch.float32)
-    y = torch.zeros(NUM_CALIB_SAMPLES, 1, 120, 160, dtype=torch.float32)  # dummy labels
+    # 从真实数据集加载校准数据
+    print(f"从 {IMAGE_DIR} 加载 {NUM_CALIB_SAMPLES} 个校准样本...")
+    img_files = glob.glob(os.path.join(IMAGE_DIR, '*.[jp][pn]g')) + glob.glob(os.path.join(IMAGE_DIR, '*.bmp'))
+    img_files = sorted(img_files)[:NUM_CALIB_SAMPLES]
+    
+    images = []
+    for img_path in img_files:
+        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        img = img.astype(np.float32) / 255.0  # 归一化到 [0, 1]
+        img = torch.from_numpy(img).unsqueeze(0)  # [1, H, W]
+        images.append(img)
+    
+    x = torch.stack(images)
+    y = torch.zeros_like(x)  # dummy labels
     
     # dataloader shuffle必须设置为False。
     # 因为计算量化误差的时候会多次遍历数据集，如果shuffle是True的话，会得到错误的量化误差。
