@@ -18,6 +18,5 @@
 · 如果某些组件在我们的C++代码里不需要，请在CMakeLists.txt里删除相关的组件。
 · 你只能修改E:\AICleanBot目录中的文件，idf的组件源码不允许修改。
 需求/问题：
-    请你在E:\AICleanBot\py_scripts\net\train_student.py添加新功能，在训练的时候实时通过窗口绘制loss和iuo和acc的三个曲线，
-    训练完毕后在E:\AICleanBot\py_scripts\figure目录下新建对应模型的目录，将三个图像保存到对应的目录下。
+    请问我的inference_test.cpp里面做模型推理的时候，有没有对齐train_student.py里面的数据预处理逻辑
     

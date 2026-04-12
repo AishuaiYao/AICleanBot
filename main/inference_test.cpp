@@ -17,6 +17,7 @@
 #include "lwip/sockets.h"
 #include "esp_timer.h"
 #include "dl_model_base.hpp"
+#include "dl_tool.hpp"
 
 static const char *TAG = "TEST_MODEL";
 
@@ -151,12 +152,17 @@ static void handle_client(int client_sock)
             // 模型推理
             int64_t t_start = esp_timer_get_time();
 
-            // 获取模型输入tensor
+            // 获取模型输入tensor和量化参数
             dl::TensorBase *input_tensor = g_model->get_input("input");
-            uint8_t *model_input = (uint8_t *)input_tensor->data;
+            int8_t *model_input = (int8_t *)input_tensor->data;
+            int exponent = input_tensor->get_exponent();
+            float inv_scale = DL_RESCALE(exponent);
             
-            // 复制图像到模型输入
-            memcpy(model_input, image_buf, INPUT_WIDTH * INPUT_HEIGHT);
+            // 归一化并量化: uint8 [0,255] -> float [0.0,1.0] -> int8
+            for (int i = 0; i < INPUT_WIDTH * INPUT_HEIGHT; i++) {
+                float normalized = image_buf[i] / 255.0f;
+                model_input[i] = (int8_t)DL_CLIP(dl::tool::round(normalized * inv_scale), -128, 127);
+            }
 
             // 执行推理
             g_model->run();
