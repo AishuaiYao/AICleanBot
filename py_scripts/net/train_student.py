@@ -10,6 +10,8 @@ from tqdm import tqdm
 from datetime import datetime
 import random
 import matplotlib.pyplot as plt
+import time
+import sys
 
 
 # ==================== 自定义U-Net模型 ====================
@@ -609,6 +611,25 @@ def calc_pixel_acc(pred, target, threshold=0.5):
     return (correct / total).item()
 
 
+# ==================== 日志输出重定向 ====================
+class Tee:
+    def __init__(self, log_path):
+        self.terminal = sys.stdout
+        self.log = open(log_path, 'w', encoding='utf-8')
+    
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+        self.log.flush()
+    
+    def flush(self):
+        self.terminal.flush()
+        self.log.flush()
+    
+    def close(self):
+        self.log.close()
+
+
 # ==================== 可视化保存 ====================
 def save_visualization(img_tensor, pred_tensor, save_path):
     img = (img_tensor.squeeze().cpu().numpy() * 255).astype(np.uint8)
@@ -741,6 +762,15 @@ def train():
     os.makedirs(save_dir, exist_ok=True)
     model_path = os.path.join(save_dir, 'best_model.pth')
     
+    # 创建日志文件
+    log_dir = r'E:\AICleanBot\logs'
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, f'{timestamp}_{model_name}.txt')
+    tee = Tee(log_path)
+    sys.stdout = tee
+    
+    start_time = time.time()
+    
     # 获取文件名
     img_files = set(glob.glob(os.path.join(IMAGE_DIR, '*.[jp][pn]g')) + glob.glob(os.path.join(IMAGE_DIR, '*.bmp')))
     label_files = set(glob.glob(os.path.join(LABEL_DIR, '*.[jp][pn]g')) + glob.glob(os.path.join(LABEL_DIR, '*.bmp')))
@@ -855,10 +885,18 @@ def train():
         print("-" * 60)
     
     fig_dir = plotter.save()
+    total_time = time.time() - start_time
+    hours, remainder = divmod(total_time, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    
     print(f"Training completed! Best val loss: {best_val_loss:.4f}")
     print(f"模型已保存：{model_path}")
     print(f"训练曲线已保存：{fig_dir}")
+    print(f"训练总耗时：{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}")
     print(f"如需导出ONNX，请使用：tools.export_pth_to_onnx({model_name}, model_path, save_dir)")
+    
+    sys.stdout = tee.terminal
+    tee.close()
 
 
 if __name__ == '__main__':

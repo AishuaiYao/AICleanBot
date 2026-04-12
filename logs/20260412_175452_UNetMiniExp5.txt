@@ -1,0 +1,200 @@
+Device: cuda
+Total samples: 262
+Train samples: 209 (Augmentation: ON)
+Val samples:   53   (Augmentation: OFF)
+训练模式: 早停模式 (patience=10, max_epochs=1000)
+============================================================
+Epoch 1/1000
+  Train - Loss: 1.0770, IoU: 0.0818, Acc: 0.0870
+  Val   - Loss: 0.9361, IoU: 0.0898, Acc: 0.0898
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 2/1000
+  Train - Loss: 1.0445, IoU: 0.0819, Acc: 0.0885
+  Val   - Loss: 0.9450, IoU: 0.0898, Acc: 0.0899
+------------------------------------------------------------
+Epoch 3/1000
+  Train - Loss: 1.0149, IoU: 0.0822, Acc: 0.0896
+  Val   - Loss: 0.9210, IoU: 0.0898, Acc: 0.0900
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 4/1000
+  Train - Loss: 0.9879, IoU: 0.0822, Acc: 0.0909
+  Val   - Loss: 0.8937, IoU: 0.0898, Acc: 0.0899
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 5/1000
+  Train - Loss: 0.9572, IoU: 0.0833, Acc: 0.0926
+  Val   - Loss: 0.8767, IoU: 0.0898, Acc: 0.0899
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 6/1000
+  Train - Loss: 0.9349, IoU: 0.0814, Acc: 0.0914
+  Val   - Loss: 0.8641, IoU: 0.0898, Acc: 0.0898
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 7/1000
+  Train - Loss: 0.9157, IoU: 0.0815, Acc: 0.0932
+  Val   - Loss: 0.8537, IoU: 0.0898, Acc: 0.0899
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 8/1000
+  Train - Loss: 0.8960, IoU: 0.0815, Acc: 0.0958
+  Val   - Loss: 0.8401, IoU: 0.0898, Acc: 0.0898
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 9/1000
+  Train - Loss: 0.8747, IoU: 0.0814, Acc: 0.0997
+  Val   - Loss: 0.8315, IoU: 0.0897, Acc: 0.0899
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 10/1000
+  Train - Loss: 0.8531, IoU: 0.0802, Acc: 0.1041
+  Val   - Loss: 0.8222, IoU: 0.0897, Acc: 0.0900
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 11/1000
+  Train - Loss: 0.8379, IoU: 0.0804, Acc: 0.1133
+  Val   - Loss: 0.8100, IoU: 0.0897, Acc: 0.0901
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 12/1000
+  Train - Loss: 0.8218, IoU: 0.0795, Acc: 0.1227
+  Val   - Loss: 0.8093, IoU: 0.0894, Acc: 0.0923
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 13/1000
+  Train - Loss: 0.8110, IoU: 0.0790, Acc: 0.1395
+  Val   - Loss: 0.7984, IoU: 0.0896, Acc: 0.0918
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 14/1000
+  Train - Loss: 0.7980, IoU: 0.0793, Acc: 0.1542
+  Val   - Loss: 0.7870, IoU: 0.0893, Acc: 0.1009
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 15/1000
+  Train - Loss: 0.7901, IoU: 0.0796, Acc: 0.1738
+  Val   - Loss: 0.7815, IoU: 0.0893, Acc: 0.1035
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 16/1000
+  Train - Loss: 0.7822, IoU: 0.0789, Acc: 0.1906
+  Val   - Loss: 0.7781, IoU: 0.0893, Acc: 0.1041
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 17/1000
+  Train - Loss: 0.7742, IoU: 0.0783, Acc: 0.2056
+  Val   - Loss: 0.7727, IoU: 0.0894, Acc: 0.1019
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 18/1000
+  Train - Loss: 0.7667, IoU: 0.0779, Acc: 0.2212
+  Val   - Loss: 0.7684, IoU: 0.0890, Acc: 0.1119
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 19/1000
+  Train - Loss: 0.7552, IoU: 0.0796, Acc: 0.2390
+  Val   - Loss: 0.7681, IoU: 0.0887, Acc: 0.1085
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 20/1000
+  Train - Loss: 0.7530, IoU: 0.0759, Acc: 0.2457
+  Val   - Loss: 0.7632, IoU: 0.0885, Acc: 0.1166
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 21/1000
+  Train - Loss: 0.7485, IoU: 0.0764, Acc: 0.2598
+  Val   - Loss: 0.7625, IoU: 0.0889, Acc: 0.1146
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 22/1000
+  Train - Loss: 0.7394, IoU: 0.0773, Acc: 0.2712
+  Val   - Loss: 0.7604, IoU: 0.0883, Acc: 0.1167
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 23/1000
+  Train - Loss: 0.7370, IoU: 0.0780, Acc: 0.2851
+  Val   - Loss: 0.7605, IoU: 0.0890, Acc: 0.1174
+------------------------------------------------------------
+Epoch 24/1000
+  Train - Loss: 0.7305, IoU: 0.0780, Acc: 0.3031
+  Val   - Loss: 0.7575, IoU: 0.0882, Acc: 0.1198
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 25/1000
+  Train - Loss: 0.7282, IoU: 0.0760, Acc: 0.3070
+  Val   - Loss: 0.7550, IoU: 0.0870, Acc: 0.1306
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 26/1000
+  Train - Loss: 0.7186, IoU: 0.0769, Acc: 0.3273
+  Val   - Loss: 0.7511, IoU: 0.0865, Acc: 0.1411
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 27/1000
+  Train - Loss: 0.7139, IoU: 0.0776, Acc: 0.3402
+  Val   - Loss: 0.7483, IoU: 0.0869, Acc: 0.1494
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 28/1000
+  Train - Loss: 0.7079, IoU: 0.0780, Acc: 0.3572
+  Val   - Loss: 0.7460, IoU: 0.0874, Acc: 0.1524
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 29/1000
+  Train - Loss: 0.7012, IoU: 0.0794, Acc: 0.3642
+  Val   - Loss: 0.7417, IoU: 0.0865, Acc: 0.1646
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 30/1000
+  Train - Loss: 0.6966, IoU: 0.0803, Acc: 0.3922
+  Val   - Loss: 0.7444, IoU: 0.0889, Acc: 0.1478
+------------------------------------------------------------
+Epoch 31/1000
+  Train - Loss: 0.6859, IoU: 0.0840, Acc: 0.4095
+  Val   - Loss: 0.7264, IoU: 0.0932, Acc: 0.2312
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 32/1000
+  Train - Loss: 0.6774, IoU: 0.0878, Acc: 0.4345
+  Val   - Loss: 0.6927, IoU: 0.1064, Acc: 0.3452
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 33/1000
+  Train - Loss: 0.6675, IoU: 0.0981, Acc: 0.4656
+  Val   - Loss: 0.6645, IoU: 0.1146, Acc: 0.4053
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 34/1000
+  Train - Loss: 0.6619, IoU: 0.1004, Acc: 0.4793
+  Val   - Loss: 0.6484, IoU: 0.1196, Acc: 0.4430
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 35/1000
+  Train - Loss: 0.6504, IoU: 0.0972, Acc: 0.4966
+  Val   - Loss: 0.6406, IoU: 0.1242, Acc: 0.4591
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 36/1000
+  Train - Loss: 0.6461, IoU: 0.1015, Acc: 0.5083
+  Val   - Loss: 0.6114, IoU: 0.1358, Acc: 0.5214
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 37/1000
+  Train - Loss: 0.6365, IoU: 0.0991, Acc: 0.5228
+  Val   - Loss: 0.6194, IoU: 0.1302, Acc: 0.4952
+------------------------------------------------------------
+Epoch 38/1000
+  Train - Loss: 0.6320, IoU: 0.1031, Acc: 0.5321
+  Val   - Loss: 0.6089, IoU: 0.1317, Acc: 0.5092
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 39/1000
+  Train - Loss: 0.6199, IoU: 0.1089, Acc: 0.5462
+  Val   - Loss: 0.6002, IoU: 0.1337, Acc: 0.5256
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260412_175452_UNetMiniExp5\best_model.pth
+------------------------------------------------------------
+Epoch 40/1000
+  Train - Loss: 0.6130, IoU: 0.1091, Acc: 0.5539
+  Val   - Loss: 0.5786, IoU: 0.1459, Acc: 0.5649
