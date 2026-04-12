@@ -1,5 +1,6 @@
 import os
 import sys
+from datetime import datetime
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 from esp_ppq.api import espdl_quantize_onnx
@@ -38,7 +39,8 @@ if __name__ == "__main__":
     LOG_DIR = r"E:\AICleanBot\logs\quantize"
     os.makedirs(LOG_DIR, exist_ok=True)
     model_name = os.path.basename(os.path.dirname(ONNX_MODEL_PATH))  # 提取 20260412_180030_UNetMiniExp5
-    log_path = os.path.join(LOG_DIR, f"{model_name}.txt")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_path = os.path.join(LOG_DIR, f"{model_name}_{timestamp}.txt")
     log_file = open(log_path, 'w', encoding='utf-8')
     original_stdout = sys.stdout
     sys.stdout = Tee(original_stdout, log_file)

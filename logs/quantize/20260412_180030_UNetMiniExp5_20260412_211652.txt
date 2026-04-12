@@ -1,0 +1,94 @@
+生成 32 个校准样本...
+开始量化模型...
+输入模型: E:\AICleanBot\py_scripts\models\20260412_180030_UNetMiniExp5\model.onnx
+输出模型: E:\AICleanBot\py_scripts\models\20260412_180030_UNetMiniExp5\model.espdl
+目标平台: esp32s3
+量化位数: 8 bit
+[21:16:52] ConvTranspose Decomposition Pass Running ... Finished.
+[21:16:52] PPQ Quantization Fusion Pass Running ...       Finished.
+[21:16:52] PPQ Quantize Simplify Pass Running ...         Finished.
+[21:16:52] PPQ Parameter Quantization Pass Running ...    Finished.
+[21:16:52] PPQ Runtime Calibration Pass Running ...       Finished.
+[21:16:55] PPQ Quantization Alignment Pass Running ...    Finished.
+[21:16:55] PPQ Passive Parameter Quantization Running ... Finished.
+--------- Network Snapshot ---------
+Num of Op:                    [69]
+Num of Quantized Op:          [69]
+Num of Variable:              [137]
+Num of Quantized Var:         [137]
+------- Quantization Snapshot ------
+Num of Quant Config:          [208]
+ACTIVATED:                    [65]
+OVERLAPPED:                   [93]
+PASSIVE:                      [44]
+FP32:                         [6]
+Network Quantization Finished.
+Layer                         | NOISE:SIGNAL POWER RATIO 
+/out/Conv:                    | ████████████████████ | 27.796%
+/dec1/conv/conv.9/Conv:       | ███████████          | 15.673%
+/dec1/conv/conv.6/Conv:       | ██████████           | 13.222%
+/dec1/conv/conv.3/Conv:       | █████████            | 12.898%
+/bottleneck/conv/conv.6/Conv: | █████████            | 11.961%
+/bottleneck/conv/conv.9/Conv: | ████████             | 11.308%
+/dec3/conv/conv.0/Conv:       | ████████             | 10.576%
+/dec3/conv/conv.9/Conv:       | ███████              | 9.548%
+/conv1/Conv:                  | ██████               | 8.584%
+/bottleneck/conv/conv.3/Conv: | ██████               | 8.388%
+/dec2/conv/conv.6/Conv:       | ██████               | 8.293%
+/dec2/conv/conv.9/Conv:       | ██████               | 7.987%
+/dec3/conv/conv.6/Conv:       | ██████               | 7.844%
+/bottleneck/conv/conv.0/Conv: | ██████               | 7.723%
+/dec3/conv/conv.3/Conv:       | █████                | 7.294%
+/conv3/Conv:                  | █████                | 7.078%
+/dec2/conv/conv.3/Conv:       | █████                | 6.941%
+/enc3/conv/conv.6/Conv:       | ████                 | 6.089%
+/enc3/conv/conv.9/Conv:       | ████                 | 5.860%
+/dec2/conv/conv.0/Conv:       | ████                 | 5.583%
+/dec1/conv/conv.0/Conv:       | ████                 | 5.442%
+/conv2/Conv:                  | ████                 | 5.236%
+/enc3/conv/conv.3/Conv:       | ████                 | 5.071%
+/enc2/conv/conv.6/Conv:       | ███                  | 3.962%
+/enc2/conv/conv.9/Conv:       | ███                  | 3.921%
+/enc3/conv/conv.0/Conv:       | ███                  | 3.756%
+/enc2/conv/conv.0/Conv:       | ██                   | 2.541%
+/enc2/conv/conv.3/Conv:       | ██                   | 2.496%
+/enc1/conv/conv.6/Conv:       | █                    | 1.142%
+/enc1/conv/conv.9/Conv:       | █                    | 1.089%
+/enc1/conv/conv.3/Conv:       |                      | 0.028%
+/enc1/conv/conv.0/Conv:       |                      | 0.010%
+Layer                         | NOISE:SIGNAL POWER RATIO 
+/enc2/conv/conv.0/Conv:       | ████████████████████ | 3.337%
+/enc1/conv/conv.6/Conv:       | █████████████        | 2.185%
+/enc1/conv/conv.0/Conv:       | ███████████          | 1.851%
+/enc2/conv/conv.6/Conv:       | █████████            | 1.582%
+/enc1/conv/conv.9/Conv:       | ███████              | 1.175%
+/dec1/conv/conv.3/Conv:       | █████                | 0.792%
+/enc3/conv/conv.6/Conv:       | ████                 | 0.598%
+/enc1/conv/conv.3/Conv:       | ███                  | 0.570%
+/conv3/Conv:                  | ███                  | 0.522%
+/conv1/Conv:                  | ██                   | 0.371%
+/conv2/Conv:                  | ██                   | 0.303%
+/enc3/conv/conv.0/Conv:       | ██                   | 0.276%
+/dec3/conv/conv.0/Conv:       | ██                   | 0.267%
+/enc2/conv/conv.3/Conv:       | █                    | 0.203%
+/bottleneck/conv/conv.0/Conv: | █                    | 0.201%
+/enc2/conv/conv.9/Conv:       | █                    | 0.189%
+/dec1/conv/conv.6/Conv:       | █                    | 0.152%
+/dec3/conv/conv.9/Conv:       | █                    | 0.128%
+/enc3/conv/conv.3/Conv:       | █                    | 0.116%
+/dec2/conv/conv.9/Conv:       |                      | 0.068%
+/dec2/conv/conv.3/Conv:       |                      | 0.062%
+/enc3/conv/conv.9/Conv:       |                      | 0.052%
+/bottleneck/conv/conv.6/Conv: |                      | 0.050%
+/dec3/conv/conv.6/Conv:       |                      | 0.049%
+/dec3/conv/conv.3/Conv:       |                      | 0.044%
+/dec2/conv/conv.6/Conv:       |                      | 0.042%
+/out/Conv:                    |                      | 0.041%
+/dec2/conv/conv.0/Conv:       |                      | 0.036%
+/dec1/conv/conv.0/Conv:       |                      | 0.035%
+/bottleneck/conv/conv.3/Conv: |                      | 0.032%
+/bottleneck/conv/conv.9/Conv: |                      | 0.027%
+/dec1/conv/conv.9/Conv:       |                      | 0.005%
+
+量化完成！模型已保存至: E:\AICleanBot\py_scripts\models\20260412_180030_UNetMiniExp5\model.espdl
+日志已保存至: E:\AICleanBot\logs\quantize\20260412_180030_UNetMiniExp5_20260412_211652.txt
