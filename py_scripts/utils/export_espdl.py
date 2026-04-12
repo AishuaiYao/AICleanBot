@@ -1,6 +1,21 @@
+import os
+import sys
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 from esp_ppq.api import espdl_quantize_onnx
+
+
+class Tee:
+    """同时输出到终端和文件"""
+    def __init__(self, *files):
+        self.files = files
+    def write(self, obj):
+        for f in self.files:
+            f.write(obj)
+            f.flush()
+    def flush(self):
+        for f in self.files:
+            f.flush()
 
 
 def collate_fn(batch):
@@ -18,6 +33,15 @@ if __name__ == "__main__":
     NUM_OF_BITS = 8  # 量化位数
     DEVICE = "cpu"  # 'cuda' or 'cpu', if you use cuda, please make sure that cuda is available
     NUM_CALIB_SAMPLES = 32  # 校准样本数量
+    
+    # 设置日志保存
+    LOG_DIR = r"E:\AICleanBot\logs\quantize"
+    os.makedirs(LOG_DIR, exist_ok=True)
+    model_name = os.path.basename(os.path.dirname(ONNX_MODEL_PATH))  # 提取 20260412_180030_UNetMiniExp5
+    log_path = os.path.join(LOG_DIR, f"{model_name}.txt")
+    log_file = open(log_path, 'w', encoding='utf-8')
+    original_stdout = sys.stdout
+    sys.stdout = Tee(original_stdout, log_file)
     
     # 生成校准数据（随机灰度图像）
     print(f"生成 {NUM_CALIB_SAMPLES} 个校准样本...")
@@ -54,4 +78,9 @@ if __name__ == "__main__":
     )
     
     print(f"\n量化完成！模型已保存至: {ESPDL_MODEL_PATH}")
+    print(f"日志已保存至: {log_path}")
+    
+    # 恢复标准输出并关闭日志文件
+    sys.stdout = original_stdout
+    log_file.close()
 
