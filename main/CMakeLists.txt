@@ -1,5 +1,5 @@
 # set(srcs    app_main.cpp)
-set(srcs    test_model.cpp)
+set(srcs    inference_test.cpp)
 
 
 set(requires

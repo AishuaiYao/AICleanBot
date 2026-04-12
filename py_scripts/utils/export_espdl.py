@@ -46,7 +46,7 @@ if __name__ == "__main__":
     TARGET = "esp32s3"  # 量化目标类型，可选 'c', 'esp32s3' or 'esp32p4'
     NUM_OF_BITS = 8  # 量化位数
     DEVICE = "cpu"  # 'cuda' or 'cpu', if you use cuda, please make sure that cuda is available
-    NUM_CALIB_SAMPLES = 32  # 校准样本数量
+    NUM_CALIB_SAMPLES = 128  # 校准样本数量
     IMAGE_DIR = r"E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA"  # 校准图像目录
     
     # 设置日志保存
@@ -62,7 +62,8 @@ if __name__ == "__main__":
     # 从真实数据集加载校准数据
     print(f"从 {IMAGE_DIR} 加载 {NUM_CALIB_SAMPLES} 个校准样本...")
     img_files = glob.glob(os.path.join(IMAGE_DIR, '*.[jp][pn]g')) + glob.glob(os.path.join(IMAGE_DIR, '*.bmp'))
-    img_files = sorted(img_files)[:NUM_CALIB_SAMPLES]
+    img_files = sorted(img_files)  # 先排序保证初始顺序一致
+    img_files = random.sample(img_files, NUM_CALIB_SAMPLES)  # 随机选取（基于固定种子）
     
     images = []
     for img_path in img_files:
