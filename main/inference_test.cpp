@@ -40,19 +40,6 @@ static dl::Model *g_model = nullptr;
 // TCP端口
 #define TCP_PORT     5000
 
-// Sigmoid查表
-static uint8_t sigmoid_lut[256];
-
-static void init_sigmoid_lut(void)
-{
-    for (int i = 0; i < 256; i++) {
-        int8_t q = (int8_t)i;
-        float x = q / 128.0f;
-        float sig = 1.0f / (1.0f + expf(-x));
-        sigmoid_lut[i] = (sig > 0.5f) ? 255 : 0;
-    }
-}
-
 // WiFi AP 初始化
 static void wifi_init_ap(void)
 {
@@ -168,11 +155,16 @@ static void handle_client(int client_sock)
             g_model->run();
             dl::TensorBase *output_tensor = g_model->get_output("output");
             int8_t *output_data = (int8_t *)output_tensor->data;
+            
+            // 获取输出量化参数
+            int out_exponent = output_tensor->get_exponent();
+            float out_scale = DL_SCALE(out_exponent);
 
-            // 后处理: sigmoid查表
+            // 后处理: 反量化 -> sigmoid -> 二值化
             for (int i = 0; i < INPUT_WIDTH * INPUT_HEIGHT; i++) {
-                uint8_t idx = (uint8_t)(output_data[i] + 128);
-                pred_buf[i] = sigmoid_lut[idx];
+                float logits = output_data[i] * out_scale;
+                float prob = 1.0f / (1.0f + expf(-logits));
+                pred_buf[i] = (prob > 0.5f) ? 255 : 0;
             }
 
             int64_t t_end = esp_timer_get_time();
@@ -257,10 +249,6 @@ extern "C" void app_main(void)
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
-
-    // 初始化sigmoid查表
-    init_sigmoid_lut();
-    ESP_LOGI(TAG, "[Init] Sigmoid查表初始化完成");
 
     // 初始化模型
     ESP_LOGI(TAG, "[Model] 加载模型...");
