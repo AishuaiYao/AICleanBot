@@ -40,6 +40,19 @@ static dl::Model *g_model = nullptr;
 // TCP端口
 #define TCP_PORT     5000
 
+// Sigmoid查表（根据输出量化参数构建）
+static uint8_t sigmoid_lut[256];
+
+static void build_sigmoid_lut(float out_scale)
+{
+    for (int i = 0; i < 256; i++) {
+        int8_t q = (int8_t)(i - 128);           // uint8索引 -> int8值
+        float logits = q * out_scale;           // 反量化
+        float prob = 1.0f / (1.0f + expf(-logits));
+        sigmoid_lut[i] = (prob > 0.5f) ? 255 : 0;
+    }
+}
+
 // WiFi AP 初始化
 static void wifi_init_ap(void)
 {
@@ -155,16 +168,11 @@ static void handle_client(int client_sock)
             g_model->run();
             dl::TensorBase *output_tensor = g_model->get_output("output");
             int8_t *output_data = (int8_t *)output_tensor->data;
-            
-            // 获取输出量化参数
-            int out_exponent = output_tensor->get_exponent();
-            float out_scale = DL_SCALE(out_exponent);
 
-            // 后处理: 反量化 -> sigmoid -> 二值化
+            // 后处理: sigmoid查表二值化
             for (int i = 0; i < INPUT_WIDTH * INPUT_HEIGHT; i++) {
-                float logits = output_data[i] * out_scale;
-                float prob = 1.0f / (1.0f + expf(-logits));
-                pred_buf[i] = (prob > 0.5f) ? 255 : 0;
+                uint8_t idx = (uint8_t)(output_data[i] + 128);
+                pred_buf[i] = sigmoid_lut[idx];
             }
 
             int64_t t_end = esp_timer_get_time();
@@ -267,6 +275,13 @@ extern "C" void app_main(void)
         ESP_LOGI(TAG, "[Model] 输出名称: %s", pair.first.c_str());
     }
     ESP_LOGI(TAG, "[Model] 模型加载成功");
+
+    // 构建sigmoid查表
+    dl::TensorBase *output_tensor = g_model->get_output("output");
+    int out_exponent = output_tensor->get_exponent();
+    float out_scale = DL_SCALE(out_exponent);
+    build_sigmoid_lut(out_scale);
+    ESP_LOGI(TAG, "[Init] Sigmoid查表构建完成 (exponent=%d, scale=%.6f)", out_exponent, out_scale);
 
     wifi_init_ap();
 
