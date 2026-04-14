@@ -491,7 +491,8 @@ PRED_DIR = os.path.join(DATA_DIR, 'FRAME_QQVGA_pred')
 MODEL_DIR = os.path.join(os.path.dirname(__file__), '..', 'models')
 
 BATCH_SIZE = 8
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 1e-3  # 提高初始学习率
+WEIGHT_DECAY = 1e-5   # L2正则化
 EPOCHS = 0
 PATIENCE = 10
 MAX_EPOCHS = 1000
@@ -796,7 +797,12 @@ def train():
     model = UNetMiniExp5().to(DEVICE)
     
     criterion = CombinedLoss()
-    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
+    
+    # 余弦退火重启学习率调度器
+    scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
+        optimizer, T_0=10, T_mult=2, eta_min=1e-6
+    )
     
     best_val_loss = float('inf')
     no_improve_count = 0
@@ -866,6 +872,11 @@ def train():
         print(f"Epoch {epoch+1}/{total_epochs}")
         print(f"  Train - Loss: {train_loss:.4f}, IoU: {train_iou:.4f}, Acc: {train_acc:.4f}")
         print(f"  Val   - Loss: {val_loss:.4f}, IoU: {val_iou:.4f}, Acc: {val_acc:.4f}")
+        
+        # ========== Update Learning Rate ==========
+        scheduler.step()
+        current_lr = optimizer.param_groups[0]['lr']
+        print(f"  Learning Rate: {current_lr:.6f}")
         
         # ========== Update Plot ==========
         plotter.update(epoch, train_loss, val_loss, train_iou, val_iou, train_acc, val_acc)
