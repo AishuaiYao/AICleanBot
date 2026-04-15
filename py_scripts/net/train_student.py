@@ -472,29 +472,15 @@ class FocalLoss(nn.Module):
         return focal.mean()
 
 
-# ==================== Dice Loss ====================
-class DiceLoss(nn.Module):
-    def __init__(self, smooth=1.0):
-        super().__init__()
-        self.smooth = smooth
-    
-    def forward(self, pred, target):
-        pred = torch.sigmoid(pred)
-        intersection = (pred * target).sum()
-        dice = (2. * intersection + self.smooth) / (pred.sum() + target.sum() + self.smooth)
-        return 1 - dice
-
-
 # ==================== 组合损失函数 ====================
 class CombinedLoss(nn.Module):
     def __init__(self, alpha=0.75, gamma=2.0):
         super().__init__()
         self.focal = FocalLoss(alpha=alpha, gamma=gamma)
         self.bce = nn.BCEWithLogitsLoss()
-        self.dice = DiceLoss()
     
     def forward(self, pred, target):
-        return self.focal(pred, target) + self.bce(pred, target) + self.dice(pred, target)
+        return self.focal(pred, target) + self.bce(pred, target)
 
 
 # ==================== 配置 ====================
