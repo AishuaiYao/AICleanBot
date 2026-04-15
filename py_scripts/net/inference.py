@@ -76,15 +76,17 @@ def save_visualization(img, pred, save_path):
 def build_visual_dir(model_path, input_dir):
     """
     根据模型路径自动构建可视化输出目录：
-      可视化目录 = input_dir + '_visual_' + 模型目录名
+      可视化目录 = input_dir的上两级目录 + 'pred_' + 模型目录名
     例如：
-      input_dir = .../FRAME_QQVGA
+      input_dir = .../dataset/val/images
       model_path = .../models/20260415_153256_UNetMiniExp5/best_model.pth
-      → visual_dir = .../FRAME_QQVGA_visual_20260415_153256_UNetMiniExp5
+      → visual_dir = .../dataset/pred_20260415_153256_UNetMiniExp5
     """
     model_dir_name = os.path.basename(os.path.dirname(model_path))
     input_dir = input_dir.rstrip('/\\')
-    return f"{input_dir}_visual_{model_dir_name}"
+    # 获取上两级目录（从 .../val/images 到 .../dataset）
+    parent_parent_dir = os.path.dirname(os.path.dirname(input_dir))
+    return os.path.join(parent_parent_dir, f"pred_{model_dir_name}")
 
 
 def infer(model_path, input_dir):
@@ -121,13 +123,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='UNetMini 推理脚本')
     parser.add_argument(
         '--model',
-        default=r'E:\AICleanBot\py_scripts\models\20260413_224444_UNetMiniExp5\best_model.pth',
+        default=r'E:\AICleanBot\py_scripts\models\20260415_221551_UNetMiniExp5\best_model.pth',
         type=str,
         help='模型权重路径（.pth），目录名需包含模型类型，如 UNetMiniExp5'
     )
     parser.add_argument(
         '--input',
-        default=r'C:\Users\aishuai\Downloads\AICleanBot-main\AICleanBot-main\py_scripts\dataset\FRAME_QQVGA',
+        default=r'E:\AICleanBot\py_scripts\dataset\val\images',
         type=str,
         help='输入图像目录'
     )

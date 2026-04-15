@@ -2,9 +2,8 @@
 .idea/
 .venv/
 
-FRAME_QQVGA_pred
-FRAME_QQVGA_pred1
-FRAME_QQVGA_pred2
+FRAME_QQVGA
+FRAME_QQVGA_label
 models/
 build/
 managed_components/

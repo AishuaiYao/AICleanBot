@@ -506,9 +506,9 @@ class CombinedLoss(nn.Module):
 
 # ==================== 配置 ====================
 DATA_DIR = r'E:\AICleanBot\py_scripts\dataset'
-IMAGE_DIR = os.path.join(DATA_DIR, 'FRAME_QQVGA')
-LABEL_DIR = os.path.join(DATA_DIR, 'FRAME_QQVGA_label')
-PRED_DIR = os.path.join(DATA_DIR, 'FRAME_QQVGA_pred')
+TRAIN_DIR = os.path.join(DATA_DIR, 'train')
+VAL_DIR = os.path.join(DATA_DIR, 'val')
+PRED_DIR = os.path.join(DATA_DIR, 'pred')
 MODEL_DIR = os.path.join(os.path.dirname(__file__), '..', 'models')
 
 BATCH_SIZE = 8
@@ -517,7 +517,6 @@ WEIGHT_DECAY = 1e-5   # L2正则化
 EPOCHS = 0
 PATIENCE = 10
 MAX_EPOCHS = 1000
-TRAIN_RATIO = 0.8
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -591,11 +590,23 @@ def apply_augmentations(img, label, config):
 
 # ==================== 数据集 ====================
 class SegDataset(Dataset):
-    def __init__(self, image_dir, label_dir, img_names, augment=False):
+    def __init__(self, data_dir, augment=False):
+        """
+        从已划分好的目录加载数据
+        
+        参数:
+            data_dir: 包含 images 和 labels 子目录的根目录
+            augment: 是否进行数据增强
+        """
         self.augment = augment
-        self.img_paths = [os.path.join(image_dir, n) for n in img_names]
-        self.label_paths = [os.path.join(label_dir, n) for n in img_names]
-        self.names = img_names
+        image_dir = os.path.join(data_dir, 'images')
+        label_dir = os.path.join(data_dir, 'labels')
+        
+        # 获取所有图片文件名
+        img_files = glob.glob(os.path.join(image_dir, '*.[jp][pn]g')) + glob.glob(os.path.join(image_dir, '*.bmp'))
+        self.img_paths = sorted(img_files)
+        self.label_paths = [os.path.join(label_dir, os.path.basename(p)) for p in self.img_paths]
+        self.names = [os.path.basename(p) for p in self.img_paths]
     
     def __len__(self):
         return len(self.names)
@@ -756,23 +767,9 @@ def train():
     
     start_time = time.time()
     
-    # 获取文件名
-    img_files = set(glob.glob(os.path.join(IMAGE_DIR, '*.[jp][pn]g')) + glob.glob(os.path.join(IMAGE_DIR, '*.bmp')))
-    label_files = set(glob.glob(os.path.join(LABEL_DIR, '*.[jp][pn]g')) + glob.glob(os.path.join(LABEL_DIR, '*.bmp')))
-    
-    img_names = {os.path.basename(p) for p in img_files}
-    label_names = {os.path.basename(p) for p in label_files}
-    common_names = sorted(list(img_names & label_names))
-    
-    random.shuffle(common_names)
-    
-    # 划分数据集
-    train_size = int(len(common_names) * TRAIN_RATIO)
-    train_names = common_names[:train_size]
-    val_names = common_names[train_size:]
-    
-    train_dataset = SegDataset(IMAGE_DIR, LABEL_DIR, train_names, augment=True)
-    val_dataset = SegDataset(IMAGE_DIR, LABEL_DIR, val_names, augment=False)
+    # 创建数据集
+    train_dataset = SegDataset(TRAIN_DIR, augment=True)
+    val_dataset = SegDataset(VAL_DIR, augment=False)
     
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
     val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=0)
@@ -793,9 +790,8 @@ def train():
     plotter = TrainingPlotter(save_dir)
     
     print(f"Device: {DEVICE}")
-    print(f"Total samples: {len(common_names)}")
-    print(f"Train samples: {len(train_names)} (Augmentation: ON)")
-    print(f"Val samples:   {len(val_names)}   (Augmentation: OFF)")
+    print(f"Train samples: {len(train_dataset)} (Augmentation: ON)")
+    print(f"Val samples:   {len(val_dataset)}   (Augmentation: OFF)")
     
     if EPOCHS == 0:
         print(f"训练模式: 早停模式 (patience={PATIENCE}, max_epochs={MAX_EPOCHS})")
