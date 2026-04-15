@@ -121,7 +121,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='UNetMini 推理脚本')
     parser.add_argument(
         '--model',
-        default=r'C:\Users\aishuai\Downloads\AICleanBot-main\AICleanBot-main\py_scripts\models\20260415_153256_UNetMiniExp5\best_model.pth',
+        default=r'E:\AICleanBot\py_scripts\models\20260413_224444_UNetMiniExp5\best_model.pth',
         type=str,
         help='模型权重路径（.pth），目录名需包含模型类型，如 UNetMiniExp5'
     )

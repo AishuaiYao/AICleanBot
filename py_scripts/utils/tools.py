@@ -7,6 +7,8 @@
 import os
 import re
 import glob
+import random
+import shutil
 import cv2
 import numpy as np
 import torch
@@ -406,6 +408,91 @@ def visualize_labels(image_dir, label_dir=None, output_dir=None):
         print(f"[{idx + 1}/{total}] {img_name}")
     
     print(f"完成，保存在：{output_dir}")
+
+
+def split_dataset(image_dir, label_dir, train_dir, val_dir, train_ratio=0.8, seed=42):
+    """
+    划分数据集为训练集和验证集
+    
+    功能:
+        按照指定随机种子和比例将数据集划分为训练集和验证集，复制到指定目录
+        仅保留图像和标签都存在的样本
+    
+    入参:
+        image_dir: str - 原图目录路径
+        label_dir: str - 标签图目录路径
+        train_dir: str - 训练集输出目录（会在其下创建images和labels子目录）
+        val_dir: str - 验证集输出目录（会在其下创建images和labels子目录）
+        train_ratio: float - 训练集比例，默认 0.8
+        seed: int - 随机种子，默认 42
+    
+    出参:
+        tuple - (train_count, val_count)
+            train_count: int - 训练集样本数
+            val_count: int - 验证集样本数
+    
+    输出示例:
+        Total samples: 262
+        Train samples: 209
+        Val samples:   53
+        
+        Copying training set...
+        Copying validation set...
+        
+        Done!
+        Train set saved to: E:\AICleanBot\py_scripts\dataset\train
+        Val set saved to:   E:\AICleanBot\py_scripts\dataset\val
+    """
+    # 固定随机种子
+    random.seed(seed)
+    
+    # 创建输出目录
+    train_img_dir = os.path.join(train_dir, 'images')
+    train_label_dir = os.path.join(train_dir, 'labels')
+    val_img_dir = os.path.join(val_dir, 'images')
+    val_label_dir = os.path.join(val_dir, 'labels')
+    
+    for dir_path in [train_img_dir, train_label_dir, val_img_dir, val_label_dir]:
+        os.makedirs(dir_path, exist_ok=True)
+    
+    # 获取文件名（支持 jpg, jpeg, png, bmp）
+    img_files = set(glob.glob(os.path.join(image_dir, '*.[jp][pn]g')) + glob.glob(os.path.join(image_dir, '*.bmp')))
+    label_files = set(glob.glob(os.path.join(label_dir, '*.[jp][pn]g')) + glob.glob(os.path.join(label_dir, '*.bmp')))
+    
+    img_names = {os.path.basename(p) for p in img_files}
+    label_names = {os.path.basename(p) for p in label_files}
+    common_names = sorted(list(img_names & label_names))
+    
+    print(f"Total samples: {len(common_names)}")
+    
+    # 随机打乱
+    random.shuffle(common_names)
+    
+    # 划分数据集
+    train_size = int(len(common_names) * train_ratio)
+    train_names = common_names[:train_size]
+    val_names = common_names[train_size:]
+    
+    print(f"Train samples: {len(train_names)}")
+    print(f"Val samples:   {len(val_names)}")
+    
+    # 复制训练集
+    print("\nCopying training set...")
+    for name in train_names:
+        shutil.copy2(os.path.join(image_dir, name), os.path.join(train_img_dir, name))
+        shutil.copy2(os.path.join(label_dir, name), os.path.join(train_label_dir, name))
+    
+    # 复制验证集
+    print("Copying validation set...")
+    for name in val_names:
+        shutil.copy2(os.path.join(image_dir, name), os.path.join(val_img_dir, name))
+        shutil.copy2(os.path.join(label_dir, name), os.path.join(val_label_dir, name))
+    
+    print(f"\nDone!")
+    print(f"Train set saved to: {train_dir}")
+    print(f"Val set saved to:   {val_dir}")
+    
+    return len(train_names), len(val_names)
 
 
 if __name__ == "__main__":
