@@ -18,5 +18,5 @@
 · 如果某些组件在我们的C++代码里不需要，请在CMakeLists.txt里删除相关的组件。
 · 你只能修改E:\AICleanBot目录中的文件，idf的组件源码不允许修改。
 需求/问题：
-    请问我的inference_test.cpp里面做模型推理的时候，有没有对齐train_student.py里面的数据预处理逻辑
+    修改E:\AICleanBot\py_scripts\net\train_student.py里面保存验证集可视化图片的逻辑，改为只有判断本次训练的模型为最佳模型的时候才保存验证集的可视化图片
     

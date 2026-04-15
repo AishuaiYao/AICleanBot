@@ -472,15 +472,36 @@ class FocalLoss(nn.Module):
         return focal.mean()
 
 
-# ==================== 组合损失函数 ====================
+# ==================== Dice Loss ====================
+class DiceLoss(nn.Module):
+    def __init__(self, smooth=1.0):
+        super().__init__()
+        self.smooth = smooth
+    
+    def forward(self, pred, target):
+        pred = torch.sigmoid(pred)
+        # 在 H×W 维度上计算，保留 batch 维度
+        intersection = (pred * target).sum(dim=(2, 3))
+        dice = (2 * intersection + self.smooth) / (
+            pred.sum(dim=(2, 3)) + target.sum(dim=(2, 3)) + self.smooth
+        )
+        return 1 - dice.mean()
+
+
+# ==================== 组合损失函数（Focal + Dice）====================
 class CombinedLoss(nn.Module):
+    """前景占比 ~8%（中等不平衡）场景：
+    - Focal Loss: alpha=0.75 给前景3倍权重，gamma=2.0 聚焦难分类边缘像素
+    - Dice Loss: 直接优化区域重叠，与 IoU 高度相关
+    - 各占 0.5 权重，两者互补
+    """
     def __init__(self, alpha=0.75, gamma=2.0):
         super().__init__()
         self.focal = FocalLoss(alpha=alpha, gamma=gamma)
-        self.bce = nn.BCEWithLogitsLoss()
+        self.dice = DiceLoss()
     
     def forward(self, pred, target):
-        return self.focal(pred, target) + self.bce(pred, target)
+        return 0.5 * self.focal(pred, target) + 0.5 * self.dice(pred, target)
 
 
 # ==================== 配置 ====================
@@ -645,7 +666,7 @@ def save_visualization(img_tensor, pred_tensor, save_path):
     cv2.imwrite(save_path, result)
 
 
-# ==================== 实时绘图类 ====================
+# ==================== 绘图类（仅保存，不展示）====================
 class TrainingPlotter:
     def __init__(self, save_dir):
         self.save_dir = save_dir
@@ -654,9 +675,8 @@ class TrainingPlotter:
         self.train_iou, self.val_iou = [], []
         self.train_acc, self.val_acc = [], []
         
-        plt.ion()
-        self.fig, self.axes = plt.subplots(3, 1, figsize=(8, 12))
-        self.fig.suptitle('Training Progress', fontsize=12)
+        # 使用非交互式后端，不弹出窗口
+        plt.switch_backend('Agg')
         
     def update(self, epoch, train_loss, val_loss, train_iou, val_iou, train_acc, val_acc):
         self.epochs.append(epoch + 1)
@@ -666,44 +686,9 @@ class TrainingPlotter:
         self.val_iou.append(val_iou)
         self.train_acc.append(train_acc)
         self.val_acc.append(val_acc)
-        
-        # 清空并重绘
-        for ax in self.axes:
-            ax.clear()
-        
-        # Loss曲线
-        self.axes[0].plot(self.epochs, self.train_loss, 'b-', label='Train', linewidth=2)
-        self.axes[0].plot(self.epochs, self.val_loss, 'r-', label='Val', linewidth=2)
-        self.axes[0].set_xlabel('Epoch')
-        self.axes[0].set_ylabel('Loss')
-        self.axes[0].set_title('Loss Curve')
-        self.axes[0].legend()
-        self.axes[0].grid(True, alpha=0.3)
-        
-        # IoU曲线
-        self.axes[1].plot(self.epochs, self.train_iou, 'b-', label='Train', linewidth=2)
-        self.axes[1].plot(self.epochs, self.val_iou, 'r-', label='Val', linewidth=2)
-        self.axes[1].set_xlabel('Epoch')
-        self.axes[1].set_ylabel('IoU')
-        self.axes[1].set_title('IoU Curve')
-        self.axes[1].legend()
-        self.axes[1].grid(True, alpha=0.3)
-        
-        # Acc曲线
-        self.axes[2].plot(self.epochs, self.train_acc, 'b-', label='Train', linewidth=2)
-        self.axes[2].plot(self.epochs, self.val_acc, 'r-', label='Val', linewidth=2)
-        self.axes[2].set_xlabel('Epoch')
-        self.axes[2].set_ylabel('Accuracy')
-        self.axes[2].set_title('Accuracy Curve')
-        self.axes[2].legend()
-        self.axes[2].grid(True, alpha=0.3)
-        
-        plt.tight_layout()
-        plt.draw()
-        plt.pause(0.1)
+        # 仅记录数据，不绘图展示
     
     def save(self):
-        plt.ioff()
         fig_dir = os.path.join(os.path.dirname(self.save_dir), '..', 'figure', os.path.basename(self.save_dir))
         os.makedirs(fig_dir, exist_ok=True)
         
@@ -738,7 +723,6 @@ class TrainingPlotter:
         plt.tight_layout()
         fig.savefig(os.path.join(fig_dir, 'training_curves.png'), dpi=150, bbox_inches='tight')
         plt.close(fig)
-        plt.close(self.fig)
         return fig_dir
 
 # ==================== 训练 ====================
@@ -804,7 +788,7 @@ def train():
         optimizer, T_0=10, T_mult=2, eta_min=1e-6
     )
     
-    best_val_loss = float('inf')
+    best_val_iou = 0.0
     no_improve_count = 0
     plotter = TrainingPlotter(save_dir)
     
@@ -850,6 +834,7 @@ def train():
         val_loss = 0.0
         val_iou = 0.0
         val_acc = 0.0
+        val_cache = []  # 缓存验证结果，仅最佳模型时保存
         
         with torch.no_grad():
             for imgs, labels, names in tqdm(val_loader, desc=f"Epoch {epoch+1}/{total_epochs} [Val]"):
@@ -862,7 +847,8 @@ def train():
                 val_iou += calc_iou(torch.sigmoid(outputs), labels)
                 val_acc += calc_pixel_acc(torch.sigmoid(outputs), labels)
                 
-                save_visualization(imgs[0], torch.sigmoid(outputs[0]), os.path.join(PRED_DIR, names[0]))
+                # 缓存数据，延迟保存
+                val_cache.append((imgs[0].cpu(), torch.sigmoid(outputs[0]).cpu(), names[0]))
         
         val_loss /= len(val_loader)
         val_iou /= len(val_loader)
@@ -882,11 +868,15 @@ def train():
         plotter.update(epoch, train_loss, val_loss, train_iou, val_iou, train_acc, val_acc)
         
         # ========== Save Best Model & Early Stopping ==========
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
+        if val_iou > best_val_iou:
+            best_val_iou = val_iou
             no_improve_count = 0
             torch.save(model.state_dict(), model_path)
+            # 保存验证集可视化
+            for img, pred, name in val_cache:
+                save_visualization(img, pred, os.path.join(PRED_DIR, name))
             print(f"  >>> Best model saved: {model_path}")
+            print(f"  >>> Val visualization saved to: {PRED_DIR}")
         else:
             no_improve_count += 1
             if EPOCHS == 0 and no_improve_count >= PATIENCE:
@@ -900,7 +890,7 @@ def train():
     hours, remainder = divmod(total_time, 3600)
     minutes, seconds = divmod(remainder, 60)
     
-    print(f"Training completed! Best val loss: {best_val_loss:.4f}")
+    print(f"Training completed! Best val IoU: {best_val_iou:.4f}")
     print(f"模型已保存：{model_path}")
     print(f"训练曲线已保存：{fig_dir}")
     print(f"训练总耗时：{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}")
