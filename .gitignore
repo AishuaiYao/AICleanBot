@@ -1,7 +1,7 @@
 .vscode/
 .idea/
 .venv/
-FRAME_QQVGA_label
+
 FRAME_QQVGA_pred
 FRAME_QQVGA_pred1
 FRAME_QQVGA_pred2
