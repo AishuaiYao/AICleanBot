@@ -10,78 +10,85 @@ import segmentation_models_pytorch as smp
 from tqdm import tqdm
 from datetime import datetime
 import random
+import matplotlib.pyplot as plt
+import time
+import sys
 
 
 # ==================== Focal Loss ====================
 class FocalLoss(nn.Module):
-    def __init__(self, alpha=0.25, gamma=2.0):
+    def __init__(self, alpha=0.75, gamma=2.0):
         super().__init__()
         self.alpha = alpha
         self.gamma = gamma
     
     def forward(self, pred, target):
-        # pred: logits (未经sigmoid)
         bce = nn.functional.binary_cross_entropy_with_logits(pred, target, reduction='none')
-        
-        # 计算pt
         pred_prob = torch.sigmoid(pred)
         pt = target * pred_prob + (1 - target) * (1 - pred_prob)
-        
-        # 计算alpha权重
         alpha_t = target * self.alpha + (1 - target) * (1 - self.alpha)
-        
-        # Focal Loss
         focal = alpha_t * (1 - pt) ** self.gamma * bce
-        
         return focal.mean()
 
 
-# ==================== 组合损失函数 ====================
-class CombinedLoss(nn.Module):
-    def __init__(self, alpha=0.75, gamma=2.0):
+# ==================== Dice Loss ====================
+class DiceLoss(nn.Module):
+    def __init__(self, smooth=1.0):
         super().__init__()
-        self.dice = smp.losses.DiceLoss(mode='binary')
-        self.focal = FocalLoss(alpha=alpha, gamma=gamma)
+        self.smooth = smooth
     
     def forward(self, pred, target):
-        return self.dice(pred, target) + self.focal(pred, target)
+        pred = torch.sigmoid(pred)
+        # 在 H×W 维度上计算，保留 batch 维度
+        intersection = (pred * target).sum(dim=(2, 3))
+        dice = (2 * intersection + self.smooth) / (
+            pred.sum(dim=(2, 3)) + target.sum(dim=(2, 3)) + self.smooth
+        )
+        return 1 - dice.mean()
+
+
+# ==================== 组合损失函数（Focal + Dice）====================
+class CombinedLoss(nn.Module):
+    """前景占比 ~8%（中等不平衡）场景：
+    - Focal Loss: alpha=0.75 给前景3倍权重，gamma=2.0 聚焦难分类边缘像素
+    - Dice Loss: 直接优化区域重叠，与 IoU 高度相关
+    - 各占 0.5 权重，两者互补
+    """
+    def __init__(self, alpha=0.75, gamma=2.0):
+        super().__init__()
+        self.focal = FocalLoss(alpha=alpha, gamma=gamma)
+        self.dice = DiceLoss()
+    
+    def forward(self, pred, target):
+        return 0.5 * self.focal(pred, target) + 0.5 * self.dice(pred, target)
 
 
 # ==================== 配置 ====================
 DATA_DIR = r'E:\AICleanBot\py_scripts\dataset'
-IMAGE_DIR = os.path.join(DATA_DIR, 'FRAME_QQVGA')
-LABEL_DIR = os.path.join(DATA_DIR, 'FRAME_QQVGA_label')
-PRED_DIR = os.path.join(DATA_DIR, 'FRAME_QQVGA_pred')
+TRAIN_DIR = os.path.join(DATA_DIR, 'train')
+VAL_DIR = os.path.join(DATA_DIR, 'val')
+PRED_DIR = os.path.join(DATA_DIR, 'pred')
 MODEL_DIR = os.path.join(os.path.dirname(__file__), '..', 'models')
-FIGURE_DIR = os.path.join(os.path.dirname(__file__), '..', 'figure')
-
-# ==================== 可视化配置 ====================
-SAVE_AUG_VIS = True  # 开关：是否保存数据增强对比图
-AUG_VIS_FILENAME = 'aug_debug_batch.jpg'
 
 BATCH_SIZE = 8
-LEARNING_RATE = 1e-4
-EPOCHS = 0  # 0=早停模式，>0=固定轮数
-PATIENCE = 10  # 早停耐心值（仅EPOCHS=0时生效）
-MAX_EPOCHS = 1000  # 最大训练轮数（仅EPOCHS=0时生效）
-TRAIN_RATIO = 0.8
+LEARNING_RATE = 1e-3  # 提高初始学习率
+WEIGHT_DECAY = 1e-5   # L2正则化
+EPOCHS = 0
+PATIENCE = 10
+MAX_EPOCHS = 1000
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # ==================== 数据增强配置 ====================
-# 你可以在这里开启或关闭特定的增强功能
 AUGMENTATION_CONFIG = {
-    # --- 几何变换 (Geometry) : 同时作用于 Image 和 Label ---
-    'h_flip': True,        # 水平翻转 (50% 概率)
-    'v_flip': True,        # 垂直翻转 (50% 概率)
-    'rotate': False,        # 随机旋转 (-30° ~ +30°)
-    
-    # --- 像素变换 (Pixel) : 只作用于 Image ---
-    'brightness': True,    # 随机亮度 (0.8 ~ 1.2)
-    'contrast': True,      # 随机对比度 (0.8 ~ 1.2)
-    'noise': True,         # 高斯噪声
-    'blur': True,          # 高斯模糊
-    'color_jitter': False, # 色彩抖动 (灰度图通常不需要，除非是伪彩色)
+    'h_flip': True,
+    'v_flip': True,
+    'rotate': True,
+    'brightness': True,
+    'contrast': True,
+    'noise': True,
+    'blur': True,
+    'color_jitter': False,
 }
 
 
@@ -89,55 +96,46 @@ AUGMENTATION_CONFIG = {
 def apply_augmentations(img, label, config):
     h, w = img.shape[:2]
     applied_augs = []
-
-    # -----------------------------------------------------------
-    # 1. 几何变换 (必须同时应用到 img 和 label)
-    # -----------------------------------------------------------
     
     # 水平翻转
     if config.get('h_flip') and random.random() > 0.5:
         img = cv2.flip(img, 1)
         label = cv2.flip(label, 1)
         applied_augs.append('h_flip')
-
+    
     # 垂直翻转
     if config.get('v_flip') and random.random() > 0.5:
         img = cv2.flip(img, 0)
         label = cv2.flip(label, 0)
         applied_augs.append('v_flip')
-
+    
     # 随机旋转
     if config.get('rotate') and random.random() > 0.5:
         angle = random.uniform(-30, 30)
         M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1.0)
-        # img 用双线性插值，label 用最近邻插值 (保持0/1值)
         img = cv2.warpAffine(img, M, (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
         label = cv2.warpAffine(label, M, (w, h), flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
         applied_augs.append(f'rot:{angle:.1f}')
-
-    # -----------------------------------------------------------
-    # 2. 像素变换 (只应用到 img)
-    # -----------------------------------------------------------
     
     # 随机亮度
     if config.get('brightness') and random.random() > 0.5:
         factor = random.uniform(0.8, 1.2)
         img = np.clip(img * factor, 0, 255).astype(np.uint8)
         applied_augs.append(f'bri:{factor:.2f}')
-
+    
     # 随机对比度
     if config.get('contrast') and random.random() > 0.5:
         factor = random.uniform(0.8, 1.2)
         mean = np.mean(img)
         img = np.clip((img - mean) * factor + mean, 0, 255).astype(np.uint8)
         applied_augs.append(f'con:{factor:.2f}')
-
+    
     # 高斯模糊
     if config.get('blur') and random.random() > 0.5:
         ksize = random.choice([3, 5])
         img = cv2.GaussianBlur(img, (ksize, ksize), 0)
         applied_augs.append(f'blur:{ksize}')
-
+    
     # 高斯噪声
     if config.get('noise') and random.random() > 0.5:
         mean = 0
@@ -145,73 +143,47 @@ def apply_augmentations(img, label, config):
         gauss = np.random.normal(mean, sigma, img.shape).astype(np.float32)
         img = np.clip(img.astype(np.float32) + gauss, 0, 255).astype(np.uint8)
         applied_augs.append('noise')
-        
-    # 色彩抖动 (仅作为示例，灰度图效果有限，这里实现简单的 Gamma 校正模拟)
-    if config.get('color_jitter') and random.random() > 0.5:
-        gamma = random.uniform(0.8, 1.2)
-        inv_gamma = 1.0 / gamma
-        table = np.array([((i / 255.0) ** inv_gamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
-        img = cv2.LUT(img, table)
-        applied_augs.append('jitter')
-
+    
     return img, label, applied_augs
 
 
 # ==================== 数据集 ====================
 class SegDataset(Dataset):
-    def __init__(self, image_dir, label_dir, img_names, augment=False):
+    def __init__(self, data_dir, augment=False):
+        """
+        从已划分好的目录加载数据
+        
+        参数:
+            data_dir: 包含 images 和 labels 子目录的根目录
+            augment: 是否进行数据增强
+        """
         self.augment = augment
+        image_dir = os.path.join(data_dir, 'images')
+        label_dir = os.path.join(data_dir, 'labels')
         
-        # 只保留传入的文件名列表
-        self.img_paths = [os.path.join(image_dir, n) for n in img_names]
-        self.label_paths = [os.path.join(label_dir, n) for n in img_names]
-        self.names = img_names
-        
+        # 获取所有图片文件名
+        img_files = glob.glob(os.path.join(image_dir, '*.[jp][pn]g')) + glob.glob(os.path.join(image_dir, '*.bmp'))
+        self.img_paths = sorted(img_files)
+        self.label_paths = [os.path.join(label_dir, os.path.basename(p)) for p in self.img_paths]
+        self.names = [os.path.basename(p) for p in self.img_paths]
+    
     def __len__(self):
         return len(self.names)
     
     def __getitem__(self, idx):
-        # 读取原始图片 (灰度模式)
         img = cv2.imread(self.img_paths[idx], cv2.IMREAD_GRAYSCALE)
         label = cv2.imread(self.label_paths[idx], cv2.IMREAD_GRAYSCALE)
         
-        # 备份原始用于可视化
-        img_origin = img.copy()
-        label_origin = label.copy()
-
-        # --- 应用数据增强 (仅在训练模式下) ---
-        applied_augs_list = []
         if self.augment:
-            img, label, applied_augs_list = apply_augmentations(img, label, AUGMENTATION_CONFIG)
+            img, label, _ = apply_augmentations(img, label, AUGMENTATION_CONFIG)
         
-        # 备份增强后用于可视化
-        img_aug = img.copy()
-        label_aug = label.copy()
-
-        # 生成可视化拼接图 (如果开启)
-        # 格式: [原图, 原Label, 增强图, 增强Label]
-        h, w = img_origin.shape
-        vis_img = np.zeros((h, w * 4), dtype=np.uint8)
-        if SAVE_AUG_VIS:
-            vis_img = np.hstack([img_origin, label_origin, img_aug, label_aug])
-            if applied_augs_list:
-                # 在增强图上方打印增强手段
-                text = ", ".join(applied_augs_list)
-                # 计算文字位置 (打印在第3张图即增强图的上方)
-                x_offset = w * 2 + 10
-                y_offset = 20
-                # 由于是灰度图，颜色只有0-255，为了清晰，可以用白色或者反色背景
-                cv2.putText(vis_img, text, (x_offset, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255), 1, cv2.LINE_AA)
-
-        # 归一化和格式转换
         img = img.astype(np.float32) / 255.0
         label = (label > 0).astype(np.float32)
         
-        # 增加 Channel 维度 (H, W) -> (1, H, W)
         img = torch.from_numpy(img).unsqueeze(0)
         label = torch.from_numpy(label).unsqueeze(0)
         
-        return img, label, self.names[idx], vis_img
+        return img, label, self.names[idx]
 
 
 # ==================== 指标计算 ====================
@@ -223,11 +195,31 @@ def calc_iou(pred, target, threshold=0.5):
         return 1.0
     return (intersection / union).item()
 
+
 def calc_pixel_acc(pred, target, threshold=0.5):
     pred = (pred > threshold).float()
     correct = (pred == target).float().sum()
     total = target.numel()
     return (correct / total).item()
+
+
+# ==================== 日志输出重定向 ====================
+class Tee:
+    def __init__(self, log_path):
+        self.terminal = sys.stdout
+        self.log = open(log_path, 'w', encoding='utf-8')
+    
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+        self.log.flush()
+    
+    def flush(self):
+        self.terminal.flush()
+        self.log.flush()
+    
+    def close(self):
+        self.log.close()
 
 
 # ==================== 可视化保存 ====================
@@ -236,7 +228,6 @@ def save_visualization(img_tensor, pred_tensor, save_path):
     pred = (pred_tensor.squeeze().cpu().numpy() > 0.5).astype(np.uint8) * 255
     
     img_bgr = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-    
     mask = pred > 0
     alpha = 0.1
     result = img_bgr.copy()
@@ -245,51 +236,104 @@ def save_visualization(img_tensor, pred_tensor, save_path):
     cv2.imwrite(save_path, result)
 
 
+# ==================== 绘图类（仅保存，不展示）====================
+class TrainingPlotter:
+    def __init__(self, save_dir):
+        self.save_dir = save_dir
+        self.epochs = []
+        self.train_loss, self.val_loss = [], []
+        self.train_iou, self.val_iou = [], []
+        self.train_acc, self.val_acc = [], []
+        
+        # 使用非交互式后端，不弹出窗口
+        plt.switch_backend('Agg')
+        
+    def update(self, epoch, train_loss, val_loss, train_iou, val_iou, train_acc, val_acc):
+        self.epochs.append(epoch + 1)
+        self.train_loss.append(train_loss)
+        self.val_loss.append(val_loss)
+        self.train_iou.append(train_iou)
+        self.val_iou.append(val_iou)
+        self.train_acc.append(train_acc)
+        self.val_acc.append(val_acc)
+        # 仅记录数据，不绘图展示
+    
+    def save(self):
+        fig_dir = os.path.join(os.path.dirname(self.save_dir), '..', 'figure', os.path.basename(self.save_dir))
+        os.makedirs(fig_dir, exist_ok=True)
+        
+        # 保存三合一竖排图像
+        fig, axes = plt.subplots(3, 1, figsize=(8, 12))
+        
+        # Loss曲线
+        axes[0].plot(self.epochs, self.train_loss, 'b-', label='Train', linewidth=2)
+        axes[0].plot(self.epochs, self.val_loss, 'r-', label='Val', linewidth=2)
+        axes[0].set_ylabel('Loss', fontsize=11)
+        axes[0].set_title('Loss Curve', fontsize=12)
+        axes[0].legend(fontsize=10)
+        axes[0].grid(True, alpha=0.3)
+        
+        # IoU曲线
+        axes[1].plot(self.epochs, self.train_iou, 'b-', label='Train', linewidth=2)
+        axes[1].plot(self.epochs, self.val_iou, 'r-', label='Val', linewidth=2)
+        axes[1].set_ylabel('IoU', fontsize=11)
+        axes[1].set_title('IoU Curve', fontsize=12)
+        axes[1].legend(fontsize=10)
+        axes[1].grid(True, alpha=0.3)
+        
+        # Acc曲线
+        axes[2].plot(self.epochs, self.train_acc, 'b-', label='Train', linewidth=2)
+        axes[2].plot(self.epochs, self.val_acc, 'r-', label='Val', linewidth=2)
+        axes[2].set_xlabel('Epoch', fontsize=11)
+        axes[2].set_ylabel('Accuracy', fontsize=11)
+        axes[2].set_title('Accuracy Curve', fontsize=12)
+        axes[2].legend(fontsize=10)
+        axes[2].grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        fig.savefig(os.path.join(fig_dir, 'training_curves.png'), dpi=150, bbox_inches='tight')
+        plt.close(fig)
+        return fig_dir
+
 # ==================== 训练 ====================
 def train():
-    # 固定随机种子（确保可复现）
+    # 固定随机种子
     SEED = 42
     random.seed(SEED)
     np.random.seed(SEED)
     torch.manual_seed(SEED)
     torch.cuda.manual_seed(SEED)
     torch.cuda.manual_seed_all(SEED)
-    
-    # PyTorch确定性设置
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     
     os.makedirs(PRED_DIR, exist_ok=True)
-    if SAVE_AUG_VIS:
-        os.makedirs(FIGURE_DIR, exist_ok=True)
+    
+    # 模型名称
+    model_name = 'UNet_ResNet18'
     
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    save_dir = os.path.join(MODEL_DIR, timestamp)
+    save_dir = os.path.join(MODEL_DIR, f'{timestamp}_{model_name}')
     os.makedirs(save_dir, exist_ok=True)
     model_path = os.path.join(save_dir, 'best_model.pth')
     
-    # --- 1. 获取所有文件名并打乱 ---
-    img_files = set(glob.glob(os.path.join(IMAGE_DIR, '*.[jp][pn]g')) + glob.glob(os.path.join(IMAGE_DIR, '*.bmp')))
-    label_files = set(glob.glob(os.path.join(LABEL_DIR, '*.[jp][pn]g')) + glob.glob(os.path.join(LABEL_DIR, '*.bmp')))
+    # 创建日志文件
+    log_dir = r'E:\AICleanBot\logs\train'
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, f'{timestamp}_{model_name}.txt')
+    tee = Tee(log_path)
+    sys.stdout = tee
     
-    img_names = {os.path.basename(p) for p in img_files}
-    label_names = {os.path.basename(p) for p in label_files}
-    common_names = sorted(list(img_names & label_names))
+    start_time = time.time()
     
-    random.shuffle(common_names)
-    
-    # --- 2. 手动划分 Train / Val ---
-    train_size = int(len(common_names) * TRAIN_RATIO)
-    train_names = common_names[:train_size]
-    val_names = common_names[train_size:]
-    
-    # --- 3. 分别创建 Dataset (Train开启增强, Val关闭增强) ---
-    train_dataset = SegDataset(IMAGE_DIR, LABEL_DIR, train_names, augment=True)
-    val_dataset = SegDataset(IMAGE_DIR, LABEL_DIR, val_names, augment=False)
+    # 创建数据集
+    train_dataset = SegDataset(TRAIN_DIR, augment=True)
+    val_dataset = SegDataset(VAL_DIR, augment=False)
     
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
     val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=0)
     
+    # 使用 smp Unet 模型
     model = smp.Unet(
         encoder_name='resnet18',
         encoder_weights=None,
@@ -298,16 +342,20 @@ def train():
     ).to(DEVICE)
     
     criterion = CombinedLoss()
-    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
     
-    best_val_loss = float('inf')
-    no_improve_count = 0  # 早停计数器
+    # 余弦退火学习率调度器（无重启，更适合大模型）
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(
+        optimizer, T_max=50, eta_min=1e-6
+    )
+    
+    best_val_iou = 0.0
+    no_improve_count = 0
+    plotter = TrainingPlotter(save_dir)
     
     print(f"Device: {DEVICE}")
-    print(f"Total samples: {len(common_names)}")
-    print(f"Train samples: {len(train_names)} (Augmentation: ON)")
-    print(f"Val samples:   {len(val_names)}   (Augmentation: OFF)")
-    print(f"Augmentation Config: {AUGMENTATION_CONFIG}")
+    print(f"Train samples: {len(train_dataset)} (Augmentation: ON)")
+    print(f"Val samples:   {len(val_dataset)}   (Augmentation: OFF)")
     
     if EPOCHS == 0:
         print(f"训练模式: 早停模式 (patience={PATIENCE}, max_epochs={MAX_EPOCHS})")
@@ -315,7 +363,6 @@ def train():
         print(f"训练模式: 固定轮数 (epochs={EPOCHS})")
     print("=" * 60)
     
-    # 确定训练轮数
     total_epochs = EPOCHS if EPOCHS > 0 else MAX_EPOCHS
     
     for epoch in range(total_epochs):
@@ -325,13 +372,8 @@ def train():
         train_iou = 0.0
         train_acc = 0.0
         
-        for imgs, labels, _, vis_imgs in tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS} [Train]"):
+        for imgs, labels, _ in tqdm(train_loader, desc=f"Epoch {epoch+1}/{total_epochs} [Train]"):
             imgs, labels = imgs.to(DEVICE), labels.to(DEVICE)
-
-            # 保存本 batch 第一张增强对比图
-            if SAVE_AUG_VIS:
-                # vis_imgs 是 Tensor (B, H, W*4), 取第一个转换为 numpy 保存
-                cv2.imwrite(os.path.join(FIGURE_DIR, AUG_VIS_FILENAME), vis_imgs[0].numpy())
             
             optimizer.zero_grad()
             outputs = model(imgs)
@@ -352,9 +394,10 @@ def train():
         val_loss = 0.0
         val_iou = 0.0
         val_acc = 0.0
+        val_cache = []  # 缓存验证结果，仅最佳模型时保存
         
         with torch.no_grad():
-            for imgs, labels, names, _ in tqdm(val_loader, desc=f"Epoch {epoch+1}/{EPOCHS} [Val]"):
+            for imgs, labels, names in tqdm(val_loader, desc=f"Epoch {epoch+1}/{total_epochs} [Val]"):
                 imgs, labels = imgs.to(DEVICE), labels.to(DEVICE)
                 
                 outputs = model(imgs)
@@ -364,23 +407,36 @@ def train():
                 val_iou += calc_iou(torch.sigmoid(outputs), labels)
                 val_acc += calc_pixel_acc(torch.sigmoid(outputs), labels)
                 
-                save_visualization(imgs[0], torch.sigmoid(outputs[0]), os.path.join(PRED_DIR, names[0]))
+                # 缓存数据，延迟保存
+                val_cache.append((imgs[0].cpu(), torch.sigmoid(outputs[0]).cpu(), names[0]))
         
         val_loss /= len(val_loader)
         val_iou /= len(val_loader)
         val_acc /= len(val_loader)
         
         # ========== Print ==========
-        print(f"Epoch {epoch+1}/{EPOCHS}")
+        print(f"Epoch {epoch+1}/{total_epochs}")
         print(f"  Train - Loss: {train_loss:.4f}, IoU: {train_iou:.4f}, Acc: {train_acc:.4f}")
         print(f"  Val   - Loss: {val_loss:.4f}, IoU: {val_iou:.4f}, Acc: {val_acc:.4f}")
         
+        # ========== Update Learning Rate ==========
+        scheduler.step()
+        current_lr = optimizer.param_groups[0]['lr']
+        print(f"  Learning Rate: {current_lr:.6f}")
+        
+        # ========== Update Plot ==========
+        plotter.update(epoch, train_loss, val_loss, train_iou, val_iou, train_acc, val_acc)
+        
         # ========== Save Best Model & Early Stopping ==========
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
+        if val_iou > best_val_iou:
+            best_val_iou = val_iou
             no_improve_count = 0
             torch.save(model.state_dict(), model_path)
+            # 保存验证集可视化
+            for img, pred, name in val_cache:
+                save_visualization(img, pred, os.path.join(PRED_DIR, name))
             print(f"  >>> Best model saved: {model_path}")
+            print(f"  >>> Val visualization saved to: {PRED_DIR}")
         else:
             no_improve_count += 1
             if EPOCHS == 0 and no_improve_count >= PATIENCE:
@@ -389,7 +445,18 @@ def train():
         
         print("-" * 60)
     
-    print(f"Training completed! Best val loss: {best_val_loss:.4f}")
+    fig_dir = plotter.save()
+    total_time = time.time() - start_time
+    hours, remainder = divmod(total_time, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    
+    print(f"Training completed! Best val IoU: {best_val_iou:.4f}")
+    print(f"模型已保存：{model_path}")
+    print(f"训练曲线已保存：{fig_dir}")
+    print(f"训练总耗时：{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}")
+    
+    sys.stdout = tee.terminal
+    tee.close()
 
 
 if __name__ == '__main__':
