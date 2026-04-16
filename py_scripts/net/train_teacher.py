@@ -7,6 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
 import torch.optim as optim
 import segmentation_models_pytorch as smp
+import torchvision.models as tv_models
 from tqdm import tqdm
 from datetime import datetime
 import random
@@ -74,7 +75,7 @@ BATCH_SIZE = 8
 LEARNING_RATE = 1e-3  # 提高初始学习率
 WEIGHT_DECAY = 1e-5   # L2正则化
 EPOCHS = 0
-PATIENCE = 10
+PATIENCE = 20
 MAX_EPOCHS = 1000
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -180,7 +181,9 @@ class SegDataset(Dataset):
         img = img.astype(np.float32) / 255.0
         label = (label > 0).astype(np.float32)
         
-        img = torch.from_numpy(img).unsqueeze(0)
+        # 灰度图复制为3通道，以匹配ImageNet预训练编码器的输入要求
+        img = np.stack([img, img, img], axis=0)  # (3, H, W)
+        img = torch.from_numpy(img)
         label = torch.from_numpy(label).unsqueeze(0)
         
         return img, label, self.names[idx]
@@ -223,8 +226,15 @@ class Tee:
 
 
 # ==================== 可视化保存 ====================
+# ==================== 可视化保存 ====================
 def save_visualization(img_tensor, pred_tensor, save_path):
-    img = (img_tensor.squeeze().cpu().numpy() * 255).astype(np.uint8)
+    # img_tensor 形状为 (3, H, W)，取第0通道作为灰度图显示（三通道值相同）
+    img_np = img_tensor.cpu().numpy()  # (3, H, W) 或 (H, W)
+    if img_np.ndim == 3:
+        gray = img_np[0]  # (H, W), float32, [0, 1]
+    else:
+        gray = img_np      # (H, W), float32, [0, 1]
+    img = np.ascontiguousarray((gray * 255).clip(0, 255).astype(np.uint8))  # 确保内存连续
     pred = (pred_tensor.squeeze().cpu().numpy() > 0.5).astype(np.uint8) * 255
     
     img_bgr = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
@@ -234,7 +244,6 @@ def save_visualization(img_tensor, pred_tensor, save_path):
     result[mask] = (img_bgr[mask].astype(float) * (1 - alpha) + np.array([128, 0, 128]) * alpha).astype(np.uint8)
     
     cv2.imwrite(save_path, result)
-
 
 # ==================== 绘图类（仅保存，不展示）====================
 class TrainingPlotter:
@@ -333,20 +342,57 @@ def train():
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
     val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=0)
     
-    # 使用 smp Unet 模型
+    # 使用 smp Unet 模型（手动加载torchvision的ImageNet预训练权重，无需访问HuggingFace）
     model = smp.Unet(
         encoder_name='resnet18',
-        encoder_weights=None,
-        in_channels=1,
+        encoder_weights=None,   # 先不加载权重
+        in_channels=3,
         classes=1
     ).to(DEVICE)
     
-    criterion = CombinedLoss()
-    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
+    # 用 torchvision 加载 ResNet18 预训练权重
+    # 若网络不通，可手动下载权重文件放到 TORCH_HOME/hub/checkpoints/ 目录：
+    # 下载地址（国内镜像）：https://download.pytorch.org/models/resnet18-f37072fd.pth
+    # 或：https://hf-mirror.com/pytorch/vision/resolve/main/resnet18-f37072fd.pth
+    print("正在加载 ResNet18 ImageNet 预训练权重...")
+    # 设置国内镜像加速（若直连失败可尝试）
+    import os as _os
+    _os.environ.setdefault('TORCH_HOME', _os.path.expanduser('~/.cache/torch'))
+    try:
+        tv_resnet = tv_models.resnet18(weights=tv_models.ResNet18_Weights.IMAGENET1K_V1)
+    except Exception as e:
+        print(f"警告：预训练权重下载失败（{e}），将使用随机初始化继续训练")
+        tv_resnet = None
     
-    # 余弦退火学习率调度器（无重启，更适合大模型）
+    if tv_resnet is not None:
+        tv_state = tv_resnet.state_dict()
+        # smp编码器的权重key格式与torchvision一致，直接按key匹配
+        encoder_state = model.encoder.state_dict()
+        matched, skipped = 0, 0
+        new_state = {}
+        for key in encoder_state:
+            if key in tv_state and tv_state[key].shape == encoder_state[key].shape:
+                new_state[key] = tv_state[key]
+                matched += 1
+            else:
+                new_state[key] = encoder_state[key]
+                skipped += 1
+        model.encoder.load_state_dict(new_state)
+        print(f"预训练权重加载完成：匹配 {matched} 层，跳过 {skipped} 层")
+    else:
+        print("使用随机初始化权重训练")
+    
+    criterion = CombinedLoss()
+    # 编码器使用更小的学习率（预训练权重已较好，避免破坏）
+    optimizer = optim.Adam([
+        {'params': model.encoder.parameters(), 'lr': LEARNING_RATE * 0.1},
+        {'params': model.decoder.parameters(), 'lr': LEARNING_RATE},
+        {'params': model.segmentation_head.parameters(), 'lr': LEARNING_RATE},
+    ], weight_decay=WEIGHT_DECAY)
+    
+    # 余弦退火学习率调度器（无重启，适合大模型稳定收敛）
     scheduler = optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=50, eta_min=1e-6
+        optimizer, T_max=200, eta_min=1e-6
     )
     
     best_val_iou = 0.0

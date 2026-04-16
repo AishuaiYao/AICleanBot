@@ -18,4 +18,4 @@
 · 如果某些组件在我们的C++代码里不需要，请在CMakeLists.txt里删除相关的组件。
 · 你只能修改E:\AICleanBot目录中的文件，idf的组件源码不允许修改。
 需求/问题：
-    
+    优化E:\AICleanBot\py_scripts\net\inference.py，让他也可以支持将train teacher的模型进行推理。
