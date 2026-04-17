@@ -170,7 +170,9 @@ def train():
     criterion = DistillationLoss(alpha=KD_ALPHA, temperature=KD_TEMPERATURE)
     
     optimizer = optim.Adam(student_model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200, eta_min=1e-6)
+    scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
+        optimizer, T_0=10, T_mult=2, eta_min=1e-6
+    )
     
     best_val_iou = 0.0
     no_improve_count = 0

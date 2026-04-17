@@ -1,0 +1,849 @@
+加载Teacher模型...
+Teacher模型已加载: e:\AICleanBot\py_scripts\models\20260416_213640_UNet_ResNet18\best_model.pth
+Device: cuda
+Train samples: 209 (Augmentation: ON)
+Val samples:   53   (Augmentation: OFF)
+KD Alpha: 0.6, Temperature: 4.0
+训练模式: 早停模式 (patience=20, max_epochs=1000)
+============================================================
+Epoch 1/1000
+  Train - Loss: 0.3523, IoU: 0.0814, Acc: 0.1685
+  Val   - Loss: 0.3429, IoU: 0.0042, Acc: 0.9028
+  Learning Rate: 0.000976
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 2/1000
+  Train - Loss: 0.3420, IoU: 0.1037, Acc: 0.6320
+  Val   - Loss: 0.3386, IoU: 0.0792, Acc: 0.9039
+  Learning Rate: 0.000905
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 3/1000
+  Train - Loss: 0.3369, IoU: 0.1595, Acc: 0.8448
+  Val   - Loss: 0.3323, IoU: 0.2324, Acc: 0.8054
+  Learning Rate: 0.000794
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 4/1000
+  Train - Loss: 0.3309, IoU: 0.1946, Acc: 0.8568
+  Val   - Loss: 0.3259, IoU: 0.3363, Acc: 0.9138
+  Learning Rate: 0.000655
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 5/1000
+  Train - Loss: 0.3208, IoU: 0.2478, Acc: 0.8640
+  Val   - Loss: 0.3074, IoU: 0.3849, Acc: 0.9015
+  Learning Rate: 0.000501
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 6/1000
+  Train - Loss: 0.3135, IoU: 0.2800, Acc: 0.8785
+  Val   - Loss: 0.2934, IoU: 0.4461, Acc: 0.9067
+  Learning Rate: 0.000346
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 7/1000
+  Train - Loss: 0.3058, IoU: 0.3040, Acc: 0.8863
+  Val   - Loss: 0.2886, IoU: 0.4722, Acc: 0.9063
+  Learning Rate: 0.000207
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 8/1000
+  Train - Loss: 0.3014, IoU: 0.3158, Acc: 0.8947
+  Val   - Loss: 0.2831, IoU: 0.5016, Acc: 0.9192
+  Learning Rate: 0.000096
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 9/1000
+  Train - Loss: 0.2992, IoU: 0.3179, Acc: 0.8951
+  Val   - Loss: 0.2811, IoU: 0.5171, Acc: 0.9233
+  Learning Rate: 0.000025
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 10/1000
+  Train - Loss: 0.2978, IoU: 0.3371, Acc: 0.8978
+  Val   - Loss: 0.2827, IoU: 0.5127, Acc: 0.9218
+  Learning Rate: 0.001000
+------------------------------------------------------------
+Epoch 11/1000
+  Train - Loss: 0.2935, IoU: 0.3267, Acc: 0.9007
+  Val   - Loss: 0.2673, IoU: 0.5044, Acc: 0.9154
+  Learning Rate: 0.000994
+------------------------------------------------------------
+Epoch 12/1000
+  Train - Loss: 0.2779, IoU: 0.3718, Acc: 0.9134
+  Val   - Loss: 0.2247, IoU: 0.5667, Acc: 0.9316
+  Learning Rate: 0.000976
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 13/1000
+  Train - Loss: 0.2538, IoU: 0.4323, Acc: 0.9269
+  Val   - Loss: 0.2015, IoU: 0.5976, Acc: 0.9469
+  Learning Rate: 0.000946
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 14/1000
+  Train - Loss: 0.2257, IoU: 0.4770, Acc: 0.9371
+  Val   - Loss: 0.1601, IoU: 0.6822, Acc: 0.9540
+  Learning Rate: 0.000905
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 15/1000
+  Train - Loss: 0.2055, IoU: 0.4970, Acc: 0.9411
+  Val   - Loss: 0.1364, IoU: 0.7240, Acc: 0.9593
+  Learning Rate: 0.000854
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 16/1000
+  Train - Loss: 0.1868, IoU: 0.5221, Acc: 0.9453
+  Val   - Loss: 0.1660, IoU: 0.5840, Acc: 0.9405
+  Learning Rate: 0.000794
+------------------------------------------------------------
+Epoch 17/1000
+  Train - Loss: 0.1863, IoU: 0.4924, Acc: 0.9393
+  Val   - Loss: 0.1212, IoU: 0.6999, Acc: 0.9574
+  Learning Rate: 0.000727
+------------------------------------------------------------
+Epoch 18/1000
+  Train - Loss: 0.1620, IoU: 0.5467, Acc: 0.9508
+  Val   - Loss: 0.1223, IoU: 0.7044, Acc: 0.9608
+  Learning Rate: 0.000655
+------------------------------------------------------------
+Epoch 19/1000
+  Train - Loss: 0.1519, IoU: 0.5556, Acc: 0.9505
+  Val   - Loss: 0.1120, IoU: 0.7081, Acc: 0.9586
+  Learning Rate: 0.000579
+------------------------------------------------------------
+Epoch 20/1000
+  Train - Loss: 0.1460, IoU: 0.5716, Acc: 0.9551
+  Val   - Loss: 0.0868, IoU: 0.7743, Acc: 0.9709
+  Learning Rate: 0.000501
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 21/1000
+  Train - Loss: 0.1326, IoU: 0.6095, Acc: 0.9595
+  Val   - Loss: 0.0933, IoU: 0.7574, Acc: 0.9662
+  Learning Rate: 0.000422
+------------------------------------------------------------
+Epoch 22/1000
+  Train - Loss: 0.1350, IoU: 0.5902, Acc: 0.9567
+  Val   - Loss: 0.0893, IoU: 0.7546, Acc: 0.9682
+  Learning Rate: 0.000346
+------------------------------------------------------------
+Epoch 23/1000
+  Train - Loss: 0.1251, IoU: 0.6207, Acc: 0.9609
+  Val   - Loss: 0.0750, IoU: 0.8022, Acc: 0.9742
+  Learning Rate: 0.000274
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 24/1000
+  Train - Loss: 0.1347, IoU: 0.5765, Acc: 0.9549
+  Val   - Loss: 0.0809, IoU: 0.7720, Acc: 0.9706
+  Learning Rate: 0.000207
+------------------------------------------------------------
+Epoch 25/1000
+  Train - Loss: 0.1243, IoU: 0.6090, Acc: 0.9607
+  Val   - Loss: 0.0745, IoU: 0.7936, Acc: 0.9728
+  Learning Rate: 0.000147
+------------------------------------------------------------
+Epoch 26/1000
+  Train - Loss: 0.1258, IoU: 0.5991, Acc: 0.9583
+  Val   - Loss: 0.0724, IoU: 0.7949, Acc: 0.9732
+  Learning Rate: 0.000096
+------------------------------------------------------------
+Epoch 27/1000
+  Train - Loss: 0.1271, IoU: 0.5967, Acc: 0.9579
+  Val   - Loss: 0.0709, IoU: 0.8001, Acc: 0.9738
+  Learning Rate: 0.000055
+------------------------------------------------------------
+Epoch 28/1000
+  Train - Loss: 0.1251, IoU: 0.5998, Acc: 0.9592
+  Val   - Loss: 0.0693, IoU: 0.8086, Acc: 0.9753
+  Learning Rate: 0.000025
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 29/1000
+  Train - Loss: 0.1319, IoU: 0.5973, Acc: 0.9544
+  Val   - Loss: 0.0671, IoU: 0.8101, Acc: 0.9752
+  Learning Rate: 0.000007
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 30/1000
+  Train - Loss: 0.1279, IoU: 0.6078, Acc: 0.9587
+  Val   - Loss: 0.0682, IoU: 0.8059, Acc: 0.9748
+  Learning Rate: 0.001000
+------------------------------------------------------------
+Epoch 31/1000
+  Train - Loss: 0.1354, IoU: 0.5636, Acc: 0.9511
+  Val   - Loss: 0.0811, IoU: 0.7633, Acc: 0.9676
+  Learning Rate: 0.000998
+------------------------------------------------------------
+Epoch 32/1000
+  Train - Loss: 0.1262, IoU: 0.5999, Acc: 0.9563
+  Val   - Loss: 0.0728, IoU: 0.7871, Acc: 0.9709
+  Learning Rate: 0.000994
+------------------------------------------------------------
+Epoch 33/1000
+  Train - Loss: 0.1097, IoU: 0.6340, Acc: 0.9626
+  Val   - Loss: 0.0657, IoU: 0.8029, Acc: 0.9741
+  Learning Rate: 0.000986
+------------------------------------------------------------
+Epoch 34/1000
+  Train - Loss: 0.1106, IoU: 0.6350, Acc: 0.9634
+  Val   - Loss: 0.1015, IoU: 0.6987, Acc: 0.9619
+  Learning Rate: 0.000976
+------------------------------------------------------------
+Epoch 35/1000
+  Train - Loss: 0.1133, IoU: 0.6197, Acc: 0.9611
+  Val   - Loss: 0.0832, IoU: 0.7410, Acc: 0.9672
+  Learning Rate: 0.000962
+------------------------------------------------------------
+Epoch 36/1000
+  Train - Loss: 0.1089, IoU: 0.6316, Acc: 0.9626
+  Val   - Loss: 0.0800, IoU: 0.7572, Acc: 0.9678
+  Learning Rate: 0.000946
+------------------------------------------------------------
+Epoch 37/1000
+  Train - Loss: 0.1106, IoU: 0.6299, Acc: 0.9625
+  Val   - Loss: 0.0666, IoU: 0.7914, Acc: 0.9724
+  Learning Rate: 0.000926
+------------------------------------------------------------
+Epoch 38/1000
+  Train - Loss: 0.1057, IoU: 0.6423, Acc: 0.9646
+  Val   - Loss: 0.0877, IoU: 0.7311, Acc: 0.9658
+  Learning Rate: 0.000905
+------------------------------------------------------------
+Epoch 39/1000
+  Train - Loss: 0.0984, IoU: 0.6625, Acc: 0.9665
+  Val   - Loss: 0.0832, IoU: 0.7394, Acc: 0.9632
+  Learning Rate: 0.000880
+------------------------------------------------------------
+Epoch 40/1000
+  Train - Loss: 0.1151, IoU: 0.6120, Acc: 0.9600
+  Val   - Loss: 0.0670, IoU: 0.7694, Acc: 0.9722
+  Learning Rate: 0.000854
+------------------------------------------------------------
+Epoch 41/1000
+  Train - Loss: 0.0977, IoU: 0.6601, Acc: 0.9649
+  Val   - Loss: 0.0626, IoU: 0.7937, Acc: 0.9750
+  Learning Rate: 0.000825
+------------------------------------------------------------
+Epoch 42/1000
+  Train - Loss: 0.0975, IoU: 0.6503, Acc: 0.9642
+  Val   - Loss: 0.1067, IoU: 0.6837, Acc: 0.9613
+  Learning Rate: 0.000794
+------------------------------------------------------------
+Epoch 43/1000
+  Train - Loss: 0.0959, IoU: 0.6640, Acc: 0.9660
+  Val   - Loss: 0.0614, IoU: 0.7965, Acc: 0.9740
+  Learning Rate: 0.000761
+------------------------------------------------------------
+Epoch 44/1000
+  Train - Loss: 0.0953, IoU: 0.6664, Acc: 0.9655
+  Val   - Loss: 0.0528, IoU: 0.8246, Acc: 0.9775
+  Learning Rate: 0.000727
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 45/1000
+  Train - Loss: 0.0825, IoU: 0.7074, Acc: 0.9711
+  Val   - Loss: 0.0509, IoU: 0.8240, Acc: 0.9789
+  Learning Rate: 0.000692
+------------------------------------------------------------
+Epoch 46/1000
+  Train - Loss: 0.1004, IoU: 0.6521, Acc: 0.9654
+  Val   - Loss: 0.0542, IoU: 0.8213, Acc: 0.9781
+  Learning Rate: 0.000655
+------------------------------------------------------------
+Epoch 47/1000
+  Train - Loss: 0.0964, IoU: 0.6620, Acc: 0.9663
+  Val   - Loss: 0.0956, IoU: 0.7100, Acc: 0.9598
+  Learning Rate: 0.000617
+------------------------------------------------------------
+Epoch 48/1000
+  Train - Loss: 0.0986, IoU: 0.6504, Acc: 0.9654
+  Val   - Loss: 0.0539, IoU: 0.8159, Acc: 0.9776
+  Learning Rate: 0.000579
+------------------------------------------------------------
+Epoch 49/1000
+  Train - Loss: 0.0989, IoU: 0.6482, Acc: 0.9645
+  Val   - Loss: 0.0474, IoU: 0.8298, Acc: 0.9786
+  Learning Rate: 0.000540
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 50/1000
+  Train - Loss: 0.0886, IoU: 0.6761, Acc: 0.9676
+  Val   - Loss: 0.0584, IoU: 0.7942, Acc: 0.9758
+  Learning Rate: 0.000501
+------------------------------------------------------------
+Epoch 51/1000
+  Train - Loss: 0.0830, IoU: 0.6972, Acc: 0.9700
+  Val   - Loss: 0.0430, IoU: 0.8472, Acc: 0.9818
+  Learning Rate: 0.000461
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 52/1000
+  Train - Loss: 0.1004, IoU: 0.6625, Acc: 0.9632
+  Val   - Loss: 0.0476, IoU: 0.8352, Acc: 0.9797
+  Learning Rate: 0.000422
+------------------------------------------------------------
+Epoch 53/1000
+  Train - Loss: 0.0865, IoU: 0.6939, Acc: 0.9695
+  Val   - Loss: 0.0462, IoU: 0.8399, Acc: 0.9803
+  Learning Rate: 0.000384
+------------------------------------------------------------
+Epoch 54/1000
+  Train - Loss: 0.0990, IoU: 0.6621, Acc: 0.9640
+  Val   - Loss: 0.0466, IoU: 0.8389, Acc: 0.9808
+  Learning Rate: 0.000346
+------------------------------------------------------------
+Epoch 55/1000
+  Train - Loss: 0.0810, IoU: 0.7006, Acc: 0.9700
+  Val   - Loss: 0.0477, IoU: 0.8308, Acc: 0.9792
+  Learning Rate: 0.000309
+------------------------------------------------------------
+Epoch 56/1000
+  Train - Loss: 0.0920, IoU: 0.6716, Acc: 0.9679
+  Val   - Loss: 0.0463, IoU: 0.8393, Acc: 0.9805
+  Learning Rate: 0.000274
+------------------------------------------------------------
+Epoch 57/1000
+  Train - Loss: 0.0889, IoU: 0.6804, Acc: 0.9682
+  Val   - Loss: 0.0461, IoU: 0.8395, Acc: 0.9804
+  Learning Rate: 0.000240
+------------------------------------------------------------
+Epoch 58/1000
+  Train - Loss: 0.0754, IoU: 0.7173, Acc: 0.9727
+  Val   - Loss: 0.0457, IoU: 0.8393, Acc: 0.9801
+  Learning Rate: 0.000207
+------------------------------------------------------------
+Epoch 59/1000
+  Train - Loss: 0.0890, IoU: 0.6866, Acc: 0.9694
+  Val   - Loss: 0.0450, IoU: 0.8386, Acc: 0.9800
+  Learning Rate: 0.000176
+------------------------------------------------------------
+Epoch 60/1000
+  Train - Loss: 0.0846, IoU: 0.6892, Acc: 0.9697
+  Val   - Loss: 0.0442, IoU: 0.8435, Acc: 0.9813
+  Learning Rate: 0.000147
+------------------------------------------------------------
+Epoch 61/1000
+  Train - Loss: 0.0888, IoU: 0.6781, Acc: 0.9688
+  Val   - Loss: 0.0416, IoU: 0.8501, Acc: 0.9821
+  Learning Rate: 0.000121
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 62/1000
+  Train - Loss: 0.0885, IoU: 0.6804, Acc: 0.9687
+  Val   - Loss: 0.0425, IoU: 0.8460, Acc: 0.9819
+  Learning Rate: 0.000096
+------------------------------------------------------------
+Epoch 63/1000
+  Train - Loss: 0.0832, IoU: 0.6991, Acc: 0.9700
+  Val   - Loss: 0.0419, IoU: 0.8469, Acc: 0.9821
+  Learning Rate: 0.000075
+------------------------------------------------------------
+Epoch 64/1000
+  Train - Loss: 0.0856, IoU: 0.6834, Acc: 0.9692
+  Val   - Loss: 0.0424, IoU: 0.8444, Acc: 0.9815
+  Learning Rate: 0.000055
+------------------------------------------------------------
+Epoch 65/1000
+  Train - Loss: 0.0782, IoU: 0.7153, Acc: 0.9725
+  Val   - Loss: 0.0413, IoU: 0.8514, Acc: 0.9823
+  Learning Rate: 0.000039
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 66/1000
+  Train - Loss: 0.0757, IoU: 0.7162, Acc: 0.9720
+  Val   - Loss: 0.0416, IoU: 0.8508, Acc: 0.9822
+  Learning Rate: 0.000025
+------------------------------------------------------------
+Epoch 67/1000
+  Train - Loss: 0.0905, IoU: 0.6802, Acc: 0.9682
+  Val   - Loss: 0.0407, IoU: 0.8501, Acc: 0.9822
+  Learning Rate: 0.000015
+------------------------------------------------------------
+Epoch 68/1000
+  Train - Loss: 0.0780, IoU: 0.7138, Acc: 0.9724
+  Val   - Loss: 0.0408, IoU: 0.8508, Acc: 0.9824
+  Learning Rate: 0.000007
+------------------------------------------------------------
+Epoch 69/1000
+  Train - Loss: 0.0876, IoU: 0.6886, Acc: 0.9690
+  Val   - Loss: 0.0414, IoU: 0.8498, Acc: 0.9821
+  Learning Rate: 0.000003
+------------------------------------------------------------
+Epoch 70/1000
+  Train - Loss: 0.0854, IoU: 0.6837, Acc: 0.9691
+  Val   - Loss: 0.0407, IoU: 0.8509, Acc: 0.9824
+  Learning Rate: 0.001000
+------------------------------------------------------------
+Epoch 71/1000
+  Train - Loss: 0.0903, IoU: 0.6688, Acc: 0.9672
+  Val   - Loss: 0.0516, IoU: 0.8111, Acc: 0.9769
+  Learning Rate: 0.001000
+------------------------------------------------------------
+Epoch 72/1000
+  Train - Loss: 0.0937, IoU: 0.6640, Acc: 0.9660
+  Val   - Loss: 0.0483, IoU: 0.8246, Acc: 0.9779
+  Learning Rate: 0.000998
+------------------------------------------------------------
+Epoch 73/1000
+  Train - Loss: 0.0853, IoU: 0.6920, Acc: 0.9685
+  Val   - Loss: 0.0645, IoU: 0.7786, Acc: 0.9729
+  Learning Rate: 0.000997
+------------------------------------------------------------
+Epoch 74/1000
+  Train - Loss: 0.0900, IoU: 0.6899, Acc: 0.9684
+  Val   - Loss: 0.0604, IoU: 0.7940, Acc: 0.9747
+  Learning Rate: 0.000994
+------------------------------------------------------------
+Epoch 75/1000
+  Train - Loss: 0.0805, IoU: 0.6906, Acc: 0.9690
+  Val   - Loss: 0.0511, IoU: 0.8125, Acc: 0.9783
+  Learning Rate: 0.000990
+------------------------------------------------------------
+Epoch 76/1000
+  Train - Loss: 0.0834, IoU: 0.7009, Acc: 0.9712
+  Val   - Loss: 0.0474, IoU: 0.8345, Acc: 0.9796
+  Learning Rate: 0.000986
+------------------------------------------------------------
+Epoch 77/1000
+  Train - Loss: 0.0859, IoU: 0.6926, Acc: 0.9698
+  Val   - Loss: 0.0418, IoU: 0.8476, Acc: 0.9810
+  Learning Rate: 0.000981
+------------------------------------------------------------
+Epoch 78/1000
+  Train - Loss: 0.0837, IoU: 0.7020, Acc: 0.9708
+  Val   - Loss: 0.0446, IoU: 0.8373, Acc: 0.9810
+  Learning Rate: 0.000976
+------------------------------------------------------------
+Epoch 79/1000
+  Train - Loss: 0.0811, IoU: 0.6958, Acc: 0.9702
+  Val   - Loss: 0.0441, IoU: 0.8455, Acc: 0.9817
+  Learning Rate: 0.000969
+------------------------------------------------------------
+Epoch 80/1000
+  Train - Loss: 0.0852, IoU: 0.6899, Acc: 0.9701
+  Val   - Loss: 0.0847, IoU: 0.7540, Acc: 0.9657
+  Learning Rate: 0.000962
+------------------------------------------------------------
+Epoch 81/1000
+  Train - Loss: 0.0859, IoU: 0.6764, Acc: 0.9680
+  Val   - Loss: 0.0476, IoU: 0.8399, Acc: 0.9807
+  Learning Rate: 0.000954
+------------------------------------------------------------
+Epoch 82/1000
+  Train - Loss: 0.0790, IoU: 0.7184, Acc: 0.9727
+  Val   - Loss: 0.0527, IoU: 0.8106, Acc: 0.9780
+  Learning Rate: 0.000946
+------------------------------------------------------------
+Epoch 83/1000
+  Train - Loss: 0.0699, IoU: 0.7369, Acc: 0.9751
+  Val   - Loss: 0.0395, IoU: 0.8523, Acc: 0.9829
+  Learning Rate: 0.000936
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 84/1000
+  Train - Loss: 0.0796, IoU: 0.7113, Acc: 0.9724
+  Val   - Loss: 0.0431, IoU: 0.8463, Acc: 0.9821
+  Learning Rate: 0.000926
+------------------------------------------------------------
+Epoch 85/1000
+  Train - Loss: 0.0880, IoU: 0.6797, Acc: 0.9681
+  Val   - Loss: 0.0405, IoU: 0.8517, Acc: 0.9828
+  Learning Rate: 0.000916
+------------------------------------------------------------
+Epoch 86/1000
+  Train - Loss: 0.0912, IoU: 0.6842, Acc: 0.9693
+  Val   - Loss: 0.0406, IoU: 0.8504, Acc: 0.9834
+  Learning Rate: 0.000905
+------------------------------------------------------------
+Epoch 87/1000
+  Train - Loss: 0.0807, IoU: 0.6983, Acc: 0.9708
+  Val   - Loss: 0.0375, IoU: 0.8613, Acc: 0.9837
+  Learning Rate: 0.000893
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 88/1000
+  Train - Loss: 0.0696, IoU: 0.7240, Acc: 0.9733
+  Val   - Loss: 0.0412, IoU: 0.8529, Acc: 0.9828
+  Learning Rate: 0.000880
+------------------------------------------------------------
+Epoch 89/1000
+  Train - Loss: 0.0801, IoU: 0.7035, Acc: 0.9700
+  Val   - Loss: 0.0478, IoU: 0.8354, Acc: 0.9805
+  Learning Rate: 0.000867
+------------------------------------------------------------
+Epoch 90/1000
+  Train - Loss: 0.0743, IoU: 0.7255, Acc: 0.9738
+  Val   - Loss: 0.0547, IoU: 0.7940, Acc: 0.9768
+  Learning Rate: 0.000854
+------------------------------------------------------------
+Epoch 91/1000
+  Train - Loss: 0.0853, IoU: 0.7026, Acc: 0.9697
+  Val   - Loss: 0.0528, IoU: 0.8090, Acc: 0.9762
+  Learning Rate: 0.000840
+------------------------------------------------------------
+Epoch 92/1000
+  Train - Loss: 0.0732, IoU: 0.7270, Acc: 0.9735
+  Val   - Loss: 0.0362, IoU: 0.8667, Acc: 0.9847
+  Learning Rate: 0.000825
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 93/1000
+  Train - Loss: 0.0814, IoU: 0.7168, Acc: 0.9709
+  Val   - Loss: 0.0361, IoU: 0.8659, Acc: 0.9844
+  Learning Rate: 0.000810
+------------------------------------------------------------
+Epoch 94/1000
+  Train - Loss: 0.0786, IoU: 0.7180, Acc: 0.9723
+  Val   - Loss: 0.0415, IoU: 0.8477, Acc: 0.9820
+  Learning Rate: 0.000794
+------------------------------------------------------------
+Epoch 95/1000
+  Train - Loss: 0.0802, IoU: 0.7164, Acc: 0.9710
+  Val   - Loss: 0.0490, IoU: 0.8231, Acc: 0.9792
+  Learning Rate: 0.000778
+------------------------------------------------------------
+Epoch 96/1000
+  Train - Loss: 0.0765, IoU: 0.7127, Acc: 0.9725
+  Val   - Loss: 0.0370, IoU: 0.8614, Acc: 0.9847
+  Learning Rate: 0.000761
+------------------------------------------------------------
+Epoch 97/1000
+  Train - Loss: 0.0752, IoU: 0.7095, Acc: 0.9720
+  Val   - Loss: 0.0360, IoU: 0.8668, Acc: 0.9848
+  Learning Rate: 0.000745
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 98/1000
+  Train - Loss: 0.0811, IoU: 0.7012, Acc: 0.9698
+  Val   - Loss: 0.0368, IoU: 0.8647, Acc: 0.9851
+  Learning Rate: 0.000727
+------------------------------------------------------------
+Epoch 99/1000
+  Train - Loss: 0.0668, IoU: 0.7301, Acc: 0.9735
+  Val   - Loss: 0.0345, IoU: 0.8682, Acc: 0.9848
+  Learning Rate: 0.000710
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 100/1000
+  Train - Loss: 0.0738, IoU: 0.7149, Acc: 0.9723
+  Val   - Loss: 0.0360, IoU: 0.8686, Acc: 0.9850
+  Learning Rate: 0.000692
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 101/1000
+  Train - Loss: 0.0861, IoU: 0.6811, Acc: 0.9679
+  Val   - Loss: 0.0551, IoU: 0.8041, Acc: 0.9764
+  Learning Rate: 0.000673
+------------------------------------------------------------
+Epoch 102/1000
+  Train - Loss: 0.0724, IoU: 0.7275, Acc: 0.9737
+  Val   - Loss: 0.0430, IoU: 0.8412, Acc: 0.9810
+  Learning Rate: 0.000655
+------------------------------------------------------------
+Epoch 103/1000
+  Train - Loss: 0.0759, IoU: 0.7169, Acc: 0.9720
+  Val   - Loss: 0.0370, IoU: 0.8651, Acc: 0.9841
+  Learning Rate: 0.000636
+------------------------------------------------------------
+Epoch 104/1000
+  Train - Loss: 0.0780, IoU: 0.7094, Acc: 0.9721
+  Val   - Loss: 0.0357, IoU: 0.8680, Acc: 0.9849
+  Learning Rate: 0.000617
+------------------------------------------------------------
+Epoch 105/1000
+  Train - Loss: 0.0726, IoU: 0.7246, Acc: 0.9734
+  Val   - Loss: 0.0417, IoU: 0.8455, Acc: 0.9826
+  Learning Rate: 0.000598
+------------------------------------------------------------
+Epoch 106/1000
+  Train - Loss: 0.0689, IoU: 0.7372, Acc: 0.9748
+  Val   - Loss: 0.0419, IoU: 0.8449, Acc: 0.9819
+  Learning Rate: 0.000579
+------------------------------------------------------------
+Epoch 107/1000
+  Train - Loss: 0.0773, IoU: 0.7122, Acc: 0.9717
+  Val   - Loss: 0.0382, IoU: 0.8534, Acc: 0.9836
+  Learning Rate: 0.000559
+------------------------------------------------------------
+Epoch 108/1000
+  Train - Loss: 0.0678, IoU: 0.7406, Acc: 0.9754
+  Val   - Loss: 0.0369, IoU: 0.8620, Acc: 0.9839
+  Learning Rate: 0.000540
+------------------------------------------------------------
+Epoch 109/1000
+  Train - Loss: 0.0607, IoU: 0.7587, Acc: 0.9771
+  Val   - Loss: 0.0366, IoU: 0.8643, Acc: 0.9846
+  Learning Rate: 0.000520
+------------------------------------------------------------
+Epoch 110/1000
+  Train - Loss: 0.0659, IoU: 0.7416, Acc: 0.9748
+  Val   - Loss: 0.0393, IoU: 0.8568, Acc: 0.9835
+  Learning Rate: 0.000501
+------------------------------------------------------------
+Epoch 111/1000
+  Train - Loss: 0.0637, IoU: 0.7491, Acc: 0.9762
+  Val   - Loss: 0.0352, IoU: 0.8672, Acc: 0.9852
+  Learning Rate: 0.000481
+------------------------------------------------------------
+Epoch 112/1000
+  Train - Loss: 0.0688, IoU: 0.7348, Acc: 0.9737
+  Val   - Loss: 0.0351, IoU: 0.8668, Acc: 0.9853
+  Learning Rate: 0.000461
+------------------------------------------------------------
+Epoch 113/1000
+  Train - Loss: 0.0656, IoU: 0.7480, Acc: 0.9761
+  Val   - Loss: 0.0348, IoU: 0.8683, Acc: 0.9853
+  Learning Rate: 0.000442
+------------------------------------------------------------
+Epoch 114/1000
+  Train - Loss: 0.0660, IoU: 0.7467, Acc: 0.9760
+  Val   - Loss: 0.0344, IoU: 0.8707, Acc: 0.9857
+  Learning Rate: 0.000422
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 115/1000
+  Train - Loss: 0.0732, IoU: 0.7178, Acc: 0.9729
+  Val   - Loss: 0.0352, IoU: 0.8694, Acc: 0.9852
+  Learning Rate: 0.000403
+------------------------------------------------------------
+Epoch 116/1000
+  Train - Loss: 0.0688, IoU: 0.7388, Acc: 0.9750
+  Val   - Loss: 0.0351, IoU: 0.8695, Acc: 0.9857
+  Learning Rate: 0.000384
+------------------------------------------------------------
+Epoch 117/1000
+  Train - Loss: 0.0626, IoU: 0.7525, Acc: 0.9752
+  Val   - Loss: 0.0346, IoU: 0.8663, Acc: 0.9848
+  Learning Rate: 0.000365
+------------------------------------------------------------
+Epoch 118/1000
+  Train - Loss: 0.0636, IoU: 0.7516, Acc: 0.9751
+  Val   - Loss: 0.0341, IoU: 0.8762, Acc: 0.9856
+  Learning Rate: 0.000346
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 119/1000
+  Train - Loss: 0.0608, IoU: 0.7640, Acc: 0.9777
+  Val   - Loss: 0.0355, IoU: 0.8667, Acc: 0.9849
+  Learning Rate: 0.000328
+------------------------------------------------------------
+Epoch 120/1000
+  Train - Loss: 0.0637, IoU: 0.7540, Acc: 0.9765
+  Val   - Loss: 0.0406, IoU: 0.8488, Acc: 0.9834
+  Learning Rate: 0.000309
+------------------------------------------------------------
+Epoch 121/1000
+  Train - Loss: 0.0648, IoU: 0.7469, Acc: 0.9752
+  Val   - Loss: 0.0350, IoU: 0.8676, Acc: 0.9850
+  Learning Rate: 0.000291
+------------------------------------------------------------
+Epoch 122/1000
+  Train - Loss: 0.0643, IoU: 0.7507, Acc: 0.9757
+  Val   - Loss: 0.0359, IoU: 0.8632, Acc: 0.9847
+  Learning Rate: 0.000274
+------------------------------------------------------------
+Epoch 123/1000
+  Train - Loss: 0.0604, IoU: 0.7643, Acc: 0.9775
+  Val   - Loss: 0.0324, IoU: 0.8744, Acc: 0.9859
+  Learning Rate: 0.000256
+------------------------------------------------------------
+Epoch 124/1000
+  Train - Loss: 0.0702, IoU: 0.7340, Acc: 0.9740
+  Val   - Loss: 0.0354, IoU: 0.8701, Acc: 0.9851
+  Learning Rate: 0.000240
+------------------------------------------------------------
+Epoch 125/1000
+  Train - Loss: 0.0693, IoU: 0.7379, Acc: 0.9739
+  Val   - Loss: 0.0421, IoU: 0.8469, Acc: 0.9828
+  Learning Rate: 0.000223
+------------------------------------------------------------
+Epoch 126/1000
+  Train - Loss: 0.0623, IoU: 0.7603, Acc: 0.9773
+  Val   - Loss: 0.0343, IoU: 0.8717, Acc: 0.9856
+  Learning Rate: 0.000207
+------------------------------------------------------------
+Epoch 127/1000
+  Train - Loss: 0.0605, IoU: 0.7569, Acc: 0.9767
+  Val   - Loss: 0.0337, IoU: 0.8722, Acc: 0.9860
+  Learning Rate: 0.000191
+------------------------------------------------------------
+Epoch 128/1000
+  Train - Loss: 0.0594, IoU: 0.7712, Acc: 0.9785
+  Val   - Loss: 0.0321, IoU: 0.8781, Acc: 0.9862
+  Learning Rate: 0.000176
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 129/1000
+  Train - Loss: 0.0570, IoU: 0.7736, Acc: 0.9788
+  Val   - Loss: 0.0332, IoU: 0.8740, Acc: 0.9858
+  Learning Rate: 0.000161
+------------------------------------------------------------
+Epoch 130/1000
+  Train - Loss: 0.0646, IoU: 0.7378, Acc: 0.9745
+  Val   - Loss: 0.0334, IoU: 0.8703, Acc: 0.9856
+  Learning Rate: 0.000147
+------------------------------------------------------------
+Epoch 131/1000
+  Train - Loss: 0.0643, IoU: 0.7489, Acc: 0.9757
+  Val   - Loss: 0.0329, IoU: 0.8760, Acc: 0.9862
+  Learning Rate: 0.000134
+------------------------------------------------------------
+Epoch 132/1000
+  Train - Loss: 0.0722, IoU: 0.7253, Acc: 0.9731
+  Val   - Loss: 0.0318, IoU: 0.8790, Acc: 0.9866
+  Learning Rate: 0.000121
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 133/1000
+  Train - Loss: 0.0685, IoU: 0.7422, Acc: 0.9741
+  Val   - Loss: 0.0339, IoU: 0.8715, Acc: 0.9857
+  Learning Rate: 0.000108
+------------------------------------------------------------
+Epoch 134/1000
+  Train - Loss: 0.0634, IoU: 0.7498, Acc: 0.9762
+  Val   - Loss: 0.0311, IoU: 0.8791, Acc: 0.9867
+  Learning Rate: 0.000096
+  >>> Best model saved: e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+  >>> Val visualization saved to: E:\AICleanBot\py_scripts\dataset\pred
+------------------------------------------------------------
+Epoch 135/1000
+  Train - Loss: 0.0585, IoU: 0.7741, Acc: 0.9785
+  Val   - Loss: 0.0327, IoU: 0.8753, Acc: 0.9863
+  Learning Rate: 0.000085
+------------------------------------------------------------
+Epoch 136/1000
+  Train - Loss: 0.0776, IoU: 0.7254, Acc: 0.9714
+  Val   - Loss: 0.0325, IoU: 0.8771, Acc: 0.9865
+  Learning Rate: 0.000075
+------------------------------------------------------------
+Epoch 137/1000
+  Train - Loss: 0.0610, IoU: 0.7577, Acc: 0.9770
+  Val   - Loss: 0.0340, IoU: 0.8732, Acc: 0.9862
+  Learning Rate: 0.000065
+------------------------------------------------------------
+Epoch 138/1000
+  Train - Loss: 0.0584, IoU: 0.7642, Acc: 0.9773
+  Val   - Loss: 0.0325, IoU: 0.8766, Acc: 0.9865
+  Learning Rate: 0.000055
+------------------------------------------------------------
+Epoch 139/1000
+  Train - Loss: 0.0596, IoU: 0.7738, Acc: 0.9782
+  Val   - Loss: 0.0319, IoU: 0.8769, Acc: 0.9865
+  Learning Rate: 0.000047
+------------------------------------------------------------
+Epoch 140/1000
+  Train - Loss: 0.0579, IoU: 0.7771, Acc: 0.9791
+  Val   - Loss: 0.0331, IoU: 0.8739, Acc: 0.9862
+  Learning Rate: 0.000039
+------------------------------------------------------------
+Epoch 141/1000
+  Train - Loss: 0.0694, IoU: 0.7380, Acc: 0.9750
+  Val   - Loss: 0.0327, IoU: 0.8746, Acc: 0.9862
+  Learning Rate: 0.000032
+------------------------------------------------------------
+Epoch 142/1000
+  Train - Loss: 0.0622, IoU: 0.7503, Acc: 0.9763
+  Val   - Loss: 0.0325, IoU: 0.8752, Acc: 0.9862
+  Learning Rate: 0.000025
+------------------------------------------------------------
+Epoch 143/1000
+  Train - Loss: 0.0725, IoU: 0.7268, Acc: 0.9738
+  Val   - Loss: 0.0330, IoU: 0.8733, Acc: 0.9861
+  Learning Rate: 0.000020
+------------------------------------------------------------
+Epoch 144/1000
+  Train - Loss: 0.0741, IoU: 0.7267, Acc: 0.9730
+  Val   - Loss: 0.0317, IoU: 0.8780, Acc: 0.9865
+  Learning Rate: 0.000015
+------------------------------------------------------------
+Epoch 145/1000
+  Train - Loss: 0.0609, IoU: 0.7587, Acc: 0.9770
+  Val   - Loss: 0.0326, IoU: 0.8748, Acc: 0.9862
+  Learning Rate: 0.000011
+------------------------------------------------------------
+Epoch 146/1000
+  Train - Loss: 0.0614, IoU: 0.7572, Acc: 0.9768
+  Val   - Loss: 0.0330, IoU: 0.8739, Acc: 0.9861
+  Learning Rate: 0.000007
+------------------------------------------------------------
+Epoch 147/1000
+  Train - Loss: 0.0625, IoU: 0.7622, Acc: 0.9772
+  Val   - Loss: 0.0326, IoU: 0.8748, Acc: 0.9862
+  Learning Rate: 0.000004
+------------------------------------------------------------
+Epoch 148/1000
+  Train - Loss: 0.0602, IoU: 0.7616, Acc: 0.9771
+  Val   - Loss: 0.0326, IoU: 0.8744, Acc: 0.9861
+  Learning Rate: 0.000003
+------------------------------------------------------------
+Epoch 149/1000
+  Train - Loss: 0.0583, IoU: 0.7685, Acc: 0.9780
+  Val   - Loss: 0.0332, IoU: 0.8733, Acc: 0.9860
+  Learning Rate: 0.000001
+------------------------------------------------------------
+Epoch 150/1000
+  Train - Loss: 0.0597, IoU: 0.7620, Acc: 0.9773
+  Val   - Loss: 0.0328, IoU: 0.8742, Acc: 0.9861
+  Learning Rate: 0.001000
+------------------------------------------------------------
+Epoch 151/1000
+  Train - Loss: 0.0653, IoU: 0.7393, Acc: 0.9746
+  Val   - Loss: 0.0398, IoU: 0.8532, Acc: 0.9830
+  Learning Rate: 0.001000
+------------------------------------------------------------
+Epoch 152/1000
+  Train - Loss: 0.0657, IoU: 0.7446, Acc: 0.9757
+  Val   - Loss: 0.0369, IoU: 0.8607, Acc: 0.9847
+  Learning Rate: 0.001000
+------------------------------------------------------------
+Epoch 153/1000
+  Train - Loss: 0.0661, IoU: 0.7412, Acc: 0.9748
+  Val   - Loss: 0.0749, IoU: 0.7174, Acc: 0.9671
+  Learning Rate: 0.000999
+------------------------------------------------------------
+Epoch 154/1000
+  Train - Loss: 0.0626, IoU: 0.7532, Acc: 0.9762
+  Val   - Loss: 0.0402, IoU: 0.8435, Acc: 0.9819
+  Learning Rate: 0.000998
+  >>> Early stopping triggered! No improvement for 20 epochs
+Training completed! Best val IoU: 0.8791
+模型已保存：e:\AICleanBot\py_scripts\net\..\models\20260416_225153_UNetMiniExp5_KD\best_model.pth
+训练曲线已保存：e:\AICleanBot\py_scripts\net\..\models\..\figure\20260416_225153_UNetMiniExp5_KD
+训练总耗时：00:09:59
+Teacher模型: e:\AICleanBot\py_scripts\models\20260416_213640_UNet_ResNet18\best_model.pth

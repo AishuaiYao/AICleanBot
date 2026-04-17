@@ -150,7 +150,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='UNet 推理脚本（支持 Student 和 Teacher 模型）')
     parser.add_argument(
         '--model',
-        default=r'E:\AICleanBot\py_scripts\models\20260416_223257_UNetMiniExp5_KD\best_model.pth',
+        default=r'E:\AICleanBot\py_scripts\models\20260412_180030_UNetMiniExp5\best_model.pth',
         type=str,
         help='模型权重路径（.pth），目录名需包含模型类型，如 UNetMiniExp5 或 UNet_ResNet18'
     )
