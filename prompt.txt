@@ -19,3 +19,5 @@
 · 你只能修改E:\AICleanBot目录中的文件，idf的组件源码不允许修改。
 需求/问题：
     请看我的train_teacher train_student代码,以及对应的训练日志（在logs里最新的两个）然后告诉我我的student训练，还有什么策略可以提升效果吗。
+
+

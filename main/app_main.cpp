@@ -346,7 +346,7 @@ static void handle_client(int client_sock)
 
         if (strncmp(buf, "START:", 6) == 0) {
             int speed = atoi(buf + 6);
-            if (speed >= 1 && speed <= 20) {
+            if (speed >= 1 && speed <= 100) {
                 g_motor_running = true;
                 g_motor_base_speed = speed * 255 / 100;
                 motor_a_forward(g_motor_base_speed);
@@ -360,8 +360,8 @@ static void handle_client(int client_sock)
                 continue;
             }
             int speed = atoi(buf + 6);
-            if (speed >= 1 && speed <= 20) {
-                g_motor_base_speed = speed * 255 / 100;  // 1-20映射到PWM百分比
+            if (speed >= 1 && speed <= 100) {
+                g_motor_base_speed = speed * 255 / 100;
                 motor_a_forward(g_motor_base_speed);
                 motor_b_forward(g_motor_base_speed);
                 ESP_LOGI(TAG, "[Motor] 速度设置为%d%%, PWM=%d", speed, g_motor_base_speed);
@@ -658,7 +658,7 @@ static void handle_client(int client_sock)
                     
                     if (strncmp(buf, "START:", 6) == 0) {
                         int speed = atoi(buf + 6);
-                        if (speed >= 1 && speed <= 20) {
+                        if (speed >= 1 && speed <= 100) {
                             g_motor_running = true;
                             g_motor_base_speed = speed * 255 / 100;
                             motor_a_forward(g_motor_base_speed);
@@ -685,7 +685,7 @@ static void handle_client(int client_sock)
                             continue;
                         }
                         int speed = atoi(buf + 6);
-                        if (speed >= 1 && speed <= 20) {
+                        if (speed >= 1 && speed <= 100) {
                             g_motor_base_speed = speed * 255 / 100;
                             motor_a_forward(g_motor_base_speed);
                             motor_b_forward(g_motor_base_speed);
