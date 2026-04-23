@@ -18,6 +18,8 @@
 · 如果某些组件在我们的C++代码里不需要，请在CMakeLists.txt里删除相关的组件。
 · 你只能修改E:\AICleanBot目录中的文件，idf的组件源码不允许修改。
 需求/问题：
-    请看我的train_teacher train_student代码,以及对应的训练日志（在logs里最新的两个）然后告诉我我的student训练，还有什么策略可以提升效果吗。
+    请问我现在驱动两个电机都用的那些引脚
 
 
+PWMA	GPIO1	速度控制PWM，AIN1	GPIO2	方向控制，AIN2	GPIO42  方向控制，E1A GPIO41，E1B GPIO40。
+PWMB	GPIO39	速度控制PWM，BIN1	GPIO38	方向控制，BIN2	GPIO37	方向控制，E2A GPIO36，E2B GPIO35。

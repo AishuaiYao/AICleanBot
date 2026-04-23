@@ -13,6 +13,7 @@
 #include "esp_timer.h"
 #include "driver/ledc.h"
 #include "driver/gpio.h"
+#include "driver/pulse_cnt.h"
 #include "dl_model_base.hpp"
 
 static const char *TAG = "CAM_TCP";
@@ -52,9 +53,19 @@ static dl::Model *g_model = nullptr;
 #define MOTOR_A_IN1   GPIO_NUM_2    // GPIO2  - AIN1
 #define MOTOR_A_IN2   GPIO_NUM_42   // GPIO42 - AIN2
 
-#define MOTOR_B_PWM   GPIO_NUM_41   // GPIO41 - PWMB
-#define MOTOR_B_IN1   GPIO_NUM_40   // GPIO40 - BIN1
-#define MOTOR_B_IN2   GPIO_NUM_39   // GPIO39 - BIN2
+#define MOTOR_B_PWM   GPIO_NUM_39   // GPIO39 - PWMB
+#define MOTOR_B_IN1   GPIO_NUM_38   // GPIO38 - BIN1
+#define MOTOR_B_IN2   GPIO_NUM_37   // GPIO37 - BIN2
+
+// 编码器引脚定义
+#define ENCODER_E1A   GPIO_NUM_41   // GPIO41 - 电机A编码器A相
+#define ENCODER_E1B   GPIO_NUM_40   // GPIO40 - 电机A编码器B相
+#define ENCODER_E2A   GPIO_NUM_36   // GPIO36 - 电机B编码器A相
+#define ENCODER_E2B   GPIO_NUM_35   // GPIO35 - 电机B编码器B相
+
+// PCNT单元定义
+#define ENCODER_A_PCNT_UNIT  PCNT_UNIT_0
+#define ENCODER_B_PCNT_UNIT  PCNT_UNIT_1
 
 // LEDC PWM 配置
 #define MOTOR_LEDC_TIMER      LEDC_TIMER_1
@@ -93,6 +104,12 @@ static uint8_t g_motor_base_speed = 0;  // 基础速度PWM值 (0-255)
 static bool g_motor_running = false;    // 电机运行状态
 static uint8_t g_motor_a_pwm = 0;       // 电机A实际PWM值
 static uint8_t g_motor_b_pwm = 0;       // 电机B实际PWM值
+
+// 编码器相关
+static int16_t g_encoder_a_count = 0;   // 电机A编码器脉冲计数
+static int16_t g_encoder_b_count = 0;   // 电机B编码器脉冲计数
+static pcnt_unit_handle_t g_encoder_a_pcnt = NULL;
+static pcnt_unit_handle_t g_encoder_b_pcnt = NULL;
 
 // ===========================
 // Sigmoid查表优化
@@ -213,6 +230,76 @@ static void motor_stop(void)
     g_motor_a_pwm = 0;  // 重置PWM值
     g_motor_b_pwm = 0;  // 重置PWM值
     ESP_LOGI(TAG, "[Motor] 停止");
+}
+
+// ===========================
+// 编码器控制函数
+// ===========================
+
+// 初始化编码器PCNT
+static void encoder_init(void)
+{
+    // 配置电机A编码器
+    pcnt_channel_config_t pcnt_chan_a_config = {
+        .edge_gpio_num = ENCODER_E1A,
+        .level_gpio_num = ENCODER_E1B,
+    };
+    
+    pcnt_unit_config_t unit_config_a = {
+        .high_limit = 32767,
+        .low_limit = -32768,
+    };
+    pcnt_new_unit(&unit_config_a, &g_encoder_a_pcnt);
+    pcnt_new_channel(g_encoder_a_pcnt, &pcnt_chan_a_config, NULL);
+    pcnt_unit_enable(g_encoder_a_pcnt);
+    pcnt_unit_clear_count(g_encoder_a_pcnt);
+    pcnt_unit_start(g_encoder_a_pcnt);
+
+    // 配置电机B编码器
+    pcnt_channel_config_t pcnt_chan_b_config = {
+        .edge_gpio_num = ENCODER_E2A,
+        .level_gpio_num = ENCODER_E2B,
+    };
+    
+    pcnt_unit_config_t unit_config_b = {
+        .high_limit = 32767,
+        .low_limit = -32768,
+    };
+    pcnt_new_unit(&unit_config_b, &g_encoder_b_pcnt);
+    pcnt_new_channel(g_encoder_b_pcnt, &pcnt_chan_b_config, NULL);
+    pcnt_unit_enable(g_encoder_b_pcnt);
+    pcnt_unit_clear_count(g_encoder_b_pcnt);
+    pcnt_unit_start(g_encoder_b_pcnt);
+
+    ESP_LOGI(TAG, "[Encoder] 初始化完成");
+}
+
+// 获取电机A编码器脉冲计数
+static int16_t encoder_a_get_count(void)
+{
+    int16_t count;
+    pcnt_unit_get_count(g_encoder_a_pcnt, &count);
+    return count;
+}
+
+// 获取电机B编码器脉冲计数
+static int16_t encoder_b_get_count(void)
+{
+    int16_t count;
+    pcnt_unit_get_count(g_encoder_b_pcnt, &count);
+    return count;
+}
+
+// 重置电机A编码器计数
+static void encoder_a_reset(void)
+{
+    pcnt_unit_clear_count(g_encoder_a_pcnt);
+}
+
+// 重置电机B编码器计数
+static void encoder_b_reset(void)
+{
+    pcnt_unit_clear_count(g_encoder_b_pcnt);
 }
 
 // ===========================
@@ -797,6 +884,7 @@ extern "C" void app_main(void)
 
     camera_init();
     motor_init();
+    encoder_init();
     wifi_init_ap();
     udp_init();
 
