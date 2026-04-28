@@ -53,19 +53,17 @@ static dl::Model *g_model = nullptr;
 #define MOTOR_A_IN1   GPIO_NUM_2    // GPIO2  - AIN1
 #define MOTOR_A_IN2   GPIO_NUM_42   // GPIO42 - AIN2
 
-#define MOTOR_B_PWM   GPIO_NUM_39   // GPIO39 - PWMB
-#define MOTOR_B_IN1   GPIO_NUM_38   // GPIO38 - BIN1
-#define MOTOR_B_IN2   GPIO_NUM_37   // GPIO37 - BIN2
+#define MOTOR_B_PWM   GPIO_NUM_41   // GPIO41 - PWMB
+#define MOTOR_B_IN1   GPIO_NUM_40   // GPIO40 - BIN1
+#define MOTOR_B_IN2   GPIO_NUM_39   // GPIO39 - BIN2
 
+// ===========================
 // 编码器引脚定义
-#define ENCODER_E1A   GPIO_NUM_41   // GPIO41 - 电机A编码器A相
-#define ENCODER_E1B   GPIO_NUM_40   // GPIO40 - 电机A编码器B相
-#define ENCODER_E2A   GPIO_NUM_36   // GPIO36 - 电机B编码器A相
-#define ENCODER_E2B   GPIO_NUM_35   // GPIO35 - 电机B编码器B相
-
-// PCNT单元定义
-#define ENCODER_A_PCNT_UNIT  PCNT_UNIT_0
-#define ENCODER_B_PCNT_UNIT  PCNT_UNIT_1
+// ===========================
+#define ENCODER_L_A   GPIO_NUM_38   // E1A - 左轮编码器A相
+#define ENCODER_L_B   GPIO_NUM_47   // E1B - 左轮编码器B相
+#define ENCODER_R_A   GPIO_NUM_21   // E2A - 右轮编码器A相
+#define ENCODER_R_B   GPIO_NUM_14   // E2B - 右轮编码器B相
 
 // LEDC PWM 配置
 #define MOTOR_LEDC_TIMER      LEDC_TIMER_1
@@ -106,10 +104,8 @@ static uint8_t g_motor_a_pwm = 0;       // 电机A实际PWM值
 static uint8_t g_motor_b_pwm = 0;       // 电机B实际PWM值
 
 // 编码器相关
-static int16_t g_encoder_a_count = 0;   // 电机A编码器脉冲计数
-static int16_t g_encoder_b_count = 0;   // 电机B编码器脉冲计数
-static pcnt_unit_handle_t g_encoder_a_pcnt = NULL;
-static pcnt_unit_handle_t g_encoder_b_pcnt = NULL;
+static pcnt_unit_handle_t g_enc_l = nullptr;  // 左轮编码器
+static pcnt_unit_handle_t g_enc_r = nullptr;  // 右轮编码器
 
 // ===========================
 // Sigmoid查表优化
@@ -194,6 +190,74 @@ static void motor_init(void)
     ESP_LOGI(TAG, "[Motor] 初始化完成");
 }
 
+// ===========================
+// 编码器初始化
+// ===========================
+static void encoder_init(void)
+{
+    pcnt_glitch_filter_config_t filter_config = {};
+    filter_config.max_glitch_ns = 1000;  // 1us滤波
+
+    // 左轮编码器
+    pcnt_unit_config_t unit_l_config = {};
+    unit_l_config.high_limit = 10000;
+    unit_l_config.low_limit = -10000;
+    ESP_ERROR_CHECK(pcnt_new_unit(&unit_l_config, &g_enc_l));
+    ESP_ERROR_CHECK(pcnt_unit_set_glitch_filter(g_enc_l, &filter_config));
+
+    pcnt_chan_config_t chan_l_config = {};
+    chan_l_config.edge_gpio_num = ENCODER_L_A;
+    chan_l_config.level_gpio_num = ENCODER_L_B;
+    pcnt_channel_handle_t chan_l_a = nullptr;
+    pcnt_channel_handle_t chan_l_b = nullptr;
+    ESP_ERROR_CHECK(pcnt_new_channel(g_enc_l, &chan_l_config, &chan_l_a));
+    chan_l_config.edge_gpio_num = -1;
+    ESP_ERROR_CHECK(pcnt_new_channel(g_enc_l, &chan_l_config, &chan_l_b));
+
+    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(chan_l_a, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE));
+    ESP_ERROR_CHECK(pcnt_channel_set_level_action(chan_l_b, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
+
+    ESP_ERROR_CHECK(pcnt_unit_enable(g_enc_l));
+    ESP_ERROR_CHECK(pcnt_unit_clear_count(g_enc_l));
+    ESP_ERROR_CHECK(pcnt_unit_start(g_enc_l));
+
+    // 右轮编码器
+    pcnt_unit_config_t unit_r_config = {};
+    unit_r_config.high_limit = 10000;
+    unit_r_config.low_limit = -10000;
+    ESP_ERROR_CHECK(pcnt_new_unit(&unit_r_config, &g_enc_r));
+    ESP_ERROR_CHECK(pcnt_unit_set_glitch_filter(g_enc_r, &filter_config));
+
+    pcnt_chan_config_t chan_r_config = {};
+    chan_r_config.edge_gpio_num = ENCODER_R_A;
+    chan_r_config.level_gpio_num = ENCODER_R_B;
+    pcnt_channel_handle_t chan_r_a = nullptr;
+    pcnt_channel_handle_t chan_r_b = nullptr;
+    ESP_ERROR_CHECK(pcnt_new_channel(g_enc_r, &chan_r_config, &chan_r_a));
+    chan_r_config.edge_gpio_num = -1;
+    ESP_ERROR_CHECK(pcnt_new_channel(g_enc_r, &chan_r_config, &chan_r_b));
+
+    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(chan_r_a, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE));
+    ESP_ERROR_CHECK(pcnt_channel_set_level_action(chan_r_b, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
+
+    ESP_ERROR_CHECK(pcnt_unit_enable(g_enc_r));
+    ESP_ERROR_CHECK(pcnt_unit_clear_count(g_enc_r));
+    ESP_ERROR_CHECK(pcnt_unit_start(g_enc_r));
+
+    ESP_LOGI(TAG, "[Encoder] 初始化完成 左轮:GPIO38/GPIO47 右轮:GPIO21/GPIO14");
+}
+
+// 编码器读取
+static void encoder_read(int *l_count, int *r_count)
+{
+    if (g_enc_l) {
+        pcnt_unit_get_count(g_enc_l, l_count);
+    }
+    if (g_enc_r) {
+        pcnt_unit_get_count(g_enc_r, r_count);
+    }
+}
+
 // 电机A正转
 static void motor_a_forward(uint8_t speed)
 {
@@ -230,76 +294,6 @@ static void motor_stop(void)
     g_motor_a_pwm = 0;  // 重置PWM值
     g_motor_b_pwm = 0;  // 重置PWM值
     ESP_LOGI(TAG, "[Motor] 停止");
-}
-
-// ===========================
-// 编码器控制函数
-// ===========================
-
-// 初始化编码器PCNT
-static void encoder_init(void)
-{
-    // 配置电机A编码器
-    pcnt_chan_config_t pcnt_chan_a_config = {
-        .edge_gpio_num = ENCODER_E1A,
-        .level_gpio_num = ENCODER_E1B,
-    };
-    
-    pcnt_unit_config_t unit_config_a = {
-        .low_limit = -32768,
-        .high_limit = 32767,
-    };
-    pcnt_new_unit(&unit_config_a, &g_encoder_a_pcnt);
-    pcnt_new_channel(g_encoder_a_pcnt, &pcnt_chan_a_config, NULL);
-    pcnt_unit_enable(g_encoder_a_pcnt);
-    pcnt_unit_clear_count(g_encoder_a_pcnt);
-    pcnt_unit_start(g_encoder_a_pcnt);
-
-    // 配置电机B编码器
-    pcnt_chan_config_t pcnt_chan_b_config = {
-        .edge_gpio_num = ENCODER_E2A,
-        .level_gpio_num = ENCODER_E2B,
-    };
-    
-    pcnt_unit_config_t unit_config_b = {
-        .low_limit = -32768,
-        .high_limit = 32767,
-    };
-    pcnt_new_unit(&unit_config_b, &g_encoder_b_pcnt);
-    pcnt_new_channel(g_encoder_b_pcnt, &pcnt_chan_b_config, NULL);
-    pcnt_unit_enable(g_encoder_b_pcnt);
-    pcnt_unit_clear_count(g_encoder_b_pcnt);
-    pcnt_unit_start(g_encoder_b_pcnt);
-
-    ESP_LOGI(TAG, "[Encoder] 初始化完成");
-}
-
-// 获取电机A编码器脉冲计数
-static int16_t encoder_a_get_count(void)
-{
-    int count;
-    pcnt_unit_get_count(g_encoder_a_pcnt, &count);
-    return (int16_t)count;
-}
-
-// 获取电机B编码器脉冲计数
-static int16_t encoder_b_get_count(void)
-{
-    int count;
-    pcnt_unit_get_count(g_encoder_b_pcnt, &count);
-    return (int16_t)count;
-}
-
-// 重置电机A编码器计数
-static void encoder_a_reset(void)
-{
-    pcnt_unit_clear_count(g_encoder_a_pcnt);
-}
-
-// 重置电机B编码器计数
-static void encoder_b_reset(void)
-{
-    pcnt_unit_clear_count(g_encoder_b_pcnt);
 }
 
 // ===========================
@@ -687,16 +681,16 @@ static void handle_client(int client_sock)
                     
                     if (i == 0) {
                         // 第一分片：[帧号2B][总分片1B][索引1B][电机A 1B][电机B 1B][编码器A 2B][编码器B 2B][数据...]
+                        int enc_l = 0, enc_r = 0;
+                        encoder_read(&enc_l, &enc_r);
                         chunk_buf = (uint8_t *)malloc(10 + current_chunk_size);
                         header_size = 10;
                         chunk_buf[4] = g_motor_a_pwm;  // 电机A PWM值
                         chunk_buf[5] = g_motor_b_pwm;  // 电机B PWM值
-                        int16_t enc_a = encoder_a_get_count();
-                        int16_t enc_b = encoder_b_get_count();
-                        chunk_buf[6] = (enc_a >> 8) & 0xFF;  // 编码器A 高字节
-                        chunk_buf[7] = enc_a & 0xFF;         // 编码器A 低字节
-                        chunk_buf[8] = (enc_b >> 8) & 0xFF;  // 编码器B 高字节
-                        chunk_buf[9] = enc_b & 0xFF;         // 编码器B 低字节
+                        chunk_buf[6] = (enc_l >> 8) & 0xFF;  // 左编码器 高字节
+                        chunk_buf[7] = enc_l & 0xFF;          // 左编码器 低字节
+                        chunk_buf[8] = (enc_r >> 8) & 0xFF;  // 右编码器 高字节
+                        chunk_buf[9] = enc_r & 0xFF;          // 右编码器 低字节
                     } else {
                         // 其他分片：[帧号2B][总分片1B][索引1B][数据...]
                         chunk_buf = (uint8_t *)malloc(4 + current_chunk_size);
@@ -730,10 +724,14 @@ static void handle_client(int client_sock)
                 
                 if (chunks_sent == total_chunks) {
                     frame_count++;
+                    // 打印编码器值
+                    int l_count = 0, r_count = 0;
+                    encoder_read(&l_count, &r_count);
+                    ESP_LOGI(TAG, "[Encoder] 左轮:%d  右轮:%d", l_count, r_count);
                     // 每100帧打印一次状态
                     if (frame_count % 100 == 0) {
                         float fps = frame_count * 1000.0f / ((frame_end - stream_start_time) / 1000.0f);
-                        ESP_LOGI(TAG, "[Stream] 帧%d: 发送%d分片, 耗时%.1fms, FPS=%.1f", 
+                        ESP_LOGI(TAG, "[Stream] 帧%d: 发送%d分片, 耗时%.1fms, FPS=%.1f",
                                  frame_count, chunks_sent, frame_time, fps);
                     }
                 } else {
