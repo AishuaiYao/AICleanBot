@@ -240,14 +240,14 @@ static void motor_stop(void)
 static void encoder_init(void)
 {
     // 配置电机A编码器
-    pcnt_channel_config_t pcnt_chan_a_config = {
+    pcnt_chan_config_t pcnt_chan_a_config = {
         .edge_gpio_num = ENCODER_E1A,
         .level_gpio_num = ENCODER_E1B,
     };
     
     pcnt_unit_config_t unit_config_a = {
-        .high_limit = 32767,
         .low_limit = -32768,
+        .high_limit = 32767,
     };
     pcnt_new_unit(&unit_config_a, &g_encoder_a_pcnt);
     pcnt_new_channel(g_encoder_a_pcnt, &pcnt_chan_a_config, NULL);
@@ -256,14 +256,14 @@ static void encoder_init(void)
     pcnt_unit_start(g_encoder_a_pcnt);
 
     // 配置电机B编码器
-    pcnt_channel_config_t pcnt_chan_b_config = {
+    pcnt_chan_config_t pcnt_chan_b_config = {
         .edge_gpio_num = ENCODER_E2A,
         .level_gpio_num = ENCODER_E2B,
     };
     
     pcnt_unit_config_t unit_config_b = {
-        .high_limit = 32767,
         .low_limit = -32768,
+        .high_limit = 32767,
     };
     pcnt_new_unit(&unit_config_b, &g_encoder_b_pcnt);
     pcnt_new_channel(g_encoder_b_pcnt, &pcnt_chan_b_config, NULL);
@@ -277,17 +277,17 @@ static void encoder_init(void)
 // 获取电机A编码器脉冲计数
 static int16_t encoder_a_get_count(void)
 {
-    int16_t count;
+    int count;
     pcnt_unit_get_count(g_encoder_a_pcnt, &count);
-    return count;
+    return (int16_t)count;
 }
 
 // 获取电机B编码器脉冲计数
 static int16_t encoder_b_get_count(void)
 {
-    int16_t count;
+    int count;
     pcnt_unit_get_count(g_encoder_b_pcnt, &count);
-    return count;
+    return (int16_t)count;
 }
 
 // 重置电机A编码器计数
@@ -686,11 +686,17 @@ static void handle_client(int client_sock)
                     int header_size;
                     
                     if (i == 0) {
-                        // 第一分片：[帧号2B][总分片1B][索引1B][电机A 1B][电机B 1B][数据...]
-                        chunk_buf = (uint8_t *)malloc(6 + current_chunk_size);
-                        header_size = 6;
+                        // 第一分片：[帧号2B][总分片1B][索引1B][电机A 1B][电机B 1B][编码器A 2B][编码器B 2B][数据...]
+                        chunk_buf = (uint8_t *)malloc(10 + current_chunk_size);
+                        header_size = 10;
                         chunk_buf[4] = g_motor_a_pwm;  // 电机A PWM值
                         chunk_buf[5] = g_motor_b_pwm;  // 电机B PWM值
+                        int16_t enc_a = encoder_a_get_count();
+                        int16_t enc_b = encoder_b_get_count();
+                        chunk_buf[6] = (enc_a >> 8) & 0xFF;  // 编码器A 高字节
+                        chunk_buf[7] = enc_a & 0xFF;         // 编码器A 低字节
+                        chunk_buf[8] = (enc_b >> 8) & 0xFF;  // 编码器B 高字节
+                        chunk_buf[9] = enc_b & 0xFF;         // 编码器B 低字节
                     } else {
                         // 其他分片：[帧号2B][总分片1B][索引1B][数据...]
                         chunk_buf = (uint8_t *)malloc(4 + current_chunk_size);
