@@ -205,74 +205,57 @@ static void encoder_init(void)
     enc_pull_conf.pull_up_en = GPIO_PULLUP_ENABLE;
     enc_pull_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     enc_pull_conf.intr_type = GPIO_INTR_DISABLE;
-    ESP_ERROR_CHECK(gpio_config(&enc_pull_conf));
-    ESP_LOGI(TAG, "[Encoder] GPIO上拉配置完成: L_A=%d L_B=%d R_A=%d R_B=%d",
-             ENCODER_L_A, ENCODER_L_B, ENCODER_R_A, ENCODER_R_B);
+    gpio_config(&enc_pull_conf);
+    ESP_LOGI(TAG, "[Encoder] GPIO上拉配置完成");
 
     // 读取GPIO初始电平
-    int l_a = gpio_get_level(ENCODER_L_A);
-    int l_b = gpio_get_level(ENCODER_L_B);
-    int r_a = gpio_get_level(ENCODER_R_A);
-    int r_b = gpio_get_level(ENCODER_R_B);
-    ESP_LOGI(TAG, "[Encoder] 初始电平: L_A=%d L_B=%d R_A=%d R_B=%d", l_a, l_b, r_a, r_b);
+    ESP_LOGI(TAG, "[Encoder] 初始电平: L_A=%d L_B=%d R_A=%d R_B=%d",
+             gpio_get_level(ENCODER_L_A), gpio_get_level(ENCODER_L_B),
+             gpio_get_level(ENCODER_R_A), gpio_get_level(ENCODER_R_B));
 
-    // 配置左轮 PCNT 单元（启用软件累加，防止溢出）
+    // 配置左轮 PCNT 单元
     pcnt_unit_config_t unit_config = {};
-    unit_config.high_limit = 32767;
-    unit_config.low_limit = -32768;
-    unit_config.flags.accum_count = 1;
-    ESP_ERROR_CHECK(pcnt_new_unit(&unit_config, &g_pcnt_l));
+    unit_config.high_limit = 10000;
+    unit_config.low_limit = -10000;
+    pcnt_new_unit(&unit_config, &g_pcnt_l);
 
-    // 左轮通道0：A相边沿 + B相电平
+    // 左轮通道0：简单配置 - 只用edge GPIO计数
+    // 先测试基本功能
     pcnt_chan_config_t chan_config = {};
-    chan_config.edge_gpio_num = ENCODER_L_A;
-    chan_config.level_gpio_num = ENCODER_L_B;
-    pcnt_channel_handle_t pcnt_ch_l0 = NULL;
-    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_l, &chan_config, &pcnt_ch_l0));
-    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_l0, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE));
-    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_l0, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
+    chan_config.edge_gpio_num = ENCODER_L_A;   // GPIO38 - 只用A相计数
+    pcnt_channel_handle_t pcnt_ch_l = NULL;
+    pcnt_new_channel(g_pcnt_l, &chan_config, &pcnt_ch_l);
+    // A相上升沿+1，下降沿-1（相当于统计A相脉冲数的一半）
+    pcnt_channel_set_edge_action(pcnt_ch_l, 
+        PCNT_CHANNEL_EDGE_ACTION_INCREASE,  
+        PCNT_CHANNEL_EDGE_ACTION_DECREASE); 
+    pcnt_channel_set_level_action(pcnt_ch_l,
+        PCNT_CHANNEL_LEVEL_ACTION_HOLD,
+        PCNT_CHANNEL_LEVEL_ACTION_HOLD);
 
-    // 左轮通道1：B相边沿 + A相电平（4倍频正交计数）
-    chan_config.edge_gpio_num = ENCODER_L_B;
-    chan_config.level_gpio_num = ENCODER_L_A;
-    pcnt_channel_handle_t pcnt_ch_l1 = NULL;
-    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_l, &chan_config, &pcnt_ch_l1));
-    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_l1, PCNT_CHANNEL_EDGE_ACTION_DECREASE, PCNT_CHANNEL_EDGE_ACTION_INCREASE));
-    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_l1, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
+    // 配置右轮 PCNT 单元
+    pcnt_new_unit(&unit_config, &g_pcnt_r);
 
-    // 配置右轮 PCNT 单元（启用软件累加，防止溢出）
-    ESP_ERROR_CHECK(pcnt_new_unit(&unit_config, &g_pcnt_r));
+    // 右轮通道0
+    chan_config.edge_gpio_num = ENCODER_R_A;   // GPIO21
+    pcnt_channel_handle_t pcnt_ch_r = NULL;
+    pcnt_new_channel(g_pcnt_r, &chan_config, &pcnt_ch_r);
+    pcnt_channel_set_edge_action(pcnt_ch_r,
+        PCNT_CHANNEL_EDGE_ACTION_INCREASE,
+        PCNT_CHANNEL_EDGE_ACTION_DECREASE);
+    pcnt_channel_set_level_action(pcnt_ch_r,
+        PCNT_CHANNEL_LEVEL_ACTION_HOLD,
+        PCNT_CHANNEL_LEVEL_ACTION_HOLD);
 
-    // 右轮通道0：A相边沿 + B相电平
-    chan_config.edge_gpio_num = ENCODER_R_A;
-    chan_config.level_gpio_num = ENCODER_R_B;
-    pcnt_channel_handle_t pcnt_ch_r0 = NULL;
-    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_r, &chan_config, &pcnt_ch_r0));
-    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_r0, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE));
-    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_r0, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
+    // 使能、清零、启动
+    pcnt_unit_enable(g_pcnt_l);
+    pcnt_unit_enable(g_pcnt_r);
+    pcnt_unit_clear_count(g_pcnt_l);
+    pcnt_unit_clear_count(g_pcnt_r);
+    pcnt_unit_start(g_pcnt_l);
+    pcnt_unit_start(g_pcnt_r);
 
-    // 右轮通道1：B相边沿 + A相电平（4倍频正交计数）
-    chan_config.edge_gpio_num = ENCODER_R_B;
-    chan_config.level_gpio_num = ENCODER_R_A;
-    pcnt_channel_handle_t pcnt_ch_r1 = NULL;
-    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_r, &chan_config, &pcnt_ch_r1));
-    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_r1, PCNT_CHANNEL_EDGE_ACTION_DECREASE, PCNT_CHANNEL_EDGE_ACTION_INCREASE));
-    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_r1, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
-
-    // 使能 PCNT 单元（必须在 start 之前调用）
-    ESP_ERROR_CHECK(pcnt_unit_enable(g_pcnt_l));
-    ESP_ERROR_CHECK(pcnt_unit_enable(g_pcnt_r));
-
-    // 清零计数器
-    ESP_ERROR_CHECK(pcnt_unit_clear_count(g_pcnt_l));
-    ESP_ERROR_CHECK(pcnt_unit_clear_count(g_pcnt_r));
-
-    // 启动 PCNT 计数
-    ESP_ERROR_CHECK(pcnt_unit_start(g_pcnt_l));
-    ESP_ERROR_CHECK(pcnt_unit_start(g_pcnt_r));
-
-    ESP_LOGI(TAG, "[Encoder] PCNT配置完成: 左轮=UNIT, 右轮=UNIT");
-    ESP_LOGI(TAG, "[Encoder] 初始化完成 左轮:GPIO38/GPIO47 右轮:GPIO21/GPIO14");
+    ESP_LOGI(TAG, "[Encoder] 初始化完成");
 }
 
 // 编码器读取

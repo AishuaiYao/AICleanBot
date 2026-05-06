@@ -19,7 +19,8 @@
 · 如果某些组件在我们的C++代码里不需要，请在CMakeLists.txt里删除相关的组件。
 · 你只能修改E:\AICleanBot目录中的文件，idf的组件源码不允许修改。
 需求/问题：
+esp32的日志：E:\AICleanBot\logs\esp32log.txt
 所有的电机和编码器引脚定义如下，但是我的程序读不到编码器的值，请分析我的c++代码，看看哪里有问题。
 PWMA	GPIO1	速度控制PWM，AIN1	GPIO2	方向控制，AIN2	GPIO42  方向控制，E1A GPIO38，E1B GPIO47。
 PWMB	GPIO41	速度控制PWM，BIN1	GPIO40	方向控制，BIN2	GPIO39	方向控制，E2A GPIO21，E2B GPIO14。
-esp32的日志：E:\AICleanBot\logs\esp32log.txt
+
