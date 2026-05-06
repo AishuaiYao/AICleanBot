@@ -216,31 +216,56 @@ static void encoder_init(void)
     int r_b = gpio_get_level(ENCODER_R_B);
     ESP_LOGI(TAG, "[Encoder] 初始电平: L_A=%d L_B=%d R_A=%d R_B=%d", l_a, l_b, r_a, r_b);
 
-    // 配置左轮 PCNT 单元
+    // 配置左轮 PCNT 单元（启用软件累加，防止溢出）
     pcnt_unit_config_t unit_config = {};
     unit_config.high_limit = 32767;
     unit_config.low_limit = -32768;
+    unit_config.flags.accum_count = 1;
     ESP_ERROR_CHECK(pcnt_new_unit(&unit_config, &g_pcnt_l));
 
-    // 配置左轮通道 - 正交计数模式
+    // 左轮通道0：A相边沿 + B相电平
     pcnt_chan_config_t chan_config = {};
     chan_config.edge_gpio_num = ENCODER_L_A;
     chan_config.level_gpio_num = ENCODER_L_B;
-    pcnt_channel_handle_t pcnt_ch_l = NULL;
-    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_l, &chan_config, &pcnt_ch_l));
-    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_l, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE));
-    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_l, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
+    pcnt_channel_handle_t pcnt_ch_l0 = NULL;
+    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_l, &chan_config, &pcnt_ch_l0));
+    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_l0, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE));
+    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_l0, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
 
-    // 配置右轮 PCNT 单元
+    // 左轮通道1：B相边沿 + A相电平（4倍频正交计数）
+    chan_config.edge_gpio_num = ENCODER_L_B;
+    chan_config.level_gpio_num = ENCODER_L_A;
+    pcnt_channel_handle_t pcnt_ch_l1 = NULL;
+    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_l, &chan_config, &pcnt_ch_l1));
+    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_l1, PCNT_CHANNEL_EDGE_ACTION_DECREASE, PCNT_CHANNEL_EDGE_ACTION_INCREASE));
+    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_l1, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
+
+    // 配置右轮 PCNT 单元（启用软件累加，防止溢出）
     ESP_ERROR_CHECK(pcnt_new_unit(&unit_config, &g_pcnt_r));
 
-    // 配置右轮通道 - 正交计数模式
+    // 右轮通道0：A相边沿 + B相电平
     chan_config.edge_gpio_num = ENCODER_R_A;
     chan_config.level_gpio_num = ENCODER_R_B;
-    pcnt_channel_handle_t pcnt_ch_r = NULL;
-    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_r, &chan_config, &pcnt_ch_r));
-    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_r, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE));
-    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_r, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
+    pcnt_channel_handle_t pcnt_ch_r0 = NULL;
+    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_r, &chan_config, &pcnt_ch_r0));
+    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_r0, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE));
+    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_r0, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
+
+    // 右轮通道1：B相边沿 + A相电平（4倍频正交计数）
+    chan_config.edge_gpio_num = ENCODER_R_B;
+    chan_config.level_gpio_num = ENCODER_R_A;
+    pcnt_channel_handle_t pcnt_ch_r1 = NULL;
+    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_r, &chan_config, &pcnt_ch_r1));
+    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_r1, PCNT_CHANNEL_EDGE_ACTION_DECREASE, PCNT_CHANNEL_EDGE_ACTION_INCREASE));
+    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_r1, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
+
+    // 使能 PCNT 单元（必须在 start 之前调用）
+    ESP_ERROR_CHECK(pcnt_unit_enable(g_pcnt_l));
+    ESP_ERROR_CHECK(pcnt_unit_enable(g_pcnt_r));
+
+    // 清零计数器
+    ESP_ERROR_CHECK(pcnt_unit_clear_count(g_pcnt_l));
+    ESP_ERROR_CHECK(pcnt_unit_clear_count(g_pcnt_r));
 
     // 启动 PCNT 计数
     ESP_ERROR_CHECK(pcnt_unit_start(g_pcnt_l));
