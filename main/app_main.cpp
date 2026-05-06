@@ -103,9 +103,9 @@ static bool g_motor_running = false;    // 电机运行状态
 static uint8_t g_motor_a_pwm = 0;       // 电机A实际PWM值
 static uint8_t g_motor_b_pwm = 0;       // 电机B实际PWM值
 
-// 编码器相关
-static pcnt_unit_handle_t g_enc_l = nullptr;  // 左轮编码器
-static pcnt_unit_handle_t g_enc_r = nullptr;  // 右轮编码器
+// 编码器相关 - PCNT外设
+static pcnt_unit_handle_t g_pcnt_l = NULL;  // 左轮 PCNT 单元句柄
+static pcnt_unit_handle_t g_pcnt_r = NULL;  // 右轮 PCNT 单元句柄
 
 // ===========================
 // Sigmoid查表优化
@@ -191,71 +191,75 @@ static void motor_init(void)
 }
 
 // ===========================
-// 编码器初始化
+// 编码器初始化 - PCNT外设方式
 // ===========================
 static void encoder_init(void)
 {
-    pcnt_glitch_filter_config_t filter_config = {};
-    filter_config.max_glitch_ns = 1000;  // 1us滤波
+    ESP_LOGI(TAG, "[Encoder] 初始化开始 (PCNT外设方式)...");
 
-    // 左轮编码器
-    pcnt_unit_config_t unit_l_config = {};
-    unit_l_config.high_limit = 10000;
-    unit_l_config.low_limit = -10000;
-    ESP_ERROR_CHECK(pcnt_new_unit(&unit_l_config, &g_enc_l));
-    ESP_ERROR_CHECK(pcnt_unit_set_glitch_filter(g_enc_l, &filter_config));
+    // 编码器GPIO上拉配置
+    gpio_config_t enc_pull_conf = {};
+    enc_pull_conf.pin_bit_mask = (1ULL << ENCODER_L_A) | (1ULL << ENCODER_L_B) |
+                                 (1ULL << ENCODER_R_A) | (1ULL << ENCODER_R_B);
+    enc_pull_conf.mode = GPIO_MODE_INPUT;
+    enc_pull_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+    enc_pull_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    enc_pull_conf.intr_type = GPIO_INTR_DISABLE;
+    ESP_ERROR_CHECK(gpio_config(&enc_pull_conf));
+    ESP_LOGI(TAG, "[Encoder] GPIO上拉配置完成: L_A=%d L_B=%d R_A=%d R_B=%d",
+             ENCODER_L_A, ENCODER_L_B, ENCODER_R_A, ENCODER_R_B);
 
-    pcnt_chan_config_t chan_l_config = {};
-    chan_l_config.edge_gpio_num = ENCODER_L_A;
-    chan_l_config.level_gpio_num = ENCODER_L_B;
-    pcnt_channel_handle_t chan_l_a = nullptr;
-    pcnt_channel_handle_t chan_l_b = nullptr;
-    ESP_ERROR_CHECK(pcnt_new_channel(g_enc_l, &chan_l_config, &chan_l_a));
-    chan_l_config.edge_gpio_num = -1;
-    ESP_ERROR_CHECK(pcnt_new_channel(g_enc_l, &chan_l_config, &chan_l_b));
+    // 读取GPIO初始电平
+    int l_a = gpio_get_level(ENCODER_L_A);
+    int l_b = gpio_get_level(ENCODER_L_B);
+    int r_a = gpio_get_level(ENCODER_R_A);
+    int r_b = gpio_get_level(ENCODER_R_B);
+    ESP_LOGI(TAG, "[Encoder] 初始电平: L_A=%d L_B=%d R_A=%d R_B=%d", l_a, l_b, r_a, r_b);
 
-    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(chan_l_a, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE));
-    ESP_ERROR_CHECK(pcnt_channel_set_level_action(chan_l_b, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
+    // 配置左轮 PCNT 单元
+    pcnt_unit_config_t unit_config = {};
+    unit_config.high_limit = 32767;
+    unit_config.low_limit = -32768;
+    ESP_ERROR_CHECK(pcnt_new_unit(&unit_config, &g_pcnt_l));
 
-    ESP_ERROR_CHECK(pcnt_unit_enable(g_enc_l));
-    ESP_ERROR_CHECK(pcnt_unit_clear_count(g_enc_l));
-    ESP_ERROR_CHECK(pcnt_unit_start(g_enc_l));
+    // 配置左轮通道 - 正交计数模式
+    pcnt_chan_config_t chan_config = {};
+    chan_config.edge_gpio_num = ENCODER_L_A;
+    chan_config.level_gpio_num = ENCODER_L_B;
+    pcnt_channel_handle_t pcnt_ch_l = NULL;
+    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_l, &chan_config, &pcnt_ch_l));
+    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_l, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE));
+    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_l, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
 
-    // 右轮编码器
-    pcnt_unit_config_t unit_r_config = {};
-    unit_r_config.high_limit = 10000;
-    unit_r_config.low_limit = -10000;
-    ESP_ERROR_CHECK(pcnt_new_unit(&unit_r_config, &g_enc_r));
-    ESP_ERROR_CHECK(pcnt_unit_set_glitch_filter(g_enc_r, &filter_config));
+    // 配置右轮 PCNT 单元
+    ESP_ERROR_CHECK(pcnt_new_unit(&unit_config, &g_pcnt_r));
 
-    pcnt_chan_config_t chan_r_config = {};
-    chan_r_config.edge_gpio_num = ENCODER_R_A;
-    chan_r_config.level_gpio_num = ENCODER_R_B;
-    pcnt_channel_handle_t chan_r_a = nullptr;
-    pcnt_channel_handle_t chan_r_b = nullptr;
-    ESP_ERROR_CHECK(pcnt_new_channel(g_enc_r, &chan_r_config, &chan_r_a));
-    chan_r_config.edge_gpio_num = -1;
-    ESP_ERROR_CHECK(pcnt_new_channel(g_enc_r, &chan_r_config, &chan_r_b));
+    // 配置右轮通道 - 正交计数模式
+    chan_config.edge_gpio_num = ENCODER_R_A;
+    chan_config.level_gpio_num = ENCODER_R_B;
+    pcnt_channel_handle_t pcnt_ch_r = NULL;
+    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_r, &chan_config, &pcnt_ch_r));
+    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_r, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE));
+    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_r, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
 
-    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(chan_r_a, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE));
-    ESP_ERROR_CHECK(pcnt_channel_set_level_action(chan_r_b, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
+    // 启动 PCNT 计数
+    ESP_ERROR_CHECK(pcnt_unit_start(g_pcnt_l));
+    ESP_ERROR_CHECK(pcnt_unit_start(g_pcnt_r));
 
-    ESP_ERROR_CHECK(pcnt_unit_enable(g_enc_r));
-    ESP_ERROR_CHECK(pcnt_unit_clear_count(g_enc_r));
-    ESP_ERROR_CHECK(pcnt_unit_start(g_enc_r));
-
+    ESP_LOGI(TAG, "[Encoder] PCNT配置完成: 左轮=UNIT, 右轮=UNIT");
     ESP_LOGI(TAG, "[Encoder] 初始化完成 左轮:GPIO38/GPIO47 右轮:GPIO21/GPIO14");
 }
 
 // 编码器读取
 static void encoder_read(int *l_count, int *r_count)
 {
-    if (g_enc_l) {
-        pcnt_unit_get_count(g_enc_l, l_count);
-    }
-    if (g_enc_r) {
-        pcnt_unit_get_count(g_enc_r, r_count);
-    }
+    int l_val, r_val;
+    pcnt_unit_get_count(g_pcnt_l, &l_val);
+    pcnt_unit_get_count(g_pcnt_r, &r_val);
+    *l_count = l_val;
+    *r_count = r_val;
+
+    ESP_LOGD(TAG, "[Encoder] 读取: L=%d R=%d", *l_count, *r_count);
 }
 
 // 电机A正转
@@ -724,10 +728,12 @@ static void handle_client(int client_sock)
                 
                 if (chunks_sent == total_chunks) {
                     frame_count++;
-                    // 打印编码器值
+                    // 每20帧打印一次编码器值
                     int l_count = 0, r_count = 0;
                     encoder_read(&l_count, &r_count);
-                    ESP_LOGI(TAG, "[Encoder] 左轮:%d  右轮:%d", l_count, r_count);
+                    if (frame_count % 20 == 0) {
+                        ESP_LOGI(TAG, "[Encoder] 左轮:%d  右轮:%d", l_count, r_count);
+                    }
                     // 每100帧打印一次状态
                     if (frame_count % 100 == 0) {
                         float fps = frame_count * 1000.0f / ((frame_end - stream_start_time) / 1000.0f);

@@ -1,0 +1,1027 @@
+I (1926) dl::Model: | /enc1/conv/conv.6/Conv       | Conv             | 12626us  |
+I (1936) dl::Model: +------------------------------+------------------+----------+
+I (1946) dl::Model: | /enc1/conv/conv.9/Conv       | Conv             | 12875us  |
+I (1956) dl::Model: +------------------------------+------------------+----------+
+I (1966) dl::Model: | /pool/MaxPool                | MaxPool          | 5480us   |
+I (1976) dl::Model: +------------------------------+------------------+----------+
+I (1976) dl::Model: | PPQ_Operation_1              | RequantizeLinear | 5988us   |
+I (1986) dl::Model: +------------------------------+------------------+----------+
+I (1996) dl::Model: | /enc2/conv/conv.0/Conv       | Conv             | 3323us   |
+I (2006) dl::Model: +------------------------------+------------------+----------+
+I (2016) dl::Model: | /enc2/conv/conv.3/Conv       | Conv             | 4762us   |
+I (2026) dl::Model: +------------------------------+------------------+----------+
+I (2026) dl::Model: | /enc2/conv/conv.6/Conv       | Conv             | 6025us   |
+I (2036) dl::Model: +------------------------------+------------------+----------+
+I (2046) dl::Model: | /enc2/conv/conv.9/Conv       | Conv             | 5616us   |
+I (2056) dl::Model: +------------------------------+------------------+----------+
+I (2066) dl::Model: | /pool_1/MaxPool              | MaxPool          | 2677us   |
+I (2076) dl::Model: +------------------------------+------------------+----------+
+I (2076) dl::Model: | PPQ_Operation_0              | RequantizeLinear | 2819us   |
+I (2086) dl::Model: +------------------------------+------------------+----------+
+I (2096) dl::Model: | /enc3/conv/conv.0/Conv       | Conv             | 1639us   |
+I (2106) dl::Model: +------------------------------+------------------+----------+
+I (2116) dl::Model: | /enc3/conv/conv.3/Conv       | Conv             | 2456us   |
+I (2116) dl::Model: +------------------------------+------------------+----------+
+I (2126) dl::Model: | /enc3/conv/conv.6/Conv       | Conv             | 2756us   |
+I (2136) dl::Model: +------------------------------+------------------+----------+
+I (2146) dl::Model: | /enc3/conv/conv.9/Conv       | Conv             | 3543us   |
+I (2156) dl::Model: +------------------------------+------------------+----------+
+I (2166) dl::Model: | /pool_2/MaxPool              | MaxPool          | 1386us   |
+I (2166) dl::Model: +------------------------------+------------------+----------+
+I (2176) dl::Model: | /bottleneck/conv/conv.0/Conv | Conv             | 568us    |
+I (2186) dl::Model: +------------------------------+------------------+----------+
+I (2196) dl::Model: | /bottleneck/conv/conv.3/Conv | Conv             | 1325us   |
+I (2206) dl::Model: +------------------------------+------------------+----------+
+I (2216) dl::Model: | /bottleneck/conv/conv.6/Conv | Conv             | 823us    |
+I (2216) dl::Model: +------------------------------+------------------+----------+
+I (2226) dl::Model: | /bottleneck/conv/conv.9/Conv | Conv             | 2459us   |
+I (2236) dl::Model: +------------------------------+------------------+----------+
+I (2246) dl::Model: | /up3/Resize                  | Resize           | 3478us   |
+I (2256) dl::Model: +------------------------------+------------------+----------+
+I (2256) dl::Model: | /conv3/Conv                  | Conv             | 5681us   |
+I (2266) dl::Model: +------------------------------+------------------+----------+
+I (2276) dl::Model: | /Concat                      | Concat           | 4755us   |
+I (2286) dl::Model: +------------------------------+------------------+----------+
+I (2296) dl::Model: | /dec3/conv/conv.0/Conv       | Conv             | 5191us   |
+I (2306) dl::Model: +------------------------------+------------------+----------+
+I (2306) dl::Model: | /dec3/conv/conv.3/Conv       | Conv             | 5732us   |
+I (2316) dl::Model: +------------------------------+------------------+----------+
+I (2326) dl::Model: | /dec3/conv/conv.6/Conv       | Conv             | 2623us   |
+I (2336) dl::Model: +------------------------------+------------------+----------+
+I (2346) dl::Model: | /dec3/conv/conv.9/Conv       | Conv             | 3513us   |
+I (2356) dl::Model: +------------------------------+------------------+----------+
+I (2356) dl::Model: | /up2/Resize                  | Resize           | 7005us   |
+I (2366) dl::Model: +------------------------------+------------------+----------+
+I (2376) dl::Model: | /conv2/Conv                  | Conv             | 8490us   |
+I (2386) dl::Model: +------------------------------+------------------+----------+
+I (2396) dl::Model: | /Concat_1                    | Concat           | 9787us   |
+I (2396) dl::Model: +------------------------------+------------------+----------+
+I (2406) dl::Model: | /dec2/conv/conv.0/Conv       | Conv             | 10244us  |
+I (2416) dl::Model: +------------------------------+------------------+----------+
+I (2426) dl::Model: | /dec2/conv/conv.3/Conv       | Conv             | 8616us   |
+I (2436) dl::Model: +------------------------------+------------------+----------+
+I (2446) dl::Model: | /dec2/conv/conv.6/Conv       | Conv             | 5882us   |
+I (2446) dl::Model: +------------------------------+------------------+----------+
+I (2456) dl::Model: | /dec2/conv/conv.9/Conv       | Conv             | 5646us   |
+I (2466) dl::Model: +------------------------------+------------------+----------+
+I (2476) dl::Model: | /up1/Resize                  | Resize           | 14178us  |
+I (2486) dl::Model: +------------------------------+------------------+----------+
+I (2496) dl::Model: | /conv1/Conv                  | Conv             | 16421us  |
+I (2496) dl::Model: +------------------------------+------------------+----------+
+I (2506) dl::Model: | /Concat_2                    | Concat           | 22127us  |
+I (2516) dl::Model: +------------------------------+------------------+----------+
+I (2526) dl::Model: | /dec1/conv/conv.0/Conv       | Conv             | 24031us  |
+I (2536) dl::Model: +------------------------------+------------------+----------+
+I (2546) dl::Model: | /dec1/conv/conv.3/Conv       | Conv             | 16777us  |
+I (2546) dl::Model: +------------------------------+------------------+----------+
+I (2556) dl::Model: | /dec1/conv/conv.6/Conv       | Conv             | 12386us  |
+I (2566) dl::Model: +------------------------------+------------------+----------+
+I (2576) dl::Model: | /dec1/conv/conv.9/Conv       | Conv             | 12983us  |
+I (2586) dl::Model: +------------------------------+------------------+----------+
+I (2586) dl::Model: | /out/Conv                    | Conv             | 11715us  |
+I (2596) dl::Model: +------------------------------+------------------+----------+
+I (2606) dl::Model: | total                        |                  | 334082us |
+I (2616) dl::Model: +------------------------------+------------------+----------+
+
+I (2626) CAM_TCP: [Model] 输入数量: 1
+I (2626) CAM_TCP: [Model] 输入名称: input
+I (2636) CAM_TCP: [Model] 输出数量: 1
+I (2636) CAM_TCP: [Model] 输出名称: output
+I (2646) CAM_TCP: [Model] 模型加载成功
+I (2646) CAM_TCP: [Camera] 初始化摄像头...
+I (2656) s3 ll_cam: DMA Channel=0
+I (2656) cam_hal: cam init ok
+I (2666) sccb: pin_sda 4 pin_scl 5
+I (2666) sccb: sccb_i2c_port=1
+I (2676) camera: Camera PID=0x26 VER=0x42 MIDL=0x7f MIDH=0xa2
+I (2676) camera: Detected OV2640 camera
+I (2676) camera: Detected camera at address=0x30
+I (2756) cam_hal: PSRAM DMA mode disabled
+I (2756) s3 ll_cam: node_size: 3840, nodes_per_line: 1, lines_per_node: 12
+I (2756) s3 ll_cam: dma_half_buffer_min:  3840, dma_half_buffer:  7680, lines_per_half_buffer: 24, dma_buffer_size: 30720
+I (2766) cam_hal: buffer_size: 30720, half_buffer_size: 7680, node_buffer_size: 3840, node_cnt: 8, total_cnt: 5
+I (2776) cam_hal: Allocating 19200 Byte frame buffer in PSRAM
+I (2786) cam_hal: cam config ok
+I (2786) ov2640: Set PLL: clk_2x: 1, clk_div: 3, pclk_auto: 1, pclk_div: 8
+cam_hal: FB-OVF
+I (2856) CAM_TCP: [Camera] 初始化成功 (QQVGA 160x120 灰度)
+I (2856) gpio: GPIO[2]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2866) gpio: GPIO[39]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2876) gpio: GPIO[40]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2886) gpio: GPIO[42]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2896) CAM_TCP: [Motor] 初始化完成
+I (2896) CAM_TCP: [Encoder] 初始化开始 (PCNT外设方式)...
+I (2906) gpio: GPIO[14]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2916) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2926) gpio: GPIO[38]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2936) gpio: GPIO[47]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2946) CAM_TCP: [Encoder] GPIO上拉配置完成: L_A=38 L_B=47 R_A=21 R_B=14
+I (2946) CAM_TCP: [Encoder] 初始电平: L_A=1 L_B=1 R_A=1 R_B=1
+I (2956) gpio: GPIO[38]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2966) gpio: GPIO[47]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2976) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2986) gpio: GPIO[14]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+E (2996) pcnt: pcnt_unit_start(406): unit not enabled yet
+ESP_ERROR_CHECK failed: esp_err_t 0x103 (ESP_ERR_INVALID_STATE) at 0x4200bbac
+--- 0x4200bbac: app_main at E:/AICleanBot/main/app_main.cpp:246 (discriminator 1)
+ (inlined by) app_main at E:/AICleanBot/main/app_main.cpp:897 (discriminator 1)
+
+file: "./main/app_main.cpp" line 246
+func: void encoder_init()
+expression: pcnt_unit_start(g_pcnt_l)
+
+abort() was called at PC 0x40383b0f on core 0
+--- 0x40383b0f: _esp_error_check_failed at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/esp_err.c:49
+
+
+
+Backtrace: 0x40379f6a:0x3fcafc80 0x40383b19:0x3fcafca0 0x4038b4b2:0x3fcafcc0 0x40383b0f:0x3fcafd30 0x4200bbac:0x3fcafd60 0x421725bf:0x3fcafe70
+--- 0x40379f6a: panic_abort at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/panic.c:463
+0x40383b19: esp_system_abort at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/port/esp_system_chip.c:92
+0x4038b4b2: abort at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/newlib/abort.c:38
+0x40383b0f: _esp_error_check_failed at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/esp_err.c:49
+0x4200bbac: app_main at E:/AICleanBot/main/app_main.cpp:246 (discriminator 1)
+ (inlined by) app_main at E:/AICleanBot/main/app_main.cpp:897 (discriminator 1)
+0x421725bf: main_task at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/freertos/app_startup.c:208
+
+
+
+
+
+ELF file SHA256: a5a340e33
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40379ec8
+--- 0x40379ec8: esp_restart_noos at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/port/soc/esp32s3/system_internal.c:158
+
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2820,len:0x1918
+load:0x403c8700,len:0x4
+load:0x403c8704,len:0xe5c
+load:0x403cb700,len:0x303c
+entry 0x403c893c
+I (31) boot: ESP-IDF v5.3.1-dirty 2nd stage bootloader
+I (31) boot: compile time May  5 2026 21:16:50
+I (31) boot: Multicore bootloader
+I (35) boot: chip revision: v0.2
+I (39) qio_mode: Enabling default flash chip QIO
+I (44) boot.esp32s3: Boot SPI Speed : 80MHz
+I (49) boot.esp32s3: SPI Mode       : QIO
+I (53) boot.esp32s3: SPI Flash Size : 8MB
+I (58) boot: Enabling RNG early entropy source...
+I (64) boot: Partition Table:
+I (67) boot: ## Label            Usage          Type ST Offset   Length
+I (74) boot:  0 nvs              WiFi data        01 02 00010000 00006000
+I (82) boot:  1 factory          factory app      00 00 00020000 0079e000
+I (89) boot: End of partition table
+I (94) esp_image: segment 0: paddr=00020020 vaddr=3c180020 size=73a04h (473604) map
+I (174) esp_image: segment 1: paddr=00093a2c vaddr=3fca0000 size=07664h ( 30308) load
+I (179) esp_image: segment 2: paddr=0009b098 vaddr=40378000 size=04f80h ( 20352) load
+I (184) esp_image: segment 3: paddr=000a0020 vaddr=42000020 size=1732d8h (1520344) map
+I (419) esp_image: segment 4: paddr=00213300 vaddr=4037cf80 size=13050h ( 77904) load
+I (444) boot: Loaded app from partition at offset 0x20000
+I (444) boot: Disabling RNG early entropy source...
+I (456) octal_psram: vendor id    : 0x0d (AP)
+I (456) octal_psram: dev id       : 0x02 (generation 3)
+I (456) octal_psram: density      : 0x03 (64 Mbit)
+I (461) octal_psram: good-die     : 0x01 (Pass)
+I (466) octal_psram: Latency      : 0x01 (Fixed)
+I (472) octal_psram: VCC          : 0x01 (3V)
+I (477) octal_psram: SRF          : 0x01 (Fast Refresh)
+I (483) octal_psram: BurstType    : 0x01 (Hybrid Wrap)
+I (488) octal_psram: BurstLen     : 0x01 (32 Byte)
+I (494) octal_psram: Readlatency  : 0x02 (10 cycles@Fixed)
+I (500) octal_psram: DriveStrength: 0x00 (1/1)
+I (506) MSPI Timing: PSRAM timing tuning index: 5
+I (511) esp_psram: Found 8MB PSRAM device
+I (515) esp_psram: Speed: 80MHz
+I (519) cpu_start: Multicore app
+I (808) esp_psram: SPI SRAM memory test OK
+I (817) cpu_start: Pro cpu start user code
+I (817) cpu_start: cpu freq: 240000000 Hz
+I (817) app_init: Application information:
+I (820) app_init: Project name:     model_in_flash_rodata
+I (826) app_init: App version:      a350e42-dirty
+I (831) app_init: Compile time:     May  5 2026 21:15:37
+I (837) app_init: ELF file SHA256:  a5a340e33...
+I (843) app_init: ESP-IDF:          v5.3.1-dirty
+I (848) efuse_init: Min chip rev:     v0.0
+I (853) efuse_init: Max chip rev:     v0.99 
+I (858) efuse_init: Chip rev:         v0.2
+I (862) heap_init: Initializing. RAM available for dynamic allocation:
+I (870) heap_init: At 3FCAC688 len 0003D088 (244 KiB): RAM
+I (876) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (882) esp_psram: Adding pool of 8192K of PSRAM memory to heap allocator
+I (890) spi_flash: detected chip: boya
+I (894) spi_flash: flash io: qio
+W (898) spi_flash: Detected size(16384k) larger than the size in the binary image header(8192k). Using the size in the binary image header.
+W (911) i2c: This driver is an old driver, please migrate your application code to adapt `driver/i2c_master.h`
+I (922) sleep: Configure to isolate all GPIO pins in sleep state
+I (928) sleep: Enable automatic switching of GPIO sleep configuration
+I (936) main_task: Started on CPU0
+I (946) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+I (946) main_task: Calling app_main()
+I (956) CAM_TCP: ========================================
+I (956) CAM_TCP: ESP32 Camera Server (WiFi AP + TCP)
+I (966) CAM_TCP: ========================================
+I (986) CAM_TCP: [Init] Sigmoid查表初始化完成
+I (986) CAM_TCP: [Model] 加载模型...
+
+I (1396) dl::Model: Testing output output.
+I (1396) dl::Model: Test Pass!
+
+I (1396) dl::Model: model:main_graph, version:0
+I (1396) dl::Model: MODEL LOCATION IN FLASH RODATA
+I (1406) dl::Model: +----------------+--------------+-----------+-------------+
+I (1406) dl::Model: |                     memory summary                      |
+I (1416) dl::Model: +----------------+--------------+-----------+-------------+
+I (1426) dl::Model: |                | internal RAM | PSRAM     | FLASH       |
+I (1436) dl::Model: +----------------+--------------+-----------+-------------+
+I (1436) dl::Model: | fbs_model      |              |           | 147.62KB    |
+I (1446) dl::Model: |  -- parameter  |              |           |  -- 69.67KB |
+I (1456) dl::Model: +----------------+--------------+-----------+-------------+
+I (1466) dl::Model: | parameter_copy |              | 69.67KB   |             |
+I (1476) dl::Model: +----------------+--------------+-----------+-------------+
+I (1476) dl::Model: | variable       |              | 1500.00KB |             |
+I (1486) dl::Model: +----------------+--------------+-----------+-------------+
+I (1496) dl::Model: | others         | 16.04KB      | 10.46KB   |             |
+I (1506) dl::Model: +----------------+--------------+-----------+-------------+
+I (1516) dl::Model: | total          | 16.04KB      | 1580.13KB | 147.62KB    |
+I (1516) dl::Model: +----------------+--------------+-----------+-------------+
+
+I (1866) dl::Model: +------------------------------+------------------+----------+
+I (1866) dl::Model: |                       module summary                       |
+I (1876) dl::Model: +------------------------------+------------------+----------+
+I (1886) dl::Model: | name                         | type             | latency  |
+I (1886) dl::Model: +------------------------------+------------------+----------+
+I (1896) dl::Model: | /enc1/conv/conv.0/Conv       | Conv             | 23418us  |
+I (1906) dl::Model: +------------------------------+------------------+----------+
+I (1916) dl::Model: | /enc1/conv/conv.3/Conv       | Conv             | 14256us  |
+I (1926) dl::Model: +------------------------------+------------------+----------+
+I (1926) dl::Model: | /enc1/conv/conv.6/Conv       | Conv             | 12626us  |
+I (1936) dl::Model: +------------------------------+------------------+----------+
+I (1946) dl::Model: | /enc1/conv/conv.9/Conv       | Conv             | 12876us  |
+I (1956) dl::Model: +------------------------------+------------------+----------+
+I (1966) dl::Model: | /pool/MaxPool                | MaxPool          | 5480us   |
+I (1976) dl::Model: +------------------------------+------------------+----------+
+I (1976) dl::Model: | PPQ_Operation_1              | RequantizeLinear | 5988us   |
+I (1986) dl::Model: +------------------------------+------------------+----------+
+I (1996) dl::Model: | /enc2/conv/conv.0/Conv       | Conv             | 3323us   |
+I (2006) dl::Model: +------------------------------+------------------+----------+
+I (2016) dl::Model: | /enc2/conv/conv.3/Conv       | Conv             | 4762us   |
+I (2026) dl::Model: +------------------------------+------------------+----------+
+I (2026) dl::Model: | /enc2/conv/conv.6/Conv       | Conv             | 6025us   |
+I (2036) dl::Model: +------------------------------+------------------+----------+
+I (2046) dl::Model: | /enc2/conv/conv.9/Conv       | Conv             | 5616us   |
+I (2056) dl::Model: +------------------------------+------------------+----------+
+I (2066) dl::Model: | /pool_1/MaxPool              | MaxPool          | 2677us   |
+I (2076) dl::Model: +------------------------------+------------------+----------+
+I (2076) dl::Model: | PPQ_Operation_0              | RequantizeLinear | 2819us   |
+I (2086) dl::Model: +------------------------------+------------------+----------+
+I (2096) dl::Model: | /enc3/conv/conv.0/Conv       | Conv             | 1639us   |
+I (2106) dl::Model: +------------------------------+------------------+----------+
+I (2116) dl::Model: | /enc3/conv/conv.3/Conv       | Conv             | 2456us   |
+I (2116) dl::Model: +------------------------------+------------------+----------+
+I (2126) dl::Model: | /enc3/conv/conv.6/Conv       | Conv             | 2755us   |
+I (2136) dl::Model: +------------------------------+------------------+----------+
+I (2146) dl::Model: | /enc3/conv/conv.9/Conv       | Conv             | 3543us   |
+I (2156) dl::Model: +------------------------------+------------------+----------+
+I (2166) dl::Model: | /pool_2/MaxPool              | MaxPool          | 1386us   |
+I (2166) dl::Model: +------------------------------+------------------+----------+
+I (2176) dl::Model: | /bottleneck/conv/conv.0/Conv | Conv             | 567us    |
+I (2186) dl::Model: +------------------------------+------------------+----------+
+I (2196) dl::Model: | /bottleneck/conv/conv.3/Conv | Conv             | 1325us   |
+I (2206) dl::Model: +------------------------------+------------------+----------+
+I (2216) dl::Model: | /bottleneck/conv/conv.6/Conv | Conv             | 823us    |
+I (2216) dl::Model: +------------------------------+------------------+----------+
+I (2226) dl::Model: | /bottleneck/conv/conv.9/Conv | Conv             | 2459us   |
+I (2236) dl::Model: +------------------------------+------------------+----------+
+I (2246) dl::Model: | /up3/Resize                  | Resize           | 3478us   |
+I (2256) dl::Model: +------------------------------+------------------+----------+
+I (2256) dl::Model: | /conv3/Conv                  | Conv             | 5682us   |
+I (2266) dl::Model: +------------------------------+------------------+----------+
+I (2276) dl::Model: | /Concat                      | Concat           | 4755us   |
+I (2286) dl::Model: +------------------------------+------------------+----------+
+I (2296) dl::Model: | /dec3/conv/conv.0/Conv       | Conv             | 5191us   |
+I (2306) dl::Model: +------------------------------+------------------+----------+
+I (2306) dl::Model: | /dec3/conv/conv.3/Conv       | Conv             | 5732us   |
+I (2316) dl::Model: +------------------------------+------------------+----------+
+I (2326) dl::Model: | /dec3/conv/conv.6/Conv       | Conv             | 2623us   |
+I (2336) dl::Model: +------------------------------+------------------+----------+
+I (2346) dl::Model: | /dec3/conv/conv.9/Conv       | Conv             | 3514us   |
+I (2356) dl::Model: +------------------------------+------------------+----------+
+I (2356) dl::Model: | /up2/Resize                  | Resize           | 7005us   |
+I (2366) dl::Model: +------------------------------+------------------+----------+
+I (2376) dl::Model: | /conv2/Conv                  | Conv             | 8490us   |
+I (2386) dl::Model: +------------------------------+------------------+----------+
+I (2396) dl::Model: | /Concat_1                    | Concat           | 9787us   |
+I (2396) dl::Model: +------------------------------+------------------+----------+
+I (2406) dl::Model: | /dec2/conv/conv.0/Conv       | Conv             | 10245us  |
+I (2416) dl::Model: +------------------------------+------------------+----------+
+I (2426) dl::Model: | /dec2/conv/conv.3/Conv       | Conv             | 8616us   |
+I (2436) dl::Model: +------------------------------+------------------+----------+
+I (2446) dl::Model: | /dec2/conv/conv.6/Conv       | Conv             | 5881us   |
+I (2446) dl::Model: +------------------------------+------------------+----------+
+I (2456) dl::Model: | /dec2/conv/conv.9/Conv       | Conv             | 5646us   |
+I (2466) dl::Model: +------------------------------+------------------+----------+
+I (2476) dl::Model: | /up1/Resize                  | Resize           | 14178us  |
+I (2486) dl::Model: +------------------------------+------------------+----------+
+I (2496) dl::Model: | /conv1/Conv                  | Conv             | 16422us  |
+I (2496) dl::Model: +------------------------------+------------------+----------+
+I (2506) dl::Model: | /Concat_2                    | Concat           | 22127us  |
+I (2516) dl::Model: +------------------------------+------------------+----------+
+I (2526) dl::Model: | /dec1/conv/conv.0/Conv       | Conv             | 24032us  |
+I (2536) dl::Model: +------------------------------+------------------+----------+
+I (2546) dl::Model: | /dec1/conv/conv.3/Conv       | Conv             | 16777us  |
+I (2546) dl::Model: +------------------------------+------------------+----------+
+I (2556) dl::Model: | /dec1/conv/conv.6/Conv       | Conv             | 12387us  |
+I (2566) dl::Model: +------------------------------+------------------+----------+
+I (2576) dl::Model: | /dec1/conv/conv.9/Conv       | Conv             | 12982us  |
+I (2586) dl::Model: +------------------------------+------------------+----------+
+I (2586) dl::Model: | /out/Conv                    | Conv             | 11715us  |
+I (2596) dl::Model: +------------------------------+------------------+----------+
+I (2606) dl::Model: | total                        |                  | 334084us |
+I (2616) dl::Model: +------------------------------+------------------+----------+
+
+I (2626) CAM_TCP: [Model] 输入数量: 1
+I (2626) CAM_TCP: [Model] 输入名称: input
+I (2636) CAM_TCP: [Model] 输出数量: 1
+I (2636) CAM_TCP: [Model] 输出名称: output
+I (2646) CAM_TCP: [Model] 模型加载成功
+I (2646) CAM_TCP: [Camera] 初始化摄像头...
+I (2656) s3 ll_cam: DMA Channel=0
+I (2656) cam_hal: cam init ok
+I (2666) sccb: pin_sda 4 pin_scl 5
+I (2666) sccb: sccb_i2c_port=1
+I (2676) camera: Camera PID=0x26 VER=0x42 MIDL=0x7f MIDH=0xa2
+I (2676) camera: Detected OV2640 camera
+I (2676) camera: Detected camera at address=0x30
+I (2756) cam_hal: PSRAM DMA mode disabled
+I (2756) s3 ll_cam: node_size: 3840, nodes_per_line: 1, lines_per_node: 12
+I (2756) s3 ll_cam: dma_half_buffer_min:  3840, dma_half_buffer:  7680, lines_per_half_buffer: 24, dma_buffer_size: 30720
+I (2766) cam_hal: buffer_size: 30720, half_buffer_size: 7680, node_buffer_size: 3840, node_cnt: 8, total_cnt: 5
+I (2776) cam_hal: Allocating 19200 Byte frame buffer in PSRAM
+I (2786) cam_hal: cam config ok
+I (2786) ov2640: Set PLL: clk_2x: 1, clk_div: 3, pclk_auto: 1, pclk_div: 8
+cam_hal: FB-OVF
+I (2856) CAM_TCP: [Camera] 初始化成功 (QQVGA 160x120 灰度)
+I (2856) gpio: GPIO[2]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2866) gpio: GPIO[39]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2876) gpio: GPIO[40]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2886) gpio: GPIO[42]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2896) CAM_TCP: [Motor] 初始化完成
+I (2896) CAM_TCP: [Encoder] 初始化开始 (PCNT外设方式)...
+I (2906) gpio: GPIO[14]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2916) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2926) gpio: GPIO[38]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2936) gpio: GPIO[47]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2946) CAM_TCP: [Encoder] GPIO上拉配置完成: L_A=38 L_B=47 R_A=21 R_B=14
+I (2946) CAM_TCP: [Encoder] 初始电平: L_A=1 L_B=1 R_A=1 R_B=1
+I (2956) gpio: GPIO[38]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2966) gpio: GPIO[47]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2976) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2986) gpio: GPIO[14]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+E (2996) pcnt: pcnt_unit_start(406): unit not enabled yet
+ESP_ERROR_CHECK failed: esp_err_t 0x103 (ESP_ERR_INVALID_STATE) at 0x4200bbac
+--- 0x4200bbac: app_main at E:/AICleanBot/main/app_main.cpp:246 (discriminator 1)
+ (inlined by) app_main at E:/AICleanBot/main/app_main.cpp:897 (discriminator 1)
+
+file: "./main/app_main.cpp" line 246
+func: void encoder_init()
+expression: pcnt_unit_start(g_pcnt_l)
+
+abort() was called at PC 0x40383b0f on core 0
+--- 0x40383b0f: _esp_error_check_failed at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/esp_err.c:49
+
+
+
+Backtrace: 0x40379f6a:0x3fcafc80 0x40383b19:0x3fcafca0 0x4038b4b2:0x3fcafcc0 0x40383b0f:0x3fcafd30 0x4200bbac:0x3fcafd60 0x421725bf:0x3fcafe70
+--- 0x40379f6a: panic_abort at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/panic.c:463
+0x40383b19: esp_system_abort at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/port/esp_system_chip.c:92
+0x4038b4b2: abort at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/newlib/abort.c:38
+0x40383b0f: _esp_error_check_failed at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/esp_err.c:49
+0x4200bbac: app_main at E:/AICleanBot/main/app_main.cpp:246 (discriminator 1)
+ (inlined by) app_main at E:/AICleanBot/main/app_main.cpp:897 (discriminator 1)
+0x421725bf: main_task at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/freertos/app_startup.c:208
+
+
+
+
+
+ELF file SHA256: a5a340e33
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40379ec8
+--- 0x40379ec8: esp_restart_noos at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/port/soc/esp32s3/system_internal.c:158
+
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2820,len:0x1918
+load:0x403c8700,len:0x4
+load:0x403c8704,len:0xe5c
+load:0x403cb700,len:0x303c
+entry 0x403c893c
+I (31) boot: ESP-IDF v5.3.1-dirty 2nd stage bootloader
+I (31) boot: compile time May  5 2026 21:16:50
+I (31) boot: Multicore bootloader
+I (35) boot: chip revision: v0.2
+I (39) qio_mode: Enabling default flash chip QIO
+I (44) boot.esp32s3: Boot SPI Speed : 80MHz
+I (49) boot.esp32s3: SPI Mode       : QIO
+I (53) boot.esp32s3: SPI Flash Size : 8MB
+I (58) boot: Enabling RNG early entropy source...
+I (64) boot: Partition Table:
+I (67) boot: ## Label            Usage          Type ST Offset   Length
+I (74) boot:  0 nvs              WiFi data        01 02 00010000 00006000
+I (82) boot:  1 factory          factory app      00 00 00020000 0079e000
+I (89) boot: End of partition table
+I (94) esp_image: segment 0: paddr=00020020 vaddr=3c180020 size=73a04h (473604) map
+I (174) esp_image: segment 1: paddr=00093a2c vaddr=3fca0000 size=07664h ( 30308) load
+I (179) esp_image: segment 2: paddr=0009b098 vaddr=40378000 size=04f80h ( 20352) load
+I (184) esp_image: segment 3: paddr=000a0020 vaddr=42000020 size=1732d8h (1520344) map
+I (419) esp_image: segment 4: paddr=00213300 vaddr=4037cf80 size=13050h ( 77904) load
+I (444) boot: Loaded app from partition at offset 0x20000
+I (444) boot: Disabling RNG early entropy source...
+I (456) octal_psram: vendor id    : 0x0d (AP)
+I (456) octal_psram: dev id       : 0x02 (generation 3)
+I (456) octal_psram: density      : 0x03 (64 Mbit)
+I (461) octal_psram: good-die     : 0x01 (Pass)
+I (466) octal_psram: Latency      : 0x01 (Fixed)
+I (472) octal_psram: VCC          : 0x01 (3V)
+I (477) octal_psram: SRF          : 0x01 (Fast Refresh)
+I (483) octal_psram: BurstType    : 0x01 (Hybrid Wrap)
+I (488) octal_psram: BurstLen     : 0x01 (32 Byte)
+I (494) octal_psram: Readlatency  : 0x02 (10 cycles@Fixed)
+I (500) octal_psram: DriveStrength: 0x00 (1/1)
+I (506) MSPI Timing: PSRAM timing tuning index: 5
+I (511) esp_psram: Found 8MB PSRAM device
+I (515) esp_psram: Speed: 80MHz
+I (519) cpu_start: Multicore app
+I (808) esp_psram: SPI SRAM memory test OK
+I (817) cpu_start: Pro cpu start user code
+I (817) cpu_start: cpu freq: 240000000 Hz
+I (817) app_init: Application information:
+I (820) app_init: Project name:     model_in_flash_rodata
+I (826) app_init: App version:      a350e42-dirty
+I (831) app_init: Compile time:     May  5 2026 21:15:37
+I (837) app_init: ELF file SHA256:  a5a340e33...
+I (843) app_init: ESP-IDF:          v5.3.1-dirty
+I (848) efuse_init: Min chip rev:     v0.0
+I (853) efuse_init: Max chip rev:     v0.99 
+I (858) efuse_init: Chip rev:         v0.2
+I (862) heap_init: Initializing. RAM available for dynamic allocation:
+I (870) heap_init: At 3FCAC688 len 0003D088 (244 KiB): RAM
+I (876) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (882) esp_psram: Adding pool of 8192K of PSRAM memory to heap allocator
+I (890) spi_flash: detected chip: boya
+I (894) spi_flash: flash io: qio
+W (898) spi_flash: Detected size(16384k) larger than the size in the binary image header(8192k). Using the size in the binary image header.
+W (911) i2c: This driver is an old driver, please migrate your application code to adapt `driver/i2c_master.h`
+I (922) sleep: Configure to isolate all GPIO pins in sleep state
+I (928) sleep: Enable automatic switching of GPIO sleep configuration
+I (936) main_task: Started on CPU0
+I (946) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+I (946) main_task: Calling app_main()
+I (956) CAM_TCP: ========================================
+I (956) CAM_TCP: ESP32 Camera Server (WiFi AP + TCP)
+I (966) CAM_TCP: ========================================
+I (986) CAM_TCP: [Init] Sigmoid查表初始化完成
+I (986) CAM_TCP: [Model] 加载模型...
+
+I (1396) dl::Model: Testing output output.
+I (1396) dl::Model: Test Pass!
+
+I (1396) dl::Model: model:main_graph, version:0
+I (1396) dl::Model: MODEL LOCATION IN FLASH RODATA
+I (1406) dl::Model: +----------------+--------------+-----------+-------------+
+I (1406) dl::Model: |                     memory summary                      |
+I (1416) dl::Model: +----------------+--------------+-----------+-------------+
+I (1426) dl::Model: |                | internal RAM | PSRAM     | FLASH       |
+I (1436) dl::Model: +----------------+--------------+-----------+-------------+
+I (1436) dl::Model: | fbs_model      |              |           | 147.62KB    |
+I (1446) dl::Model: |  -- parameter  |              |           |  -- 69.67KB |
+I (1456) dl::Model: +----------------+--------------+-----------+-------------+
+I (1466) dl::Model: | parameter_copy |              | 69.67KB   |             |
+I (1476) dl::Model: +----------------+--------------+-----------+-------------+
+I (1476) dl::Model: | variable       |              | 1500.00KB |             |
+I (1486) dl::Model: +----------------+--------------+-----------+-------------+
+I (1496) dl::Model: | others         | 16.04KB      | 10.46KB   |             |
+I (1506) dl::Model: +----------------+--------------+-----------+-------------+
+I (1516) dl::Model: | total          | 16.04KB      | 1580.13KB | 147.62KB    |
+I (1516) dl::Model: +----------------+--------------+-----------+-------------+
+
+I (1866) dl::Model: +------------------------------+------------------+----------+
+I (1866) dl::Model: |                       module summary                       |
+I (1876) dl::Model: +------------------------------+------------------+----------+
+I (1886) dl::Model: | name                         | type             | latency  |
+I (1886) dl::Model: +------------------------------+------------------+----------+
+I (1896) dl::Model: | /enc1/conv/conv.0/Conv       | Conv             | 23418us  |
+I (1906) dl::Model: +------------------------------+------------------+----------+
+I (1916) dl::Model: | /enc1/conv/conv.3/Conv       | Conv             | 14257us  |
+I (1926) dl::Model: +------------------------------+------------------+----------+
+I (1926) dl::Model: | /enc1/conv/conv.6/Conv       | Conv             | 12626us  |
+I (1936) dl::Model: +------------------------------+------------------+----------+
+I (1946) dl::Model: | /enc1/conv/conv.9/Conv       | Conv             | 12876us  |
+I (1956) dl::Model: +------------------------------+------------------+----------+
+I (1966) dl::Model: | /pool/MaxPool                | MaxPool          | 5480us   |
+I (1976) dl::Model: +------------------------------+------------------+----------+
+I (1976) dl::Model: | PPQ_Operation_1              | RequantizeLinear | 5988us   |
+I (1986) dl::Model: +------------------------------+------------------+----------+
+I (1996) dl::Model: | /enc2/conv/conv.0/Conv       | Conv             | 3322us   |
+I (2006) dl::Model: +------------------------------+------------------+----------+
+I (2016) dl::Model: | /enc2/conv/conv.3/Conv       | Conv             | 4763us   |
+I (2026) dl::Model: +------------------------------+------------------+----------+
+I (2026) dl::Model: | /enc2/conv/conv.6/Conv       | Conv             | 6025us   |
+I (2036) dl::Model: +------------------------------+------------------+----------+
+I (2046) dl::Model: | /enc2/conv/conv.9/Conv       | Conv             | 5617us   |
+I (2056) dl::Model: +------------------------------+------------------+----------+
+I (2066) dl::Model: | /pool_1/MaxPool              | MaxPool          | 2676us   |
+I (2076) dl::Model: +------------------------------+------------------+----------+
+I (2076) dl::Model: | PPQ_Operation_0              | RequantizeLinear | 2820us   |
+I (2086) dl::Model: +------------------------------+------------------+----------+
+I (2096) dl::Model: | /enc3/conv/conv.0/Conv       | Conv             | 1638us   |
+I (2106) dl::Model: +------------------------------+------------------+----------+
+I (2116) dl::Model: | /enc3/conv/conv.3/Conv       | Conv             | 2457us   |
+I (2116) dl::Model: +------------------------------+------------------+----------+
+I (2126) dl::Model: | /enc3/conv/conv.6/Conv       | Conv             | 2755us   |
+I (2136) dl::Model: +------------------------------+------------------+----------+
+I (2146) dl::Model: | /enc3/conv/conv.9/Conv       | Conv             | 3542us   |
+I (2156) dl::Model: +------------------------------+------------------+----------+
+I (2166) dl::Model: | /pool_2/MaxPool              | MaxPool          | 1386us   |
+I (2166) dl::Model: +------------------------------+------------------+----------+
+I (2176) dl::Model: | /bottleneck/conv/conv.0/Conv | Conv             | 567us    |
+I (2186) dl::Model: +------------------------------+------------------+----------+
+I (2196) dl::Model: | /bottleneck/conv/conv.3/Conv | Conv             | 1324us   |
+I (2206) dl::Model: +------------------------------+------------------+----------+
+I (2216) dl::Model: | /bottleneck/conv/conv.6/Conv | Conv             | 823us    |
+I (2216) dl::Model: +------------------------------+------------------+----------+
+I (2226) dl::Model: | /bottleneck/conv/conv.9/Conv | Conv             | 2459us   |
+I (2236) dl::Model: +------------------------------+------------------+----------+
+I (2246) dl::Model: | /up3/Resize                  | Resize           | 3477us   |
+I (2256) dl::Model: +------------------------------+------------------+----------+
+I (2256) dl::Model: | /conv3/Conv                  | Conv             | 5680us   |
+I (2266) dl::Model: +------------------------------+------------------+----------+
+I (2276) dl::Model: | /Concat                      | Concat           | 4754us   |
+I (2286) dl::Model: +------------------------------+------------------+----------+
+I (2296) dl::Model: | /dec3/conv/conv.0/Conv       | Conv             | 5191us   |
+I (2306) dl::Model: +------------------------------+------------------+----------+
+I (2306) dl::Model: | /dec3/conv/conv.3/Conv       | Conv             | 5733us   |
+I (2316) dl::Model: +------------------------------+------------------+----------+
+I (2326) dl::Model: | /dec3/conv/conv.6/Conv       | Conv             | 2623us   |
+I (2336) dl::Model: +------------------------------+------------------+----------+
+I (2346) dl::Model: | /dec3/conv/conv.9/Conv       | Conv             | 3513us   |
+I (2356) dl::Model: +------------------------------+------------------+----------+
+I (2356) dl::Model: | /up2/Resize                  | Resize           | 7005us   |
+I (2366) dl::Model: +------------------------------+------------------+----------+
+I (2376) dl::Model: | /conv2/Conv                  | Conv             | 8490us   |
+I (2386) dl::Model: +------------------------------+------------------+----------+
+I (2396) dl::Model: | /Concat_1                    | Concat           | 9787us   |
+I (2396) dl::Model: +------------------------------+------------------+----------+
+I (2406) dl::Model: | /dec2/conv/conv.0/Conv       | Conv             | 10245us  |
+I (2416) dl::Model: +------------------------------+------------------+----------+
+I (2426) dl::Model: | /dec2/conv/conv.3/Conv       | Conv             | 8617us   |
+I (2436) dl::Model: +------------------------------+------------------+----------+
+I (2446) dl::Model: | /dec2/conv/conv.6/Conv       | Conv             | 5882us   |
+I (2446) dl::Model: +------------------------------+------------------+----------+
+I (2456) dl::Model: | /dec2/conv/conv.9/Conv       | Conv             | 5647us   |
+I (2466) dl::Model: +------------------------------+------------------+----------+
+I (2476) dl::Model: | /up1/Resize                  | Resize           | 14177us  |
+I (2486) dl::Model: +------------------------------+------------------+----------+
+I (2496) dl::Model: | /conv1/Conv                  | Conv             | 16420us  |
+I (2496) dl::Model: +------------------------------+------------------+----------+
+I (2506) dl::Model: | /Concat_2                    | Concat           | 22127us  |
+I (2516) dl::Model: +------------------------------+------------------+----------+
+I (2526) dl::Model: | /dec1/conv/conv.0/Conv       | Conv             | 24031us  |
+I (2536) dl::Model: +------------------------------+------------------+----------+
+I (2546) dl::Model: | /dec1/conv/conv.3/Conv       | Conv             | 16776us  |
+I (2546) dl::Model: +------------------------------+------------------+----------+
+I (2556) dl::Model: | /dec1/conv/conv.6/Conv       | Conv             | 12386us  |
+I (2566) dl::Model: +------------------------------+------------------+----------+
+I (2576) dl::Model: | /dec1/conv/conv.9/Conv       | Conv             | 12982us  |
+I (2586) dl::Model: +------------------------------+------------------+----------+
+I (2586) dl::Model: | /out/Conv                    | Conv             | 11715us  |
+I (2596) dl::Model: +------------------------------+------------------+----------+
+I (2606) dl::Model: | total                        |                  | 334077us |
+I (2616) dl::Model: +------------------------------+------------------+----------+
+
+I (2626) CAM_TCP: [Model] 输入数量: 1
+I (2626) CAM_TCP: [Model] 输入名称: input
+I (2636) CAM_TCP: [Model] 输出数量: 1
+I (2636) CAM_TCP: [Model] 输出名称: output
+I (2646) CAM_TCP: [Model] 模型加载成功
+I (2646) CAM_TCP: [Camera] 初始化摄像头...
+I (2656) s3 ll_cam: DMA Channel=0
+I (2656) cam_hal: cam init ok
+I (2666) sccb: pin_sda 4 pin_scl 5
+I (2666) sccb: sccb_i2c_port=1
+I (2676) camera: Camera PID=0x26 VER=0x42 MIDL=0x7f MIDH=0xa2
+I (2676) camera: Detected OV2640 camera
+I (2676) camera: Detected camera at address=0x30
+I (2756) cam_hal: PSRAM DMA mode disabled
+I (2756) s3 ll_cam: node_size: 3840, nodes_per_line: 1, lines_per_node: 12
+I (2756) s3 ll_cam: dma_half_buffer_min:  3840, dma_half_buffer:  7680, lines_per_half_buffer: 24, dma_buffer_size: 30720
+I (2766) cam_hal: buffer_size: 30720, half_buffer_size: 7680, node_buffer_size: 3840, node_cnt: 8, total_cnt: 5
+I (2776) cam_hal: Allocating 19200 Byte frame buffer in PSRAM
+I (2786) cam_hal: cam config ok
+I (2786) ov2640: Set PLL: clk_2x: 1, clk_div: 3, pclk_auto: 1, pclk_div: 8
+cam_hal: FB-OVF
+I (2856) CAM_TCP: [Camera] 初始化成功 (QQVGA 160x120 灰度)
+I (2856) gpio: GPIO[2]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2866) gpio: GPIO[39]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2876) gpio: GPIO[40]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2886) gpio: GPIO[42]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2896) CAM_TCP: [Motor] 初始化完成
+I (2896) CAM_TCP: [Encoder] 初始化开始 (PCNT外设方式)...
+I (2906) gpio: GPIO[14]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2916) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2926) gpio: GPIO[38]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2936) gpio: GPIO[47]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2946) CAM_TCP: [Encoder] GPIO上拉配置完成: L_A=38 L_B=47 R_A=21 R_B=14
+I (2946) CAM_TCP: [Encoder] 初始电平: L_A=1 L_B=1 R_A=1 R_B=1
+I (2956) gpio: GPIO[38]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2966) gpio: GPIO[47]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2976) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2986) gpio: GPIO[14]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+E (2996) pcnt: pcnt_unit_start(406): unit not enabled yet
+ESP_ERROR_CHECK failed: esp_err_t 0x103 (ESP_ERR_INVALID_STATE) at 0x4200bbac
+--- 0x4200bbac: app_main at E:/AICleanBot/main/app_main.cpp:246 (discriminator 1)
+ (inlined by) app_main at E:/AICleanBot/main/app_main.cpp:897 (discriminator 1)
+
+file: "./main/app_main.cpp" line 246
+func: void encoder_init()
+expression: pcnt_unit_start(g_pcnt_l)
+
+abort() was called at PC 0x40383b0f on core 0
+--- 0x40383b0f: _esp_error_check_failed at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/esp_err.c:49
+
+
+
+Backtrace: 0x40379f6a:0x3fcafc80 0x40383b19:0x3fcafca0 0x4038b4b2:0x3fcafcc0 0x40383b0f:0x3fcafd30 0x4200bbac:0x3fcafd60 0x421725bf:0x3fcafe70
+--- 0x40379f6a: panic_abort at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/panic.c:463
+0x40383b19: esp_system_abort at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/port/esp_system_chip.c:92
+0x4038b4b2: abort at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/newlib/abort.c:38
+0x40383b0f: _esp_error_check_failed at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/esp_err.c:49
+0x4200bbac: app_main at E:/AICleanBot/main/app_main.cpp:246 (discriminator 1)
+ (inlined by) app_main at E:/AICleanBot/main/app_main.cpp:897 (discriminator 1)
+0x421725bf: main_task at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/freertos/app_startup.c:208
+
+
+
+
+
+ELF file SHA256: a5a340e33
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40379ec8
+--- 0x40379ec8: esp_restart_noos at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/port/soc/esp32s3/system_internal.c:158
+
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2820,len:0x1918
+load:0x403c8700,len:0x4
+load:0x403c8704,len:0xe5c
+load:0x403cb700,len:0x303c
+entry 0x403c893c
+I (31) boot: ESP-IDF v5.3.1-dirty 2nd stage bootloader
+I (31) boot: compile time May  5 2026 21:16:50
+I (31) boot: Multicore bootloader
+I (35) boot: chip revision: v0.2
+I (39) qio_mode: Enabling default flash chip QIO
+I (44) boot.esp32s3: Boot SPI Speed : 80MHz
+I (49) boot.esp32s3: SPI Mode       : QIO
+I (53) boot.esp32s3: SPI Flash Size : 8MB
+I (58) boot: Enabling RNG early entropy source...
+I (64) boot: Partition Table:
+I (67) boot: ## Label            Usage          Type ST Offset   Length
+I (74) boot:  0 nvs              WiFi data        01 02 00010000 00006000
+I (82) boot:  1 factory          factory app      00 00 00020000 0079e000
+I (89) boot: End of partition table
+I (94) esp_image: segment 0: paddr=00020020 vaddr=3c180020 size=73a04h (473604) map
+I (174) esp_image: segment 1: paddr=00093a2c vaddr=3fca0000 size=07664h ( 30308) load
+I (179) esp_image: segment 2: paddr=0009b098 vaddr=40378000 size=04f80h ( 20352) load
+I (184) esp_image: segment 3: paddr=000a0020 vaddr=42000020 size=1732d8h (1520344) map
+I (419) esp_image: segment 4: paddr=00213300 vaddr=4037cf80 size=13050h ( 77904) load
+I (444) boot: Loaded app from partition at offset 0x20000
+I (444) boot: Disabling RNG early entropy source...
+I (456) octal_psram: vendor id    : 0x0d (AP)
+I (456) octal_psram: dev id       : 0x02 (generation 3)
+I (456) octal_psram: density      : 0x03 (64 Mbit)
+I (461) octal_psram: good-die     : 0x01 (Pass)
+I (466) octal_psram: Latency      : 0x01 (Fixed)
+I (472) octal_psram: VCC          : 0x01 (3V)
+I (477) octal_psram: SRF          : 0x01 (Fast Refresh)
+I (483) octal_psram: BurstType    : 0x01 (Hybrid Wrap)
+I (488) octal_psram: BurstLen     : 0x01 (32 Byte)
+I (494) octal_psram: Readlatency  : 0x02 (10 cycles@Fixed)
+I (500) octal_psram: DriveStrength: 0x00 (1/1)
+I (506) MSPI Timing: PSRAM timing tuning index: 5
+I (511) esp_psram: Found 8MB PSRAM device
+I (515) esp_psram: Speed: 80MHz
+I (519) cpu_start: Multicore app
+I (808) esp_psram: SPI SRAM memory test OK
+I (817) cpu_start: Pro cpu start user code
+I (817) cpu_start: cpu freq: 240000000 Hz
+I (817) app_init: Application information:
+I (820) app_init: Project name:     model_in_flash_rodata
+I (826) app_init: App version:      a350e42-dirty
+I (831) app_init: Compile time:     May  5 2026 21:15:37
+I (837) app_init: ELF file SHA256:  a5a340e33...
+I (843) app_init: ESP-IDF:          v5.3.1-dirty
+I (848) efuse_init: Min chip rev:     v0.0
+I (853) efuse_init: Max chip rev:     v0.99 
+I (858) efuse_init: Chip rev:         v0.2
+I (862) heap_init: Initializing. RAM available for dynamic allocation:
+I (870) heap_init: At 3FCAC688 len 0003D088 (244 KiB): RAM
+I (876) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (882) esp_psram: Adding pool of 8192K of PSRAM memory to heap allocator
+I (890) spi_flash: detected chip: boya
+I (894) spi_flash: flash io: qio
+W (898) spi_flash: Detected size(16384k) larger than the size in the binary image header(8192k). Using the size in the binary image header.
+W (911) i2c: This driver is an old driver, please migrate your application code to adapt `driver/i2c_master.h`
+I (922) sleep: Configure to isolate all GPIO pins in sleep state
+I (928) sleep: Enable automatic switching of GPIO sleep configuration
+I (936) main_task: Started on CPU0
+I (946) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+I (946) main_task: Calling app_main()
+I (956) CAM_TCP: ========================================
+I (956) CAM_TCP: ESP32 Camera Server (WiFi AP + TCP)
+I (966) CAM_TCP: ========================================
+I (986) CAM_TCP: [Init] Sigmoid查表初始化完成
+I (986) CAM_TCP: [Model] 加载模型...
+
+I (1396) dl::Model: Testing output output.
+I (1396) dl::Model: Test Pass!
+
+I (1396) dl::Model: model:main_graph, version:0
+I (1396) dl::Model: MODEL LOCATION IN FLASH RODATA
+I (1406) dl::Model: +----------------+--------------+-----------+-------------+
+I (1406) dl::Model: |                     memory summary                      |
+I (1416) dl::Model: +----------------+--------------+-----------+-------------+
+I (1426) dl::Model: |                | internal RAM | PSRAM     | FLASH       |
+I (1436) dl::Model: +----------------+--------------+-----------+-------------+
+I (1436) dl::Model: | fbs_model      |              |           | 147.62KB    |
+I (1446) dl::Model: |  -- parameter  |              |           |  -- 69.67KB |
+I (1456) dl::Model: +----------------+--------------+-----------+-------------+
+I (1466) dl::Model: | parameter_copy |              | 69.67KB   |             |
+I (1476) dl::Model: +----------------+--------------+-----------+-------------+
+I (1476) dl::Model: | variable       |              | 1500.00KB |             |
+I (1486) dl::Model: +----------------+--------------+-----------+-------------+
+I (1496) dl::Model: | others         | 16.04KB      | 10.46KB   |             |
+I (1506) dl::Model: +----------------+--------------+-----------+-------------+
+I (1516) dl::Model: | total          | 16.04KB      | 1580.13KB | 147.62KB    |
+I (1516) dl::Model: +----------------+--------------+-----------+-------------+
+
+I (1866) dl::Model: +------------------------------+------------------+----------+
+I (1866) dl::Model: |                       module summary                       |
+I (1876) dl::Model: +------------------------------+------------------+----------+
+I (1886) dl::Model: | name                         | type             | latency  |
+I (1886) dl::Model: +------------------------------+------------------+----------+
+I (1896) dl::Model: | /enc1/conv/conv.0/Conv       | Conv             | 23418us  |
+I (1906) dl::Model: +------------------------------+------------------+----------+
+I (1916) dl::Model: | /enc1/conv/conv.3/Conv       | Conv             | 14257us  |
+I (1926) dl::Model: +------------------------------+------------------+----------+
+I (1926) dl::Model: | /enc1/conv/conv.6/Conv       | Conv             | 12626us  |
+I (1936) dl::Model: +------------------------------+------------------+----------+
+I (1946) dl::Model: | /enc1/conv/conv.9/Conv       | Conv             | 12875us  |
+I (1956) dl::Model: +------------------------------+------------------+----------+
+I (1966) dl::Model: | /pool/MaxPool                | MaxPool          | 5480us   |
+I (1976) dl::Model: +------------------------------+------------------+----------+
+I (1976) dl::Model: | PPQ_Operation_1              | RequantizeLinear | 5988us   |
+I (1986) dl::Model: +------------------------------+------------------+----------+
+I (1996) dl::Model: | /enc2/conv/conv.0/Conv       | Conv             | 3322us   |
+I (2006) dl::Model: +------------------------------+------------------+----------+
+I (2016) dl::Model: | /enc2/conv/conv.3/Conv       | Conv             | 4763us   |
+I (2026) dl::Model: +------------------------------+------------------+----------+
+I (2026) dl::Model: | /enc2/conv/conv.6/Conv       | Conv             | 6025us   |
+I (2036) dl::Model: +------------------------------+------------------+----------+
+I (2046) dl::Model: | /enc2/conv/conv.9/Conv       | Conv             | 5616us   |
+I (2056) dl::Model: +------------------------------+------------------+----------+
+I (2066) dl::Model: | /pool_1/MaxPool              | MaxPool          | 2677us   |
+I (2076) dl::Model: +------------------------------+------------------+----------+
+I (2076) dl::Model: | PPQ_Operation_0              | RequantizeLinear | 2819us   |
+I (2086) dl::Model: +------------------------------+------------------+----------+
+I (2096) dl::Model: | /enc3/conv/conv.0/Conv       | Conv             | 1639us   |
+I (2106) dl::Model: +------------------------------+------------------+----------+
+I (2116) dl::Model: | /enc3/conv/conv.3/Conv       | Conv             | 2456us   |
+I (2116) dl::Model: +------------------------------+------------------+----------+
+I (2126) dl::Model: | /enc3/conv/conv.6/Conv       | Conv             | 2755us   |
+I (2136) dl::Model: +------------------------------+------------------+----------+
+I (2146) dl::Model: | /enc3/conv/conv.9/Conv       | Conv             | 3542us   |
+I (2156) dl::Model: +------------------------------+------------------+----------+
+I (2166) dl::Model: | /pool_2/MaxPool              | MaxPool          | 1386us   |
+I (2166) dl::Model: +------------------------------+------------------+----------+
+I (2176) dl::Model: | /bottleneck/conv/conv.0/Conv | Conv             | 568us    |
+I (2186) dl::Model: +------------------------------+------------------+----------+
+I (2196) dl::Model: | /bottleneck/conv/conv.3/Conv | Conv             | 1325us   |
+I (2206) dl::Model: +------------------------------+------------------+----------+
+I (2216) dl::Model: | /bottleneck/conv/conv.6/Conv | Conv             | 823us    |
+I (2216) dl::Model: +------------------------------+------------------+----------+
+I (2226) dl::Model: | /bottleneck/conv/conv.9/Conv | Conv             | 2459us   |
+I (2236) dl::Model: +------------------------------+------------------+----------+
+I (2246) dl::Model: | /up3/Resize                  | Resize           | 3478us   |
+I (2256) dl::Model: +------------------------------+------------------+----------+
+I (2256) dl::Model: | /conv3/Conv                  | Conv             | 5681us   |
+I (2266) dl::Model: +------------------------------+------------------+----------+
+I (2276) dl::Model: | /Concat                      | Concat           | 4755us   |
+I (2286) dl::Model: +------------------------------+------------------+----------+
+I (2296) dl::Model: | /dec3/conv/conv.0/Conv       | Conv             | 5191us   |
+I (2306) dl::Model: +------------------------------+------------------+----------+
+I (2306) dl::Model: | /dec3/conv/conv.3/Conv       | Conv             | 5732us   |
+I (2316) dl::Model: +------------------------------+------------------+----------+
+I (2326) dl::Model: | /dec3/conv/conv.6/Conv       | Conv             | 2623us   |
+I (2336) dl::Model: +------------------------------+------------------+----------+
+I (2346) dl::Model: | /dec3/conv/conv.9/Conv       | Conv             | 3513us   |
+I (2356) dl::Model: +------------------------------+------------------+----------+
+I (2356) dl::Model: | /up2/Resize                  | Resize           | 7005us   |
+I (2366) dl::Model: +------------------------------+------------------+----------+
+I (2376) dl::Model: | /conv2/Conv                  | Conv             | 8490us   |
+I (2386) dl::Model: +------------------------------+------------------+----------+
+I (2396) dl::Model: | /Concat_1                    | Concat           | 9788us   |
+I (2396) dl::Model: +------------------------------+------------------+----------+
+I (2406) dl::Model: | /dec2/conv/conv.0/Conv       | Conv             | 10245us  |
+I (2416) dl::Model: +------------------------------+------------------+----------+
+I (2426) dl::Model: | /dec2/conv/conv.3/Conv       | Conv             | 8616us   |
+I (2436) dl::Model: +------------------------------+------------------+----------+
+I (2446) dl::Model: | /dec2/conv/conv.6/Conv       | Conv             | 5881us   |
+I (2446) dl::Model: +------------------------------+------------------+----------+
+I (2456) dl::Model: | /dec2/conv/conv.9/Conv       | Conv             | 5646us   |
+I (2466) dl::Model: +------------------------------+------------------+----------+
+I (2476) dl::Model: | /up1/Resize                  | Resize           | 14178us  |
+I (2486) dl::Model: +------------------------------+------------------+----------+
+I (2496) dl::Model: | /conv1/Conv                  | Conv             | 16422us  |
+I (2496) dl::Model: +------------------------------+------------------+----------+
+I (2506) dl::Model: | /Concat_2                    | Concat           | 22127us  |
+I (2516) dl::Model: +------------------------------+------------------+----------+
+I (2526) dl::Model: | /dec1/conv/conv.0/Conv       | Conv             | 24032us  |
+I (2536) dl::Model: +------------------------------+------------------+----------+
+I (2546) dl::Model: | /dec1/conv/conv.3/Conv       | Conv             | 16776us  |
+I (2546) dl::Model: +------------------------------+------------------+----------+
+I (2556) dl::Model: | /dec1/conv/conv.6/Conv       | Conv             | 12386us  |
+I (2566) dl::Model: +------------------------------+------------------+----------+
+I (2576) dl::Model: | /dec1/conv/conv.9/Conv       | Conv             | 12983us  |
+I (2586) dl::Model: +------------------------------+------------------+----------+
+I (2586) dl::Model: | /out/Conv                    | Conv             | 11715us  |
+I (2596) dl::Model: +------------------------------+------------------+----------+
+I (2606) dl::Model: | total                        |                  | 334082us |
+I (2616) dl::Model: +------------------------------+------------------+----------+
+
+I (2626) CAM_TCP: [Model] 输入数量: 1
+I (2626) CAM_TCP: [Model] 输入名称: input
+I (2636) CAM_TCP: [Model] 输出数量: 1
+I (2636) CAM_TCP: [Model] 输出名称: output
+I (2646) CAM_TCP: [Model] 模型加载成功
+I (2646) CAM_TCP: [Camera] 初始化摄像头...
+I (2656) s3 ll_cam: DMA Channel=0
+I (2656) cam_hal: cam init ok
+I (2666) sccb: pin_sda 4 pin_scl 5
+I (2666) sccb: sccb_i2c_port=1
+I (2676) camera: Camera PID=0x26 VER=0x42 MIDL=0x7f MIDH=0xa2
+I (2676) camera: Detected OV2640 camera
+I (2676) camera: Detected camera at address=0x30
+I (2756) cam_hal: PSRAM DMA mode disabled
+I (2756) s3 ll_cam: node_size: 3840, nodes_per_line: 1, lines_per_node: 12
+I (2756) s3 ll_cam: dma_half_buffer_min:  3840, dma_half_buffer:  7680, lines_per_half_buffer: 24, dma_buffer_size: 30720
+I (2766) cam_hal: buffer_size: 30720, half_buffer_size: 7680, node_buffer_size: 3840, node_cnt: 8, total_cnt: 5
+I (2776) cam_hal: Allocating 19200 Byte frame buffer in PSRAM
+I (2786) cam_hal: cam config ok
+I (2786) ov2640: Set PLL: clk_2x: 1, clk_div: 3, pclk_auto: 1, pclk_div: 8
+cam_hal: FB-OVF
+I (2856) CAM_TCP: [Camera] 初始化成功 (QQVGA 160x120 灰度)
+I (2856) gpio: GPIO[2]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2866) gpio: GPIO[39]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2876) gpio: GPIO[40]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2886) gpio: GPIO[42]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2896) CAM_TCP: [Motor] 初始化完成
+I (2896) CAM_TCP: [Encoder] 初始化开始 (PCNT外设方式)...
+I (2906) gpio: GPIO[14]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2916) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2926) gpio: GPIO[38]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2936) gpio: GPIO[47]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2946) CAM_TCP: [Encoder] GPIO上拉配置完成: L_A=38 L_B=47 R_A=21 R_B=14
+I (2946) CAM_TCP: [Encoder] 初始电平: L_A=1 L_B=1 R_A=1 R_B=1
+I (2956) gpio: GPIO[38]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2966) gpio: GPIO[47]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2976) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2986) gpio: GPIO[14]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+E (2996) pcnt: pcnt_unit_start(406): unit not enabled yet
+ESP_ERROR_CHECK failed: esp_err_t 0x103 (ESP_ERR_INVALID_STATE) at 0x4200bbac
+--- 0x4200bbac: app_main at E:/AICleanBot/main/app_main.cpp:246 (discriminator 1)
+ (inlined by) app_main at E:/AICleanBot/main/app_main.cpp:897 (discriminator 1)
+
+file: "./main/app_main.cpp" line 246
+func: void encoder_init()
+expression: pcnt_unit_start(g_pcnt_l)
+
+abort() was called at PC 0x40383b0f on core 0
+--- 0x40383b0f: _esp_error_check_failed at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/esp_err.c:49
+
+
+
+Backtrace: 0x40379f6a:0x3fcafc80 0x40383b19:0x3fcafca0 0x4038b4b2:0x3fcafcc0 0x40383b0f:0x3fcafd30 0x4200bbac:0x3fcafd60 0x421725bf:0x3fcafe70
+--- 0x40379f6a: panic_abort at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/panic.c:463
+0x40383b19: esp_system_abort at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/port/esp_system_chip.c:92
+0x4038b4b2: abort at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/newlib/abort.c:38
+0x40383b0f: _esp_error_check_failed at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/esp_err.c:49
+0x4200bbac: app_main at E:/AICleanBot/main/app_main.cpp:246 (discriminator 1)
+ (inlined by) app_main at E:/AICleanBot/main/app_main.cpp:897 (discriminator 1)
+0x421725bf: main_task at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/freertos/app_startup.c:208
+
+
+
+
+
+ELF file SHA256: a5a340e33
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40379ec8
+--- 0x40379ec8: esp_restart_noos at E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/components/esp_system/port/soc/esp32s3/system_internal.c:158
+
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2820,len:0x1918
+load:0x403c8700,len:0x4
+load:0x403c8704,len:0xe5c
+load:0x403cb700,len:0x303c
+entry 0x403c893c
+I (31) boot: ESP-IDF v5.3.1-dirty 2nd stage bootloader
+I (31) boot: compile time May  5 2026 21:16:50
+I (31) boot: Multicore bootloader
+I (35) boot: chip revision: v0.2
+I (39) qio_mode: Enabling default flash chip QIO
+I (44) boot.esp32s3: Boot SPI Speed : 80MHz
+I (49) boot.esp32s3: SPI Mode       : QIO
+I (53) boot.esp32s3: SPI Flash Size : 8MB
+I (58) boot: Enabling RNG early entropy source...
+I (64) boot: Partition Table:
+I (67) boot: ## Label            Usage          Type ST Offset   Length
+I (74) boot:  0 nvs              WiFi data        01 02 00010000 00006000
+I (82) boot:  1 factory          factory app      00 00 00020000 0079e000
+I (89) boot: End of partition table
+I (94) esp_image: segment 0: paddr=00020020 vaddr=3c180020 size=73a04h (473604) map
+I (174) esp_image: segment 1: paddr=00093a2c vaddr=3fca0000 size=07664h ( 30308) load
+I (179) esp_image: segment 2: paddr=0009b098 vaddr=40378000 size=04f80h ( 20352) load
+I (184) esp_image: segment 3: paddr=000a0020 vaddr=42000020 size=1732d8h (1520344) map
+I (419) esp_image: segment 4: paddr=00213300 vaddr=4037cf80 size=13050h ( 77904) load
+I (444) boot: Loaded app from partition at offset 0x20000
+I (444) boot: Disabling RNG early entropy source...
+I (456) octal_psram: vendor id    : 0x0d (AP)
+I (456) octal_psram: dev id       : 0x02 (generation 3)
+I (456) octal_psram: density      : 0x03 (64 Mbit)
+I (461) octal_psram: good-die     : 0x01 (Pass)
+I (466) octal_psram: Latency      : 0x01 (Fixed)
+I (472) octal_psram: VCC          : 0x01 (3V)
+I (477) octal_psram: SRF          : 0x01 (Fast Refresh)
+I (483) octal_psram: BurstType    : 0x01 (Hybrid Wrap)
+I (488) octal_psram: BurstLen     : 0x01 (32 Byte)
+I (494) octal_psram: Readlatency  : 0x02 (10 cycles@Fixed)
+I (500) octal_psram: DriveStrength: 0x00 (1/1)
+I (506) MSPI Timing: PSRAM timing tuning index: 5
+I (511) esp_psram: Found 8MB PSRAM device
+I (515) esp_psram: Speed: 80MHz
+I (519) cpu_start: Multicore app
+I (808) esp_psram: SPI SRAM memory test OK
+I (817) cpu_start: Pro cpu start user code
+I (817) cpu_start: cpu freq: 240000000 Hz
+I (817) app_init: Application information:
+I (820) app_init: Project name:     model_in_flash_rodata
+I (826) app_init: App version:      a350e42-dirty
+I (831) app_init: Compile time:     May  5 2026 21:15:37
+I (837) app_init: ELF file SHA256:  a5a340e33...
+--- Error: GetOverlappedResult failed (PermissionError(13, '鎷掔粷璁块棶銆?', None, 5))
+--- Waiting for the device to reconnectI (843) app_init: ESP-IDF:          v5.3.1-dirty
+I (848) efuse_init: Min chip rev:     v0.0
+I (853) efuse_init: Max chip rev:     v0.99 
+I (858) efuse_init: Chip rev:         v0.2
+I (862) heap_init: Initializing. RAM available for dynamic allocation:
+I (870) heap_init: At 3FCAC688 len 0003D088 (244 KiB): RAM
+I (876) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (882) esp_psram: Adding pool of 8192K of PSRAM memory to heap allocator
+I (890) spi_flash: detected chip: boya
+I (894) spi_flash: flash io: qio
+W (898) spi_flash: Detected size(16384k) larger than the size in the binary image header(8192k). Using the size in the binary image header.
+W (911) i2c: This driver is an old driver, please migrate your application code to adapt `driver/i2c_master.h`
+I (922) sleep: Configure to isolate all GPIO pins in sleep state
+I (928) sleep: Enable automatic switching of GPIO sleep configuration
+I (936) main_task: Started on CPU0
+I (946) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+I (946) main_task: Calling app_main()
+I (956) CAM_TCP: ========================================
+I (956) CAM_TCP: ESP32 Camera Server (WiFi AP + TCP)
+I (966) CAM_TCP: ========================================
+I (986) CAM_TCP: [Init] Sigmoid查表初始化完成
+I (986) CAM_TCP: [Model] 加载模型...
+
+......................................
