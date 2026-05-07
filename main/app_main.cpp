@@ -15,6 +15,7 @@
 #include "driver/gpio.h"
 #include "driver/pulse_cnt.h"
 #include "dl_model_base.hpp"
+#include "dl_tool.hpp"
 
 static const char *TAG = "CAM_TCP";
 
@@ -112,14 +113,14 @@ static pcnt_unit_handle_t g_pcnt_r = NULL;  // 右轮 PCNT 单元句柄
 // ===========================
 static uint8_t sigmoid_lut[256];  // sigmoid查表（256字节）
 
-// 初始化sigmoid查表
-static void init_sigmoid_lut(void)
+// 初始化sigmoid查表（根据模型输出量化参数构建）
+static void init_sigmoid_lut(float out_scale)
 {
     for (int i = 0; i < 256; i++) {
-        int8_t q = (int8_t)i;  // int8量化值: -128~127
-        float x = q / 128.0f;  // 反量化
-        float sig = 1.0f / (1.0f + expf(-x));
-        sigmoid_lut[i] = (sig > 0.5f) ? 255 : 0;  // 直接存储二值结果
+        int8_t q = (int8_t)(i - 128);   // uint8索引 -> int8值
+        float logits = q * out_scale;   // 反量化
+        float sig = 1.0f / (1.0f + expf(-logits));
+        sigmoid_lut[i] = (sig > 0.5f) ? 255 : 0;
     }
 }
 
@@ -205,57 +206,81 @@ static void encoder_init(void)
     enc_pull_conf.pull_up_en = GPIO_PULLUP_ENABLE;
     enc_pull_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     enc_pull_conf.intr_type = GPIO_INTR_DISABLE;
-    gpio_config(&enc_pull_conf);
-    ESP_LOGI(TAG, "[Encoder] GPIO上拉配置完成");
+    ESP_ERROR_CHECK(gpio_config(&enc_pull_conf));
+    ESP_LOGI(TAG, "[Encoder] GPIO上拉配置完成: L_A=%d L_B=%d R_A=%d R_B=%d",
+             ENCODER_L_A, ENCODER_L_B, ENCODER_R_A, ENCODER_R_B);
 
     // 读取GPIO初始电平
-    ESP_LOGI(TAG, "[Encoder] 初始电平: L_A=%d L_B=%d R_A=%d R_B=%d",
-             gpio_get_level(ENCODER_L_A), gpio_get_level(ENCODER_L_B),
-             gpio_get_level(ENCODER_R_A), gpio_get_level(ENCODER_R_B));
+    int l_a = gpio_get_level(ENCODER_L_A);
+    int l_b = gpio_get_level(ENCODER_L_B);
+    int r_a = gpio_get_level(ENCODER_R_A);
+    int r_b = gpio_get_level(ENCODER_R_B);
+    ESP_LOGI(TAG, "[Encoder] 初始电平: L_A=%d L_B=%d R_A=%d R_B=%d", l_a, l_b, r_a, r_b);
 
-    // 配置左轮 PCNT 单元
+    // 配置左轮 PCNT 单元（启用软件累加，防止溢出）
     pcnt_unit_config_t unit_config = {};
-    unit_config.high_limit = 10000;
-    unit_config.low_limit = -10000;
-    pcnt_new_unit(&unit_config, &g_pcnt_l);
+    unit_config.high_limit = 32767;
+    unit_config.low_limit = -32768;
+    unit_config.flags.accum_count = 1;
+    ESP_ERROR_CHECK(pcnt_new_unit(&unit_config, &g_pcnt_l));
 
-    // 左轮通道0：简单配置 - 只用edge GPIO计数
-    // 先测试基本功能
+    // 左轮通道0：A相边沿 + B相电平
     pcnt_chan_config_t chan_config = {};
-    chan_config.edge_gpio_num = ENCODER_L_A;   // GPIO38 - 只用A相计数
-    pcnt_channel_handle_t pcnt_ch_l = NULL;
-    pcnt_new_channel(g_pcnt_l, &chan_config, &pcnt_ch_l);
-    // A相上升沿+1，下降沿-1（相当于统计A相脉冲数的一半）
-    pcnt_channel_set_edge_action(pcnt_ch_l, 
-        PCNT_CHANNEL_EDGE_ACTION_INCREASE,  
-        PCNT_CHANNEL_EDGE_ACTION_DECREASE); 
-    pcnt_channel_set_level_action(pcnt_ch_l,
-        PCNT_CHANNEL_LEVEL_ACTION_HOLD,
-        PCNT_CHANNEL_LEVEL_ACTION_HOLD);
+    chan_config.edge_gpio_num = ENCODER_L_A;
+    chan_config.level_gpio_num = ENCODER_L_B;
+    pcnt_channel_handle_t pcnt_ch_l0 = NULL;
+    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_l, &chan_config, &pcnt_ch_l0));
+    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_l0, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE));
+    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_l0, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
 
-    // 配置右轮 PCNT 单元
-    pcnt_new_unit(&unit_config, &g_pcnt_r);
+    // 左轮通道1：B相边沿 + A相电平（4倍频正交计数）
+    chan_config.edge_gpio_num = ENCODER_L_B;
+    chan_config.level_gpio_num = ENCODER_L_A;
+    pcnt_channel_handle_t pcnt_ch_l1 = NULL;
+    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_l, &chan_config, &pcnt_ch_l1));
+    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_l1, PCNT_CHANNEL_EDGE_ACTION_DECREASE, PCNT_CHANNEL_EDGE_ACTION_INCREASE));
+    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_l1, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
 
-    // 右轮通道0
-    chan_config.edge_gpio_num = ENCODER_R_A;   // GPIO21
-    pcnt_channel_handle_t pcnt_ch_r = NULL;
-    pcnt_new_channel(g_pcnt_r, &chan_config, &pcnt_ch_r);
-    pcnt_channel_set_edge_action(pcnt_ch_r,
-        PCNT_CHANNEL_EDGE_ACTION_INCREASE,
-        PCNT_CHANNEL_EDGE_ACTION_DECREASE);
-    pcnt_channel_set_level_action(pcnt_ch_r,
-        PCNT_CHANNEL_LEVEL_ACTION_HOLD,
-        PCNT_CHANNEL_LEVEL_ACTION_HOLD);
+    // 配置右轮 PCNT 单元（启用软件累加，防止溢出）
+    ESP_ERROR_CHECK(pcnt_new_unit(&unit_config, &g_pcnt_r));
 
-    // 使能、清零、启动
-    pcnt_unit_enable(g_pcnt_l);
-    pcnt_unit_enable(g_pcnt_r);
-    pcnt_unit_clear_count(g_pcnt_l);
-    pcnt_unit_clear_count(g_pcnt_r);
-    pcnt_unit_start(g_pcnt_l);
-    pcnt_unit_start(g_pcnt_r);
+    // 右轮通道0：A相边沿 + B相电平
+    chan_config.edge_gpio_num = ENCODER_R_A;
+    chan_config.level_gpio_num = ENCODER_R_B;
+    pcnt_channel_handle_t pcnt_ch_r0 = NULL;
+    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_r, &chan_config, &pcnt_ch_r0));
+    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_r0, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE));
+    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_r0, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
 
-    ESP_LOGI(TAG, "[Encoder] 初始化完成");
+    // 右轮通道1：B相边沿 + A相电平（4倍频正交计数）
+    chan_config.edge_gpio_num = ENCODER_R_B;
+    chan_config.level_gpio_num = ENCODER_R_A;
+    pcnt_channel_handle_t pcnt_ch_r1 = NULL;
+    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_r, &chan_config, &pcnt_ch_r1));
+    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_r1, PCNT_CHANNEL_EDGE_ACTION_DECREASE, PCNT_CHANNEL_EDGE_ACTION_INCREASE));
+    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_r1, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
+
+    // 使能 PCNT 单元（必须在 start 之前调用）
+    ESP_ERROR_CHECK(pcnt_unit_enable(g_pcnt_l));
+    ESP_ERROR_CHECK(pcnt_unit_enable(g_pcnt_r));
+
+    // 清零计数器
+    ESP_ERROR_CHECK(pcnt_unit_clear_count(g_pcnt_l));
+    ESP_ERROR_CHECK(pcnt_unit_clear_count(g_pcnt_r));
+
+    // 启动 PCNT 计数
+    ESP_ERROR_CHECK(pcnt_unit_start(g_pcnt_l));
+    ESP_ERROR_CHECK(pcnt_unit_start(g_pcnt_r));
+
+    // 重新设置上拉（pcnt_new_channel 会覆盖 IO_MUX 配置，清除上拉）
+    gpio_pullup_en(ENCODER_L_A);
+    gpio_pullup_en(ENCODER_L_B);
+    gpio_pullup_en(ENCODER_R_A);
+    gpio_pullup_en(ENCODER_R_B);
+    ESP_LOGI(TAG, "[Encoder] 上拉重新设置完成");
+
+    ESP_LOGI(TAG, "[Encoder] PCNT配置完成: 左轮=UNIT, 右轮=UNIT");
+    ESP_LOGI(TAG, "[Encoder] 初始化完成 左轮:GPIO38/GPIO47 右轮:GPIO21/GPIO14");
 }
 
 // 编码器读取
@@ -478,7 +503,7 @@ static void handle_client(int client_sock)
             motor_b_forward(g_motor_base_speed);
             ESP_LOGI(TAG, "[Motor] 直行: A=%d, B=%d", g_motor_base_speed, g_motor_base_speed);
         }
-        else if (strncmp(buf, "STOP", 4) == 0) {
+        else if (strncmp(buf, "STOP", 4) == 0 && (buf[4] == '\0' || buf[4] == '\n' || buf[4] == '\r')) {
             motor_stop();
             g_motor_base_speed = 0;
             g_motor_running = false;
@@ -605,6 +630,7 @@ static void handle_client(int client_sock)
             
             // 释放内存
             free(pred_data);
+            free(concat_data);
             
             esp_camera_fb_return(fb);
         }
@@ -876,16 +902,12 @@ extern "C" void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
 
-    // 初始化sigmoid查表
-    init_sigmoid_lut();
-    ESP_LOGI(TAG, "[Init] Sigmoid查表初始化完成");
-
     // 初始化模型
     ESP_LOGI(TAG, "[Model] 加载模型...");
     g_model = new dl::Model((const char *)model_espdl, fbs::MODEL_LOCATION_IN_FLASH_RODATA);
     ESP_ERROR_CHECK(g_model->test());
     g_model->profile();
-    
+
     // 打印模型输入输出名称
     auto &model_inputs = g_model->get_inputs();
     auto &model_outputs = g_model->get_outputs();
@@ -897,8 +919,14 @@ extern "C" void app_main(void)
     for (auto &pair : model_outputs) {
         ESP_LOGI(TAG, "[Model] 输出名称: %s", pair.first.c_str());
     }
-    
     ESP_LOGI(TAG, "[Model] 模型加载成功");
+
+    // 根据模型输出量化参数初始化sigmoid查表
+    dl::TensorBase *out_tensor = g_model->get_output("output");
+    int out_exponent = out_tensor->get_exponent();
+    float out_scale = DL_SCALE(out_exponent);
+    init_sigmoid_lut(out_scale);
+    ESP_LOGI(TAG, "[Init] Sigmoid查表初始化完成 (exponent=%d, scale=%.6f)", out_exponent, out_scale);
 
     camera_init();
     motor_init();
@@ -907,7 +935,7 @@ extern "C" void app_main(void)
     udp_init();
 
     // TCP服务器任务绑定到Core 1，推理任务与WiFi底层(Core 0)分离
-    xTaskCreatePinnedToCore(tcp_server_task, "tcp_server", 8192, NULL, 5, NULL, 1);
+    xTaskCreatePinnedToCore(tcp_server_task, "tcp_server", 16384, NULL, 5, NULL, 1);
 
     ESP_LOGI(TAG, "========================================");
     ESP_LOGI(TAG, "系统启动完成!");
