@@ -26,11 +26,11 @@ I (63) boot: ## Label            Usage          Type ST Offset   Length
 I (70) boot:  0 nvs              WiFi data        01 02 00010000 00006000
 I (78) boot:  1 factory          factory app      00 00 00020000 0079e000
 I (85) boot: End of partition table
-I (89) esp_image: segment 0: paddr=00020020 vaddr=3c020020 size=0b4d0h ( 46288) map
-I (105) esp_image: segment 1: paddr=0002b4f8 vaddr=3fc96600 size=02ebch ( 11964) load
-I (108) esp_image: segment 2: paddr=0002e3bc vaddr=40378000 size=01c5ch (  7260) load
-I (116) esp_image: segment 3: paddr=00030020 vaddr=42000020 size=198d4h (104660) map
-I (139) esp_image: segment 4: paddr=000498fc vaddr=40379c5c size=0c970h ( 51568) load
+I (89) esp_image: segment 0: paddr=00020020 vaddr=3c020020 size=0b370h ( 45936) map
+I (105) esp_image: segment 1: paddr=0002b398 vaddr=3fc96600 size=02ebch ( 11964) load
+I (108) esp_image: segment 2: paddr=0002e25c vaddr=40378000 size=01dbch (  7612) load
+I (116) esp_image: segment 3: paddr=00030020 vaddr=42000020 size=197ech (104428) map
+I (139) esp_image: segment 4: paddr=00049814 vaddr=40379dbc size=0c810h ( 51216) load
 I (155) boot: Loaded app from partition at offset 0x20000
 I (155) boot: Disabling RNG early entropy source...
 I (167) octal_psram: vendor id    : 0x0d (AP)
@@ -40,12 +40,12 @@ I (172) octal_psram: good-die     : 0x01 (Pass)
 I (177) octal_psram: Latency      : 0x01 (Fixed)
 I (183) octal_psram: VCC          : 0x01 (3V)
 I (188) octal_psram: SRF          : 0x01 (Fast Refresh)
-I (194) octal_psram: BurstType    : 0x01 (Hybrid Wrap)
+I (193) octal_psram: BurstType    : 0x01 (Hybrid Wrap)
 I (199) octal_psram: BurstLen     : 0x01 (32 Byte)
 I (205) octal_psram: Readlatency  : 0x02 (10 cycles@Fixed)
 I (211) octal_psram: DriveStrength: 0x00 (1/1)
 I (217) MSPI Timing: PSRAM timing tuning index: 5
-I (222) esp_psram: Found 8MB PSRAM device
+I (221) esp_psram: Found 8MB PSRAM device
 I (226) esp_psram: Speed: 80MHz
 I (230) cpu_start: Multicore app
 I (519) esp_psram: SPI SRAM memory test OK
@@ -53,15 +53,15 @@ I (528) cpu_start: Pro cpu start user code
 I (528) cpu_start: cpu freq: 240000000 Hz
 I (528) app_init: Application information:
 I (531) app_init: Project name:     model_in_flash_rodata
-I (537) app_init: App version:      676e0e3-dirty
-I (542) app_init: Compile time:     May  7 2026 21:40:01
-I (548) app_init: ELF file SHA256:  c8dcd8c40...
-I (554) app_init: ESP-IDF:          v5.3.1-dirty
+I (537) app_init: App version:      05a9111-dirty
+I (542) app_init: Compile time:     May  7 2026 22:05:38
+I (548) app_init: ELF file SHA256:  c4d3f34d1...
+I (553) app_init: ESP-IDF:          v5.3.1-dirty
 I (559) efuse_init: Min chip rev:     v0.0
 I (564) efuse_init: Max chip rev:     v0.99 
 I (569) efuse_init: Chip rev:         v0.2
 I (573) heap_init: Initializing. RAM available for dynamic allocation:
-I (581) heap_init: At 3FC99E30 len 0004F8E0 (318 KiB): RAM
+I (581) heap_init: At 3FC99E38 len 0004F8D8 (318 KiB): RAM
 I (587) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
 I (593) esp_psram: Adding pool of 8192K of PSRAM memory to heap allocator
 I (601) spi_flash: detected chip: boya
@@ -72,101 +72,59 @@ I (629) sleep: Enable automatic switching of GPIO sleep configuration
 I (636) main_task: Started on CPU0
 I (646) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
 I (646) main_task: Calling app_main()
-I (656) MOTOR_ENC_TEST: ========================================
-I (656) MOTOR_ENC_TEST: 电机编码器测试 (20%占空比)
-I (666) MOTOR_ENC_TEST: ========================================
-I (676) gpio: GPIO[2]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
-I (686) gpio: GPIO[39]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
-I (696) gpio: GPIO[40]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
-I (696) gpio: GPIO[42]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
-I (706) MOTOR_ENC_TEST: [Motor] 初始化完成
-I (716) gpio: GPIO[14]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (726) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (656) ENC_TEST: ===== Encoder Test =====
+I (656) gpio: GPIO[2]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (666) gpio: GPIO[39]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (676) gpio: GPIO[40]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (686) gpio: GPIO[42]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (696) gpio: GPIO[14]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (706) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (716) gpio: GPIO[38]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (726) gpio: GPIO[47]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
 I (736) gpio: GPIO[38]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (746) gpio: GPIO[0]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
 I (746) gpio: GPIO[47]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (756) gpio: GPIO[38]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (766) gpio: GPIO[47]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (766) gpio: GPIO[47]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (776) gpio: GPIO[38]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (786) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (796) gpio: GPIO[14]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (806) gpio: GPIO[14]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (816) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (826) MOTOR_ENC_TEST: [Encoder] 初始化完成
-I (836) MOTOR_ENC_TEST: 等待5秒...
-I (5836) MOTOR_ENC_TEST: 启动电机AB (20%占空比=51)
-I (5836) MOTOR_ENC_TEST: [MotorAB] 正转 占空比=51
-I (5836) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (5836) MOTOR_ENC_TEST: 测试运行中...
-I (5846) main_task: Returned from app_main()
-I (5936) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (6036) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (6136) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (6236) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (6336) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (6436) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (6536) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (6636) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (6736) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (6836) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (6936) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (7036) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (7136) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (7236) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (7336) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (7436) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (7536) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (7636) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (7736) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (7836) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (7936) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (8036) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (8136) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (8236) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (8336) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (8436) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (8536) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (8636) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (8736) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (8836) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (8936) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (9036) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (9136) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (9236) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (9336) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (9436) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (9536) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (9636) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (9736) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (9836) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (9936) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (10036) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (10136) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (10236) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (10336) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (10436) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (10536) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (10636) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (10736) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (10836) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (10936) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (11036) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (11136) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (11236) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (11336) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (11436) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (11536) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (11636) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (11736) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (11836) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (11936) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (12036) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (12136) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (12236) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (12336) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (12436) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (12536) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (12636) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
-I (12736) MOTOR_ENC_TEST: [Encoder] 左轮=0  右轮=0
---- Error: GetOverlappedResult failed (PermissionError(13, '鎷掔粷璁块棶銆?', None, 5))
---- Waiting for the device to reconnect................................................................................................................................
+I (756) gpio: GPIO[0]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (766) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (776) gpio: GPIO[0]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (786) gpio: GPIO[14]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (796) gpio: GPIO[0]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (806) ENC_TEST: Motor started, 20% duty
+I (806) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (1016) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (1216) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (1416) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (1616) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (1816) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (2016) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (2216) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (2416) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (2616) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (2816) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (3016) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (3216) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (3416) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (3616) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (3816) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (4016) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (4216) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (4416) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (4616) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (4816) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (5016) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (5216) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (5416) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (5616) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (5816) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (6016) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (6216) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (6416) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (6616) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (6816) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (7016) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (7216) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (7416) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (7616) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (7816) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (8016) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
+I (8216) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(1,1) R(1,1)
