@@ -77,12 +77,13 @@ static void motor_init(void)
 // ===========================
 static void encoder_init(void)
 {
-    // 配置GPIO上拉
+    // 配置GPIO（不上拉，由编码器硬件上拉）
     gpio_config_t pull_conf = {};
     pull_conf.pin_bit_mask = (1ULL << ENCODER_L_A) | (1ULL << ENCODER_L_B) |
                              (1ULL << ENCODER_R_A) | (1ULL << ENCODER_R_B);
     pull_conf.mode = GPIO_MODE_INPUT;
-    pull_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+    pull_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+    pull_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     gpio_config(&pull_conf);
 
     // PCNT单元配置
@@ -121,7 +122,7 @@ static void encoder_init(void)
     pcnt_new_channel(g_pcnt_r_b, &chan_b, &ch_rb);
     pcnt_channel_set_edge_action(ch_rb, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_HOLD);
 
-    // 使能并启动
+    // 启动所有PCNT单元
     pcnt_unit_enable(g_pcnt_l_a);
     pcnt_unit_enable(g_pcnt_l_b);
     pcnt_unit_enable(g_pcnt_r_a);
@@ -134,12 +135,6 @@ static void encoder_init(void)
     pcnt_unit_start(g_pcnt_l_b);
     pcnt_unit_start(g_pcnt_r_a);
     pcnt_unit_start(g_pcnt_r_b);
-
-    // 重新启用上拉
-    gpio_pullup_en(ENCODER_L_A);
-    gpio_pullup_en(ENCODER_L_B);
-    gpio_pullup_en(ENCODER_R_A);
-    gpio_pullup_en(ENCODER_R_B);
 }
 
 // ===========================
