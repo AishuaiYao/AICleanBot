@@ -15,7 +15,7 @@ static const char *TAG = "ENC_TEST";
 #define MOTOR_B_PWM   GPIO_NUM_41
 #define MOTOR_B_IN1   GPIO_NUM_40
 #define MOTOR_B_IN2   GPIO_NUM_39
-#define ENCODER_L_A   GPIO_NUM_38
+#define ENCODER_L_A   GPIO_NUM_48
 #define ENCODER_L_B   GPIO_NUM_47
 #define ENCODER_R_A   GPIO_NUM_21
 #define ENCODER_R_B   GPIO_NUM_14
@@ -157,8 +157,8 @@ extern "C" void app_main(void)
     gpio_set_level(MOTOR_A_IN2, 0);
     gpio_set_level(MOTOR_B_IN1, 1);
     gpio_set_level(MOTOR_B_IN2, 0);
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, 51);
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2, 51);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, 255);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2, 255);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2);
 
