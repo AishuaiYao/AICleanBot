@@ -152,8 +152,8 @@ extern "C" void app_main(void)
     gpio_set_level(MOTOR_A_IN2, 0);
     gpio_set_level(MOTOR_B_IN1, 1);
     gpio_set_level(MOTOR_B_IN2, 0);
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, 255);
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2, 255);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, 50);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2, 50);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2);
 
