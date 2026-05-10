@@ -455,15 +455,15 @@ static void handle_client(int client_sock)
         }
         else if (strncmp(buf, "MOTOR_LEFT", 10) == 0) {
             if (!g_motor_running) continue;
-            motor_l_forward(g_motor_base_speed);
-            motor_r_forward(g_motor_base_speed / 2);
-            ESP_LOGI(TAG, "[Motor] 左转: L=%d, R=%d", g_motor_base_speed, g_motor_base_speed / 2);
+            motor_r_forward(g_motor_base_speed);
+            motor_l_forward(g_motor_base_speed / 2);
+            ESP_LOGI(TAG, "[Motor] 左转: L=%d, R=%d", g_motor_base_speed / 2, g_motor_base_speed);
         }
         else if (strncmp(buf, "MOTOR_RIGHT", 11) == 0) {
             if (!g_motor_running) continue;
-            motor_r_forward(g_motor_base_speed);
-            motor_l_forward(g_motor_base_speed / 2);
-            ESP_LOGI(TAG, "[Motor] 右转: L=%d, R=%d", g_motor_base_speed / 2, g_motor_base_speed);
+            motor_l_forward(g_motor_base_speed);
+            motor_r_forward(g_motor_base_speed / 2);
+            ESP_LOGI(TAG, "[Motor] 右转: L=%d, R=%d", g_motor_base_speed, g_motor_base_speed / 2);
         }
         else if (strncmp(buf, "MOTOR_FORWARD", 13) == 0) {
             if (!g_motor_running) continue;
@@ -793,15 +793,15 @@ static void handle_client(int client_sock)
                     }
                     else if (strncmp(buf, "MOTOR_LEFT", 10) == 0) {
                         if (!g_motor_running) continue;
-                        motor_l_forward(g_motor_base_speed);
-                        motor_r_forward(g_motor_base_speed / 2);
-                        ESP_LOGI(TAG, "[Motor] 左转: L=%d, R=%d", g_motor_base_speed, g_motor_base_speed / 2);
+                        motor_r_forward(g_motor_base_speed);
+                        motor_l_forward(g_motor_base_speed / 2);
+                        ESP_LOGI(TAG, "[Motor] 左转: L=%d, R=%d", g_motor_base_speed / 2, g_motor_base_speed);
                     }
                     else if (strncmp(buf, "MOTOR_RIGHT", 11) == 0) {
                         if (!g_motor_running) continue;
-                        motor_r_forward(g_motor_base_speed);
-                        motor_l_forward(g_motor_base_speed / 2);
-                        ESP_LOGI(TAG, "[Motor] 右转: L=%d, R=%d", g_motor_base_speed / 2, g_motor_base_speed);
+                        motor_l_forward(g_motor_base_speed);
+                        motor_r_forward(g_motor_base_speed / 2);
+                        ESP_LOGI(TAG, "[Motor] 右转: L=%d, R=%d", g_motor_base_speed, g_motor_base_speed / 2);
                     }
                     else if (strncmp(buf, "MOTOR_FORWARD", 13) == 0) {
                         if (!g_motor_running) continue;
