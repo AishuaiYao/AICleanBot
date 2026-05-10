@@ -23,9 +23,11 @@ static const char *TAG = "ENC_TEST";
 #define ENCODER_R_A   GPIO_NUM_41    // 右编码器E1A
 #define ENCODER_R_B   GPIO_NUM_40    // 右编码器E1B
 
-// PCNT句柄 - 2个正交编码器（各用1个单元实现4倍频）
-static pcnt_unit_handle_t g_pcnt_l_a = NULL;  // 左编码器
-static pcnt_unit_handle_t g_pcnt_r_a = NULL;  // 右编码器
+// PCNT句柄 - 一倍频
+static pcnt_unit_handle_t g_pcnt_l = NULL;  // 左编码器
+static pcnt_unit_handle_t g_pcnt_r = NULL;  // 右编码器
+static bool g_motor_dir = true;  // true=正转, false=反转
+static bool g_last_motor_dir = true;  // 上次方向
 
 // ===========================
 // 电机初始化
@@ -66,15 +68,37 @@ static void motor_init(void)
                            (1ULL << MOTOR_R_IN1) | (1ULL << MOTOR_R_IN2);
     io_conf.mode = GPIO_MODE_OUTPUT;
     gpio_config(&io_conf);
-
-    gpio_set_level(MOTOR_L_IN1, 0);
-    gpio_set_level(MOTOR_L_IN2, 0);
-    gpio_set_level(MOTOR_R_IN1, 0);
-    gpio_set_level(MOTOR_R_IN2, 0);
 }
 
 // ===========================
-// 编码器初始化 - 简单2倍频（先用这个测试）
+// 设置电机方向（反转时清零计数器）
+// ===========================
+static void set_motor_direction(bool forward)
+{
+    if (forward != g_last_motor_dir) {
+        // 方向变化，清零计数器
+        pcnt_unit_clear_count(g_pcnt_l);
+        pcnt_unit_clear_count(g_pcnt_r);
+        g_last_motor_dir = forward;
+    }
+    
+    if (forward) {
+        gpio_set_level(MOTOR_L_IN1, 0);
+        gpio_set_level(MOTOR_L_IN2, 1);
+        gpio_set_level(MOTOR_R_IN1, 0);
+        gpio_set_level(MOTOR_R_IN2, 1);
+        ESP_LOGI(TAG, ">>> 方向: 正转");
+    } else {
+        gpio_set_level(MOTOR_L_IN1, 1);
+        gpio_set_level(MOTOR_L_IN2, 0);
+        gpio_set_level(MOTOR_R_IN1, 1);
+        gpio_set_level(MOTOR_R_IN2, 0);
+        ESP_LOGI(TAG, ">>> 方向: 反转");
+    }
+}
+
+// ===========================
+// 编码器初始化 - 一倍频（A相上升沿+1）
 // ===========================
 static void encoder_init(void)
 {
@@ -83,65 +107,73 @@ static void encoder_init(void)
     pull_conf.pin_bit_mask = (1ULL << ENCODER_L_A) | (1ULL << ENCODER_L_B) |
                              (1ULL << ENCODER_R_A) | (1ULL << ENCODER_R_B);
     pull_conf.mode = GPIO_MODE_INPUT;
-    pull_conf.pull_up_en = GPIO_PULLUP_ENABLE;  // 启用上拉
+    pull_conf.pull_up_en = GPIO_PULLUP_DISABLE;
     pull_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     gpio_config(&pull_conf);
 
-    // 左编码器 - 2倍频（A相上升沿计数）
+    // 左编码器 - 简单A相上升沿+1
     pcnt_unit_config_t unit_conf_l = {};
     unit_conf_l.high_limit = 32767;
     unit_conf_l.low_limit = -32768;
     unit_conf_l.flags.accum_count = 1;
-    pcnt_new_unit(&unit_conf_l, &g_pcnt_l_a);
+    pcnt_new_unit(&unit_conf_l, &g_pcnt_l);
 
     pcnt_chan_config_t chan_la = {};
     chan_la.edge_gpio_num = ENCODER_L_A;
-    chan_la.level_gpio_num = -1;  // 无控制信号
+    chan_la.level_gpio_num = -1;
     pcnt_channel_handle_t ch_la = NULL;
-    pcnt_new_channel(g_pcnt_l_a, &chan_la, &ch_la);
+    pcnt_new_channel(g_pcnt_l, &chan_la, &ch_la);
     pcnt_channel_set_edge_action(ch_la, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_HOLD);
 
-    // 右编码器 - 2倍频（A相上升沿计数）
+    // 右编码器
     pcnt_unit_config_t unit_conf_r = {};
     unit_conf_r.high_limit = 32767;
     unit_conf_r.low_limit = -32768;
     unit_conf_r.flags.accum_count = 1;
-    pcnt_new_unit(&unit_conf_r, &g_pcnt_r_a);
+    pcnt_new_unit(&unit_conf_r, &g_pcnt_r);
 
     pcnt_chan_config_t chan_ra = {};
     chan_ra.edge_gpio_num = ENCODER_R_A;
     chan_ra.level_gpio_num = -1;
     pcnt_channel_handle_t ch_ra = NULL;
-    pcnt_new_channel(g_pcnt_r_a, &chan_ra, &ch_ra);
+    pcnt_new_channel(g_pcnt_r, &chan_ra, &ch_ra);
     pcnt_channel_set_edge_action(ch_ra, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_HOLD);
 
     // 启动
-    pcnt_unit_enable(g_pcnt_l_a);
-    pcnt_unit_enable(g_pcnt_r_a);
-    pcnt_unit_clear_count(g_pcnt_l_a);
-    pcnt_unit_clear_count(g_pcnt_r_a);
-    pcnt_unit_start(g_pcnt_l_a);
-    pcnt_unit_start(g_pcnt_r_a);
+    pcnt_unit_enable(g_pcnt_l);
+    pcnt_unit_enable(g_pcnt_r);
+    pcnt_unit_clear_count(g_pcnt_l);
+    pcnt_unit_clear_count(g_pcnt_r);
+    pcnt_unit_start(g_pcnt_l);
+    pcnt_unit_start(g_pcnt_r);
 }
 
 // ===========================
-// 读取编码器（边界自动清零）
+// 读取编码器（根据方向返回正/负值，边界清零）
 // ===========================
 static void get_encoder_count(int *left, int *right)
 {
-    pcnt_unit_get_count(g_pcnt_l_a, left);
-    pcnt_unit_get_count(g_pcnt_r_a, right);
+    int raw_left = 0, raw_right = 0;
+    pcnt_unit_get_count(g_pcnt_l, &raw_left);
+    pcnt_unit_get_count(g_pcnt_r, &raw_right);
     
-    // 左编码器边界处理
-    if (*left >= 32767 || *left <= -32768) {
-        pcnt_unit_clear_count(g_pcnt_l_a);
-        *left = 0;
+    // 根据当前电机方向返回正数或负数
+    if (g_last_motor_dir) {
+        // 正转，返回正值
+        *left = raw_left;
+        *right = raw_right;
+    } else {
+        // 反转，返回负值
+        *left = -raw_left;
+        *right = -raw_right;
     }
     
-    // 右编码器边界处理
-    if (*right >= 32767 || *right <= -32768) {
-        pcnt_unit_clear_count(g_pcnt_r_a);
-        *right = 0;
+    // 边界处理
+    if (raw_left >= 32767 || raw_left <= -32768) {
+        pcnt_unit_clear_count(g_pcnt_l);
+    }
+    if (raw_right >= 32767 || raw_right <= -32768) {
+        pcnt_unit_clear_count(g_pcnt_r);
     }
 }
 
@@ -155,17 +187,16 @@ extern "C" void app_main(void)
     motor_init();
     encoder_init();
 
-    // 启动电机（方向反转）
-    gpio_set_level(MOTOR_L_IN1, 0);
-    gpio_set_level(MOTOR_L_IN2, 1);
-    gpio_set_level(MOTOR_R_IN1, 0);
-    gpio_set_level(MOTOR_R_IN2, 1);
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, 255);
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2, 255);
+    // 启动电机
+    set_motor_direction(g_motor_dir);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, 200);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2, 200);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2);
 
-    ESP_LOGI(TAG, "Motor started");
+    ESP_LOGI(TAG, "Motor started, testing with 5s direction toggle");
+
+    int tick_count = 0;
 
     while (1) {
         int left_cnt = 0, right_cnt = 0;
@@ -174,5 +205,14 @@ extern "C" void app_main(void)
         ESP_LOGI(TAG, "Left=%d Right=%d", left_cnt, right_cnt);
 
         vTaskDelay(pdMS_TO_TICKS(200));
+
+        // 每5秒反转一次方向 (25 * 200ms = 5s)
+        tick_count++;
+        if (tick_count >= 25) {
+            tick_count = 0;
+            g_motor_dir = !g_motor_dir;
+            set_motor_direction(g_motor_dir);
+            // 不清零，让正负数继续累积
+        }
     }
 }
