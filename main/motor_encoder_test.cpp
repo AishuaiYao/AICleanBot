@@ -23,11 +23,9 @@ static const char *TAG = "ENC_TEST";
 #define ENCODER_R_A   GPIO_NUM_41    // 右编码器E1A
 #define ENCODER_R_B   GPIO_NUM_40    // 右编码器E1B
 
-// PCNT句柄 - 4个独立计数器
-static pcnt_unit_handle_t g_pcnt_l_a = NULL;
-static pcnt_unit_handle_t g_pcnt_l_b = NULL;
-static pcnt_unit_handle_t g_pcnt_r_a = NULL;
-static pcnt_unit_handle_t g_pcnt_r_b = NULL;
+// PCNT句柄 - 2个正交编码器（各用1个单元实现4倍频）
+static pcnt_unit_handle_t g_pcnt_l_a = NULL;  // 左编码器
+static pcnt_unit_handle_t g_pcnt_r_a = NULL;  // 右编码器
 
 // ===========================
 // 电机初始化
@@ -76,70 +74,75 @@ static void motor_init(void)
 }
 
 // ===========================
-// 编码器初始化 - 4个独立PCNT
+// 编码器初始化 - 简单2倍频（先用这个测试）
 // ===========================
 static void encoder_init(void)
 {
-    // 配置GPIO（不上拉，由编码器硬件上拉）
+    // 配置GPIO
     gpio_config_t pull_conf = {};
     pull_conf.pin_bit_mask = (1ULL << ENCODER_L_A) | (1ULL << ENCODER_L_B) |
                              (1ULL << ENCODER_R_A) | (1ULL << ENCODER_R_B);
     pull_conf.mode = GPIO_MODE_INPUT;
-    pull_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+    pull_conf.pull_up_en = GPIO_PULLUP_ENABLE;  // 启用上拉
     pull_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     gpio_config(&pull_conf);
 
-    // PCNT单元配置
-    pcnt_unit_config_t unit_conf = {};
-    unit_conf.high_limit = 32767;
-    unit_conf.low_limit = -32768;
-    unit_conf.flags.accum_count = 1;
+    // 左编码器 - 2倍频（A相上升沿计数）
+    pcnt_unit_config_t unit_conf_l = {};
+    unit_conf_l.high_limit = 32767;
+    unit_conf_l.low_limit = -32768;
+    unit_conf_l.flags.accum_count = 1;
+    pcnt_new_unit(&unit_conf_l, &g_pcnt_l_a);
 
-    // 左编码器A相
-    pcnt_new_unit(&unit_conf, &g_pcnt_l_a);
     pcnt_chan_config_t chan_la = {};
     chan_la.edge_gpio_num = ENCODER_L_A;
+    chan_la.level_gpio_num = -1;  // 无控制信号
     pcnt_channel_handle_t ch_la = NULL;
     pcnt_new_channel(g_pcnt_l_a, &chan_la, &ch_la);
     pcnt_channel_set_edge_action(ch_la, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_HOLD);
 
-    // 左编码器B相
-    pcnt_new_unit(&unit_conf, &g_pcnt_l_b);
-    pcnt_chan_config_t chan_lb = {};
-    chan_lb.edge_gpio_num = ENCODER_L_B;
-    pcnt_channel_handle_t ch_lb = NULL;
-    pcnt_new_channel(g_pcnt_l_b, &chan_lb, &ch_lb);
-    pcnt_channel_set_edge_action(ch_lb, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_HOLD);
+    // 右编码器 - 2倍频（A相上升沿计数）
+    pcnt_unit_config_t unit_conf_r = {};
+    unit_conf_r.high_limit = 32767;
+    unit_conf_r.low_limit = -32768;
+    unit_conf_r.flags.accum_count = 1;
+    pcnt_new_unit(&unit_conf_r, &g_pcnt_r_a);
 
-    // 右编码器A相
-    pcnt_new_unit(&unit_conf, &g_pcnt_r_a);
     pcnt_chan_config_t chan_ra = {};
     chan_ra.edge_gpio_num = ENCODER_R_A;
+    chan_ra.level_gpio_num = -1;
     pcnt_channel_handle_t ch_ra = NULL;
     pcnt_new_channel(g_pcnt_r_a, &chan_ra, &ch_ra);
     pcnt_channel_set_edge_action(ch_ra, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_HOLD);
 
-    // 右编码器B相
-    pcnt_new_unit(&unit_conf, &g_pcnt_r_b);
-    pcnt_chan_config_t chan_rb = {};
-    chan_rb.edge_gpio_num = ENCODER_R_B;
-    pcnt_channel_handle_t ch_rb = NULL;
-    pcnt_new_channel(g_pcnt_r_b, &chan_rb, &ch_rb);
-    pcnt_channel_set_edge_action(ch_rb, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_HOLD);
-
-    // 启动所有PCNT单元
+    // 启动
     pcnt_unit_enable(g_pcnt_l_a);
-    pcnt_unit_enable(g_pcnt_l_b);
     pcnt_unit_enable(g_pcnt_r_a);
-    pcnt_unit_enable(g_pcnt_r_b);
     pcnt_unit_clear_count(g_pcnt_l_a);
-    pcnt_unit_clear_count(g_pcnt_l_b);
     pcnt_unit_clear_count(g_pcnt_r_a);
-    pcnt_unit_clear_count(g_pcnt_r_b);
     pcnt_unit_start(g_pcnt_l_a);
-    pcnt_unit_start(g_pcnt_l_b);
     pcnt_unit_start(g_pcnt_r_a);
-    pcnt_unit_start(g_pcnt_r_b);
+}
+
+// ===========================
+// 读取编码器（边界自动清零）
+// ===========================
+static void get_encoder_count(int *left, int *right)
+{
+    pcnt_unit_get_count(g_pcnt_l_a, left);
+    pcnt_unit_get_count(g_pcnt_r_a, right);
+    
+    // 左编码器边界处理
+    if (*left >= 32767 || *left <= -32768) {
+        pcnt_unit_clear_count(g_pcnt_l_a);
+        *left = 0;
+    }
+    
+    // 右编码器边界处理
+    if (*right >= 32767 || *right <= -32768) {
+        pcnt_unit_clear_count(g_pcnt_r_a);
+        *right = 0;
+    }
 }
 
 // ===========================
@@ -165,13 +168,10 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "Motor started");
 
     while (1) {
-        int la_cnt = 0, lb_cnt = 0, ra_cnt = 0, rb_cnt = 0;
-        pcnt_unit_get_count(g_pcnt_l_a, &la_cnt);
-        pcnt_unit_get_count(g_pcnt_l_b, &lb_cnt);
-        pcnt_unit_get_count(g_pcnt_r_a, &ra_cnt);
-        pcnt_unit_get_count(g_pcnt_r_b, &rb_cnt);
+        int left_cnt = 0, right_cnt = 0;
+        get_encoder_count(&left_cnt, &right_cnt);
 
-        ESP_LOGI(TAG, "LA=%d LB=%d RA=%d RB=%d", la_cnt, lb_cnt, ra_cnt, rb_cnt);
+        ESP_LOGI(TAG, "Left=%d Right=%d", left_cnt, right_cnt);
 
         vTaskDelay(pdMS_TO_TICKS(200));
     }
