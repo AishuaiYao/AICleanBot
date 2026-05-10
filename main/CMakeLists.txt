@@ -1,6 +1,6 @@
-# set(srcs    app_main.cpp)
+set(srcs    app_main.cpp)
 # set(srcs    inference_test.cpp)
-set(srcs    motor_encoder_test.cpp)
+# set(srcs    motor_encoder_test.cpp)
 
 
 set(requires

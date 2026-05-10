@@ -50,21 +50,22 @@ static dl::Model *g_model = nullptr;
 // ===========================
 // 电机引脚定义 (TB6612FNG)
 // ===========================
-#define MOTOR_A_PWM   GPIO_NUM_1    // GPIO1  - PWMA
-#define MOTOR_A_IN1   GPIO_NUM_2    // GPIO2  - AIN1
-#define MOTOR_A_IN2   GPIO_NUM_42   // GPIO42 - AIN2
-
-#define MOTOR_B_PWM   GPIO_NUM_41   // GPIO41 - PWMB
-#define MOTOR_B_IN1   GPIO_NUM_40   // GPIO40 - BIN1
-#define MOTOR_B_IN2   GPIO_NUM_39   // GPIO39 - BIN2
+// 左轮
+#define MOTOR_L_PWM   GPIO_NUM_39    // 左轮PWMB（速度控制）
+#define MOTOR_L_IN1   GPIO_NUM_45    // 左轮BIN1（方向控制）
+#define MOTOR_L_IN2   GPIO_NUM_48    // 左轮BIN2（方向控制）
+// 右轮
+#define MOTOR_R_PWM   GPIO_NUM_1     // 右轮PWMA（速度控制）
+#define MOTOR_R_IN1   GPIO_NUM_2     // 右轮AIN1（方向控制）
+#define MOTOR_R_IN2   GPIO_NUM_42    // 右轮AIN2（方向控制）
 
 // ===========================
 // 编码器引脚定义
 // ===========================
-#define ENCODER_L_A   GPIO_NUM_38   // E1A - 左轮编码器A相
-#define ENCODER_L_B   GPIO_NUM_47   // E1B - 左轮编码器B相
-#define ENCODER_R_A   GPIO_NUM_21   // E2A - 右轮编码器A相
-#define ENCODER_R_B   GPIO_NUM_14   // E2B - 右轮编码器B相
+#define ENCODER_L_A   GPIO_NUM_47    // 左编码器E2A
+#define ENCODER_L_B   GPIO_NUM_21    // 左编码器E2B
+#define ENCODER_R_A   GPIO_NUM_41    // 右编码器E1A
+#define ENCODER_R_B   GPIO_NUM_40    // 右编码器E1B
 
 // LEDC PWM 配置
 #define MOTOR_LEDC_TIMER      LEDC_TIMER_1
@@ -72,8 +73,8 @@ static dl::Model *g_model = nullptr;
 #define MOTOR_LEDC_RESOLUTION LEDC_TIMER_8_BIT
 #define MOTOR_LEDC_FREQ       1000  // 1kHz
 
-#define MOTOR_A_CHANNEL       LEDC_CHANNEL_1
-#define MOTOR_B_CHANNEL       LEDC_CHANNEL_2
+#define MOTOR_L_CHANNEL       LEDC_CHANNEL_1
+#define MOTOR_R_CHANNEL       LEDC_CHANNEL_2
 
 // ===========================
 // WiFi AP 配置
@@ -101,8 +102,8 @@ static bool g_udp_client_ready = false;
 // 电机控制相关
 static uint8_t g_motor_base_speed = 0;  // 基础速度PWM值 (0-255)
 static bool g_motor_running = false;    // 电机运行状态
-static uint8_t g_motor_a_pwm = 0;       // 电机A实际PWM值
-static uint8_t g_motor_b_pwm = 0;       // 电机B实际PWM值
+static uint8_t g_motor_l_pwm = 0;       // 左电机实际PWM值
+static uint8_t g_motor_r_pwm = 0;       // 右电机实际PWM值
 
 // 编码器相关 - PCNT外设
 static pcnt_unit_handle_t g_pcnt_l = NULL;  // 左轮 PCNT 单元句柄
@@ -150,32 +151,32 @@ static void motor_init(void)
     timer_conf.clk_cfg = LEDC_AUTO_CLK;
     ledc_timer_config(&timer_conf);
 
-    // 配置电机A PWM通道
-    ledc_channel_config_t motor_a_conf = {};
-    motor_a_conf.gpio_num = MOTOR_A_PWM;
-    motor_a_conf.speed_mode = MOTOR_LEDC_MODE;
-    motor_a_conf.channel = MOTOR_A_CHANNEL;
-    motor_a_conf.intr_type = LEDC_INTR_DISABLE;
-    motor_a_conf.timer_sel = MOTOR_LEDC_TIMER;
-    motor_a_conf.duty = 0;
-    motor_a_conf.hpoint = 0;
-    ledc_channel_config(&motor_a_conf);
+    // 配置左轮PWM通道
+    ledc_channel_config_t motor_l_conf = {};
+    motor_l_conf.gpio_num = MOTOR_L_PWM;
+    motor_l_conf.speed_mode = MOTOR_LEDC_MODE;
+    motor_l_conf.channel = MOTOR_L_CHANNEL;
+    motor_l_conf.intr_type = LEDC_INTR_DISABLE;
+    motor_l_conf.timer_sel = MOTOR_LEDC_TIMER;
+    motor_l_conf.duty = 0;
+    motor_l_conf.hpoint = 0;
+    ledc_channel_config(&motor_l_conf);
 
-    // 配置电机B PWM通道
-    ledc_channel_config_t motor_b_conf = {};
-    motor_b_conf.gpio_num = MOTOR_B_PWM;
-    motor_b_conf.speed_mode = MOTOR_LEDC_MODE;
-    motor_b_conf.channel = MOTOR_B_CHANNEL;
-    motor_b_conf.intr_type = LEDC_INTR_DISABLE;
-    motor_b_conf.timer_sel = MOTOR_LEDC_TIMER;
-    motor_b_conf.duty = 0;
-    motor_b_conf.hpoint = 0;
-    ledc_channel_config(&motor_b_conf);
+    // 配置右轮PWM通道
+    ledc_channel_config_t motor_r_conf = {};
+    motor_r_conf.gpio_num = MOTOR_R_PWM;
+    motor_r_conf.speed_mode = MOTOR_LEDC_MODE;
+    motor_r_conf.channel = MOTOR_R_CHANNEL;
+    motor_r_conf.intr_type = LEDC_INTR_DISABLE;
+    motor_r_conf.timer_sel = MOTOR_LEDC_TIMER;
+    motor_r_conf.duty = 0;
+    motor_r_conf.hpoint = 0;
+    ledc_channel_config(&motor_r_conf);
 
     // 配置方向控制GPIO
     gpio_config_t io_conf = {};
-    io_conf.pin_bit_mask = (1ULL << MOTOR_A_IN1) | (1ULL << MOTOR_A_IN2) |
-                           (1ULL << MOTOR_B_IN1) | (1ULL << MOTOR_B_IN2);
+    io_conf.pin_bit_mask = (1ULL << MOTOR_L_IN1) | (1ULL << MOTOR_L_IN2) |
+                           (1ULL << MOTOR_R_IN1) | (1ULL << MOTOR_R_IN2);
     io_conf.mode = GPIO_MODE_OUTPUT;
     io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
@@ -183,154 +184,121 @@ static void motor_init(void)
     gpio_config(&io_conf);
 
     // 初始状态：停止
-    gpio_set_level(MOTOR_A_IN1, 0);
-    gpio_set_level(MOTOR_A_IN2, 0);
-    gpio_set_level(MOTOR_B_IN1, 0);
-    gpio_set_level(MOTOR_B_IN2, 0);
+    gpio_set_level(MOTOR_L_IN1, 0);
+    gpio_set_level(MOTOR_L_IN2, 0);
+    gpio_set_level(MOTOR_R_IN1, 0);
+    gpio_set_level(MOTOR_R_IN2, 0);
 
     ESP_LOGI(TAG, "[Motor] 初始化完成");
 }
 
 // ===========================
-// 编码器初始化 - PCNT外设方式
+// 编码器初始化 - 单通道一倍频（A相上升沿+1）
 // ===========================
 static void encoder_init(void)
 {
-    ESP_LOGI(TAG, "[Encoder] 初始化开始 (PCNT外设方式)...");
+    ESP_LOGI(TAG, "[Encoder] 初始化开始 (单通道一倍频)...");
 
-    // 编码器GPIO上拉配置
-    gpio_config_t enc_pull_conf = {};
-    enc_pull_conf.pin_bit_mask = (1ULL << ENCODER_L_A) | (1ULL << ENCODER_L_B) |
-                                 (1ULL << ENCODER_R_A) | (1ULL << ENCODER_R_B);
-    enc_pull_conf.mode = GPIO_MODE_INPUT;
-    enc_pull_conf.pull_up_en = GPIO_PULLUP_ENABLE;
-    enc_pull_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
-    enc_pull_conf.intr_type = GPIO_INTR_DISABLE;
-    ESP_ERROR_CHECK(gpio_config(&enc_pull_conf));
-    ESP_LOGI(TAG, "[Encoder] GPIO上拉配置完成: L_A=%d L_B=%d R_A=%d R_B=%d",
+    // 编码器GPIO配置（不上拉，由外部电路决定）
+    gpio_config_t pull_conf = {};
+    pull_conf.pin_bit_mask = (1ULL << ENCODER_L_A) | (1ULL << ENCODER_L_B) |
+                             (1ULL << ENCODER_R_A) | (1ULL << ENCODER_R_B);
+    pull_conf.mode = GPIO_MODE_INPUT;
+    pull_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+    pull_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    gpio_config(&pull_conf);
+
+    // 配置左编码器 - 简单A相上升沿+1
+    pcnt_unit_config_t unit_conf_l = {};
+    unit_conf_l.high_limit = 32767;
+    unit_conf_l.low_limit = -32768;
+    unit_conf_l.flags.accum_count = 1;
+    pcnt_new_unit(&unit_conf_l, &g_pcnt_l);
+
+    pcnt_chan_config_t chan_la = {};
+    chan_la.edge_gpio_num = ENCODER_L_A;
+    chan_la.level_gpio_num = -1;
+    pcnt_channel_handle_t ch_la = NULL;
+    pcnt_new_channel(g_pcnt_l, &chan_la, &ch_la);
+    pcnt_channel_set_edge_action(ch_la, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_HOLD);
+
+    // 配置右编码器
+    pcnt_unit_config_t unit_conf_r = {};
+    unit_conf_r.high_limit = 32767;
+    unit_conf_r.low_limit = -32768;
+    unit_conf_r.flags.accum_count = 1;
+    pcnt_new_unit(&unit_conf_r, &g_pcnt_r);
+
+    pcnt_chan_config_t chan_ra = {};
+    chan_ra.edge_gpio_num = ENCODER_R_A;
+    chan_ra.level_gpio_num = -1;
+    pcnt_channel_handle_t ch_ra = NULL;
+    pcnt_new_channel(g_pcnt_r, &chan_ra, &ch_ra);
+    pcnt_channel_set_edge_action(ch_ra, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_HOLD);
+
+    // 启动
+    pcnt_unit_enable(g_pcnt_l);
+    pcnt_unit_enable(g_pcnt_r);
+    pcnt_unit_clear_count(g_pcnt_l);
+    pcnt_unit_clear_count(g_pcnt_r);
+    pcnt_unit_start(g_pcnt_l);
+    pcnt_unit_start(g_pcnt_r);
+
+    ESP_LOGI(TAG, "[Encoder] 初始化完成: 左轮=GPIO%d/GPIO%d, 右轮=GPIO%d/GPIO%d",
              ENCODER_L_A, ENCODER_L_B, ENCODER_R_A, ENCODER_R_B);
-
-    // 读取GPIO初始电平
-    int l_a = gpio_get_level(ENCODER_L_A);
-    int l_b = gpio_get_level(ENCODER_L_B);
-    int r_a = gpio_get_level(ENCODER_R_A);
-    int r_b = gpio_get_level(ENCODER_R_B);
-    ESP_LOGI(TAG, "[Encoder] 初始电平: L_A=%d L_B=%d R_A=%d R_B=%d", l_a, l_b, r_a, r_b);
-
-    // 配置左轮 PCNT 单元（启用软件累加，防止溢出）
-    pcnt_unit_config_t unit_config = {};
-    unit_config.high_limit = 32767;
-    unit_config.low_limit = -32768;
-    unit_config.flags.accum_count = 1;
-    ESP_ERROR_CHECK(pcnt_new_unit(&unit_config, &g_pcnt_l));
-
-    // 左轮通道0：A相边沿 + B相电平
-    pcnt_chan_config_t chan_config = {};
-    chan_config.edge_gpio_num = ENCODER_L_A;
-    chan_config.level_gpio_num = ENCODER_L_B;
-    pcnt_channel_handle_t pcnt_ch_l0 = NULL;
-    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_l, &chan_config, &pcnt_ch_l0));
-    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_l0, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE));
-    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_l0, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
-
-    // 左轮通道1：B相边沿 + A相电平（4倍频正交计数）
-    chan_config.edge_gpio_num = ENCODER_L_B;
-    chan_config.level_gpio_num = ENCODER_L_A;
-    pcnt_channel_handle_t pcnt_ch_l1 = NULL;
-    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_l, &chan_config, &pcnt_ch_l1));
-    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_l1, PCNT_CHANNEL_EDGE_ACTION_DECREASE, PCNT_CHANNEL_EDGE_ACTION_INCREASE));
-    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_l1, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
-
-    // 配置右轮 PCNT 单元（启用软件累加，防止溢出）
-    ESP_ERROR_CHECK(pcnt_new_unit(&unit_config, &g_pcnt_r));
-
-    // 右轮通道0：A相边沿 + B相电平
-    chan_config.edge_gpio_num = ENCODER_R_A;
-    chan_config.level_gpio_num = ENCODER_R_B;
-    pcnt_channel_handle_t pcnt_ch_r0 = NULL;
-    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_r, &chan_config, &pcnt_ch_r0));
-    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_r0, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE));
-    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_r0, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
-
-    // 右轮通道1：B相边沿 + A相电平（4倍频正交计数）
-    chan_config.edge_gpio_num = ENCODER_R_B;
-    chan_config.level_gpio_num = ENCODER_R_A;
-    pcnt_channel_handle_t pcnt_ch_r1 = NULL;
-    ESP_ERROR_CHECK(pcnt_new_channel(g_pcnt_r, &chan_config, &pcnt_ch_r1));
-    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_ch_r1, PCNT_CHANNEL_EDGE_ACTION_DECREASE, PCNT_CHANNEL_EDGE_ACTION_INCREASE));
-    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_ch_r1, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
-
-    // 使能 PCNT 单元（必须在 start 之前调用）
-    ESP_ERROR_CHECK(pcnt_unit_enable(g_pcnt_l));
-    ESP_ERROR_CHECK(pcnt_unit_enable(g_pcnt_r));
-
-    // 清零计数器
-    ESP_ERROR_CHECK(pcnt_unit_clear_count(g_pcnt_l));
-    ESP_ERROR_CHECK(pcnt_unit_clear_count(g_pcnt_r));
-
-    // 启动 PCNT 计数
-    ESP_ERROR_CHECK(pcnt_unit_start(g_pcnt_l));
-    ESP_ERROR_CHECK(pcnt_unit_start(g_pcnt_r));
-
-    // 重新设置上拉（pcnt_new_channel 会覆盖 IO_MUX 配置，清除上拉）
-    gpio_pullup_en(ENCODER_L_A);
-    gpio_pullup_en(ENCODER_L_B);
-    gpio_pullup_en(ENCODER_R_A);
-    gpio_pullup_en(ENCODER_R_B);
-    ESP_LOGI(TAG, "[Encoder] 上拉重新设置完成");
-
-    ESP_LOGI(TAG, "[Encoder] PCNT配置完成: 左轮=UNIT, 右轮=UNIT");
-    ESP_LOGI(TAG, "[Encoder] 初始化完成 左轮:GPIO38/GPIO47 右轮:GPIO21/GPIO14");
 }
 
 // 编码器读取
 static void encoder_read(int *l_count, int *r_count)
 {
-    int l_val, r_val;
-    pcnt_unit_get_count(g_pcnt_l, &l_val);
-    pcnt_unit_get_count(g_pcnt_r, &r_val);
-    *l_count = l_val;
-    *r_count = r_val;
+    int raw_l = 0, raw_r = 0;
+    pcnt_unit_get_count(g_pcnt_l, &raw_l);
+    pcnt_unit_get_count(g_pcnt_r, &raw_r);
+    *l_count = raw_l;
+    *r_count = raw_r;
 
-    ESP_LOGD(TAG, "[Encoder] 读取: L=%d R=%d", *l_count, *r_count);
+    // 边界处理
+    if (raw_l >= 32767 || raw_l <= -32768) {
+        pcnt_unit_clear_count(g_pcnt_l);
+    }
+    if (raw_r >= 32767 || raw_r <= -32768) {
+        pcnt_unit_clear_count(g_pcnt_r);
+    }
 }
 
-// 电机A正转
-static void motor_a_forward(uint8_t speed)
+// 左电机正转
+static void motor_l_forward(uint8_t speed)
 {
-    gpio_set_level(MOTOR_A_IN1, 1);
-    gpio_set_level(MOTOR_A_IN2, 0);
-    ledc_set_duty(MOTOR_LEDC_MODE, MOTOR_A_CHANNEL, speed);
-    ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_A_CHANNEL);
-    g_motor_a_pwm = speed;  // 更新实际PWM值
-    ESP_LOGI(TAG, "[MotorA] 正转 速度=%d", speed);
+    gpio_set_level(MOTOR_L_IN1, 0);
+    gpio_set_level(MOTOR_L_IN2, 1);
+    ledc_set_duty(MOTOR_LEDC_MODE, MOTOR_L_CHANNEL, speed);
+    ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_L_CHANNEL);
+    g_motor_l_pwm = speed;
 }
 
-// 电机B正转
-static void motor_b_forward(uint8_t speed)
+// 右电机正转
+static void motor_r_forward(uint8_t speed)
 {
-    gpio_set_level(MOTOR_B_IN1, 1);
-    gpio_set_level(MOTOR_B_IN2, 0);
-    ledc_set_duty(MOTOR_LEDC_MODE, MOTOR_B_CHANNEL, speed);
-    ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_B_CHANNEL);
-    g_motor_b_pwm = speed;  // 更新实际PWM值
-    ESP_LOGI(TAG, "[MotorB] 正转 速度=%d", speed);
+    gpio_set_level(MOTOR_R_IN1, 0);
+    gpio_set_level(MOTOR_R_IN2, 1);
+    ledc_set_duty(MOTOR_LEDC_MODE, MOTOR_R_CHANNEL, speed);
+    ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_R_CHANNEL);
+    g_motor_r_pwm = speed;
 }
 
 // 停止所有电机
 static void motor_stop(void)
 {
-    gpio_set_level(MOTOR_A_IN1, 0);
-    gpio_set_level(MOTOR_A_IN2, 0);
-    gpio_set_level(MOTOR_B_IN1, 0);
-    gpio_set_level(MOTOR_B_IN2, 0);
-    ledc_set_duty(MOTOR_LEDC_MODE, MOTOR_A_CHANNEL, 0);
-    ledc_set_duty(MOTOR_LEDC_MODE, MOTOR_B_CHANNEL, 0);
-    ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_A_CHANNEL);
-    ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_B_CHANNEL);
-    g_motor_a_pwm = 0;  // 重置PWM值
-    g_motor_b_pwm = 0;  // 重置PWM值
-    ESP_LOGI(TAG, "[Motor] 停止");
+    gpio_set_level(MOTOR_L_IN1, 0);
+    gpio_set_level(MOTOR_L_IN2, 0);
+    gpio_set_level(MOTOR_R_IN1, 0);
+    gpio_set_level(MOTOR_R_IN2, 0);
+    ledc_set_duty(MOTOR_LEDC_MODE, MOTOR_L_CHANNEL, 0);
+    ledc_set_duty(MOTOR_LEDC_MODE, MOTOR_R_CHANNEL, 0);
+    ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_L_CHANNEL);
+    ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_R_CHANNEL);
+    g_motor_l_pwm = 0;
+    g_motor_r_pwm = 0;
 }
 
 // ===========================
@@ -467,8 +435,8 @@ static void handle_client(int client_sock)
             if (speed >= 1 && speed <= 100) {
                 g_motor_running = true;
                 g_motor_base_speed = speed * 255 / 100;
-                motor_a_forward(g_motor_base_speed);
-                motor_b_forward(g_motor_base_speed);
+                motor_l_forward(g_motor_base_speed);
+                motor_r_forward(g_motor_base_speed);
                 ESP_LOGI(TAG, "[Motor] 启动速度%d%%, PWM=%d", speed, g_motor_base_speed);
             }
         }
@@ -480,28 +448,28 @@ static void handle_client(int client_sock)
             int speed = atoi(buf + 6);
             if (speed >= 1 && speed <= 100) {
                 g_motor_base_speed = speed * 255 / 100;
-                motor_a_forward(g_motor_base_speed);
-                motor_b_forward(g_motor_base_speed);
+                motor_l_forward(g_motor_base_speed);
+                motor_r_forward(g_motor_base_speed);
                 ESP_LOGI(TAG, "[Motor] 速度设置为%d%%, PWM=%d", speed, g_motor_base_speed);
             }
         }
         else if (strncmp(buf, "MOTOR_LEFT", 10) == 0) {
             if (!g_motor_running) continue;
-            motor_a_forward(g_motor_base_speed);
-            motor_b_forward(g_motor_base_speed / 2);
-            ESP_LOGI(TAG, "[Motor] 左转: A=%d, B=%d", g_motor_base_speed, g_motor_base_speed / 2);
+            motor_l_forward(g_motor_base_speed);
+            motor_r_forward(g_motor_base_speed / 2);
+            ESP_LOGI(TAG, "[Motor] 左转: L=%d, R=%d", g_motor_base_speed, g_motor_base_speed / 2);
         }
         else if (strncmp(buf, "MOTOR_RIGHT", 11) == 0) {
             if (!g_motor_running) continue;
-            motor_b_forward(g_motor_base_speed);
-            motor_a_forward(g_motor_base_speed / 2);
-            ESP_LOGI(TAG, "[Motor] 右转: A=%d, B=%d", g_motor_base_speed / 2, g_motor_base_speed);
+            motor_r_forward(g_motor_base_speed);
+            motor_l_forward(g_motor_base_speed / 2);
+            ESP_LOGI(TAG, "[Motor] 右转: L=%d, R=%d", g_motor_base_speed / 2, g_motor_base_speed);
         }
         else if (strncmp(buf, "MOTOR_FORWARD", 13) == 0) {
             if (!g_motor_running) continue;
-            motor_a_forward(g_motor_base_speed);
-            motor_b_forward(g_motor_base_speed);
-            ESP_LOGI(TAG, "[Motor] 直行: A=%d, B=%d", g_motor_base_speed, g_motor_base_speed);
+            motor_l_forward(g_motor_base_speed);
+            motor_r_forward(g_motor_base_speed);
+            ESP_LOGI(TAG, "[Motor] 直行: L=%d, R=%d", g_motor_base_speed, g_motor_base_speed);
         }
         else if (strncmp(buf, "STOP", 4) == 0 && (buf[4] == '\0' || buf[4] == '\n' || buf[4] == '\r')) {
             motor_stop();
@@ -718,13 +686,13 @@ static void handle_client(int client_sock)
                     int header_size;
                     
                     if (i == 0) {
-                        // 第一分片：[帧号2B][总分片1B][索引1B][电机A 1B][电机B 1B][编码器A 2B][编码器B 2B][数据...]
+                        // 第一分片：[帧号2B][总分片1B][索引1B][左电机PWM 1B][右电机PWM 1B][编码器L 2B][编码器R 2B][数据...]
                         int enc_l = 0, enc_r = 0;
                         encoder_read(&enc_l, &enc_r);
                         chunk_buf = (uint8_t *)malloc(10 + current_chunk_size);
                         header_size = 10;
-                        chunk_buf[4] = g_motor_a_pwm;  // 电机A PWM值
-                        chunk_buf[5] = g_motor_b_pwm;  // 电机B PWM值
+                        chunk_buf[4] = g_motor_l_pwm;  // 左电机PWM值
+                        chunk_buf[5] = g_motor_r_pwm;  // 右电机PWM值
                         chunk_buf[6] = (enc_l >> 8) & 0xFF;  // 左编码器 高字节
                         chunk_buf[7] = enc_l & 0xFF;          // 左编码器 低字节
                         chunk_buf[8] = (enc_r >> 8) & 0xFF;  // 右编码器 高字节
@@ -792,8 +760,8 @@ static void handle_client(int client_sock)
                         if (speed >= 1 && speed <= 100) {
                             g_motor_running = true;
                             g_motor_base_speed = speed * 255 / 100;
-                            motor_a_forward(g_motor_base_speed);
-                            motor_b_forward(g_motor_base_speed);
+                            motor_l_forward(g_motor_base_speed);
+                            motor_r_forward(g_motor_base_speed);
                             ESP_LOGI(TAG, "[Motor] 启动速度%d%%, PWM=%d", speed, g_motor_base_speed);
                         }
                     }
@@ -818,28 +786,28 @@ static void handle_client(int client_sock)
                         int speed = atoi(buf + 6);
                         if (speed >= 1 && speed <= 100) {
                             g_motor_base_speed = speed * 255 / 100;
-                            motor_a_forward(g_motor_base_speed);
-                            motor_b_forward(g_motor_base_speed);
+                            motor_l_forward(g_motor_base_speed);
+                            motor_r_forward(g_motor_base_speed);
                             ESP_LOGI(TAG, "[Motor] 速度设置为%d%%, PWM=%d", speed, g_motor_base_speed);
                         }
                     }
                     else if (strncmp(buf, "MOTOR_LEFT", 10) == 0) {
                         if (!g_motor_running) continue;
-                        motor_a_forward(g_motor_base_speed);
-                        motor_b_forward(g_motor_base_speed / 2);
-                        ESP_LOGI(TAG, "[Motor] 左转: A=%d, B=%d", g_motor_base_speed, g_motor_base_speed / 2);
+                        motor_l_forward(g_motor_base_speed);
+                        motor_r_forward(g_motor_base_speed / 2);
+                        ESP_LOGI(TAG, "[Motor] 左转: L=%d, R=%d", g_motor_base_speed, g_motor_base_speed / 2);
                     }
                     else if (strncmp(buf, "MOTOR_RIGHT", 11) == 0) {
                         if (!g_motor_running) continue;
-                        motor_b_forward(g_motor_base_speed);
-                        motor_a_forward(g_motor_base_speed / 2);
-                        ESP_LOGI(TAG, "[Motor] 右转: A=%d, B=%d", g_motor_base_speed / 2, g_motor_base_speed);
+                        motor_r_forward(g_motor_base_speed);
+                        motor_l_forward(g_motor_base_speed / 2);
+                        ESP_LOGI(TAG, "[Motor] 右转: L=%d, R=%d", g_motor_base_speed / 2, g_motor_base_speed);
                     }
                     else if (strncmp(buf, "MOTOR_FORWARD", 13) == 0) {
                         if (!g_motor_running) continue;
-                        motor_a_forward(g_motor_base_speed);
-                        motor_b_forward(g_motor_base_speed);
-                        ESP_LOGI(TAG, "[Motor] 直行: A=%d, B=%d", g_motor_base_speed, g_motor_base_speed);
+                        motor_l_forward(g_motor_base_speed);
+                        motor_r_forward(g_motor_base_speed);
+                        ESP_LOGI(TAG, "[Motor] 直行: L=%d, R=%d", g_motor_base_speed, g_motor_base_speed);
                     }
                 }
 
