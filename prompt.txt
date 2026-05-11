@@ -18,5 +18,6 @@
 · 生成的 C++ 代码需确保可正常运行，有必要时可修改 CMakeLists、idf_component、partition、sdkconfig、dependencies.lock.esp32s3 等相关配置文件，保障代码可完成编译。
 · 如果某些组件在我们的C++代码里不需要，请在CMakeLists.txt里删除相关的组件。
 · 你只能修改E:\AICleanBot目录中的文件，idf的组件源码不允许修改。
+备注：
+    使用UDP协议回传小程序数据时，数据第一分片格式：[帧号2B][总分片1B][索引1B][电压1B][左PWM1B][右PWM1B][编码器L2B][编码器R2B][数据...]
 需求/问题：
-    请你参考E:\AICleanBot\main\motor_encoder_test.cpp中电机和编码器的引脚定义以及使用方法，修改E:\AICleanBot\main\app_main.cpp中电机和编码器相关代码，统计和通过udp回传的逻辑保留

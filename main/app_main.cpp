@@ -14,6 +14,7 @@
 #include "driver/ledc.h"
 #include "driver/gpio.h"
 #include "driver/pulse_cnt.h"
+#include "esp_adc/adc_oneshot.h"
 #include "dl_model_base.hpp"
 #include "dl_tool.hpp"
 
@@ -55,7 +56,7 @@ static dl::Model *g_model = nullptr;
 #define MOTOR_L_IN1   GPIO_NUM_45    // 左轮BIN1（方向控制）
 #define MOTOR_L_IN2   GPIO_NUM_48    // 左轮BIN2（方向控制）
 // 右轮
-#define MOTOR_R_PWM   GPIO_NUM_1     // 右轮PWMA（速度控制）
+#define MOTOR_R_PWM   GPIO_NUM_14   // 右轮PWMA（速度控制）
 #define MOTOR_R_IN1   GPIO_NUM_2     // 右轮AIN1（方向控制）
 #define MOTOR_R_IN2   GPIO_NUM_42    // 右轮AIN2（方向控制）
 
@@ -66,6 +67,12 @@ static dl::Model *g_model = nullptr;
 #define ENCODER_L_B   GPIO_NUM_21    // 左编码器E2B
 #define ENCODER_R_A   GPIO_NUM_41    // 右编码器E1A
 #define ENCODER_R_B   GPIO_NUM_40    // 右编码器E1B
+
+// ===========================
+// 电池ADC引脚定义
+// ===========================
+#define BAT_ADC_CHANNEL  ADC_CHANNEL_0  // GPIO1 = ADC1_CH0
+#define BAT_VOLTAGE_DIVIDER  11          // 分压比例 1/11
 
 // LEDC PWM 配置
 #define MOTOR_LEDC_TIMER      LEDC_TIMER_1
@@ -246,6 +253,51 @@ static void encoder_init(void)
 
     ESP_LOGI(TAG, "[Encoder] 初始化完成: 左轮=GPIO%d/GPIO%d, 右轮=GPIO%d/GPIO%d",
              ENCODER_L_A, ENCODER_L_B, ENCODER_R_A, ENCODER_R_B);
+}
+
+// ===========================
+// 电池ADC初始化
+// ===========================
+static adc_oneshot_unit_handle_t adc_handle;
+
+static void battery_adc_init(void)
+{
+    ESP_LOGI(TAG, "[Battery] ADC初始化, GPIO14, 分压比1/%d...", BAT_VOLTAGE_DIVIDER);
+
+    adc_oneshot_unit_init_cfg_t init_cfg = {};
+    init_cfg.unit_id = ADC_UNIT_1;
+    adc_oneshot_new_unit(&init_cfg, &adc_handle);
+
+    adc_oneshot_chan_cfg_t chan_cfg = {};
+    chan_cfg.bitwidth = ADC_BITWIDTH_12;
+    chan_cfg.atten = ADC_ATTEN_DB_12;
+    adc_oneshot_config_channel(adc_handle, BAT_ADC_CHANNEL, &chan_cfg);
+
+    ESP_LOGI(TAG, "[Battery] ADC初始化完成");
+}
+
+// 读取电池电压(十分之一伏特，如120表示12.0V)
+static uint8_t battery_read_voltage(void)
+{
+    int adc_raw;
+    adc_oneshot_read(adc_handle, BAT_ADC_CHANNEL, &adc_raw);
+    float voltage = adc_raw * 3.3f / 4095.0f;
+    uint8_t battery_01v = (uint8_t)(voltage * BAT_VOLTAGE_DIVIDER * 10.0f);
+    return battery_01v;
+}
+
+// 电池监控任务
+static void battery_monitor_task(void *pvParameters)
+{
+    while (1) {
+        int adc_raw;
+        adc_oneshot_read(adc_handle, BAT_ADC_CHANNEL, &adc_raw);
+        float voltage = adc_raw * 3.3f / 4095.0f;
+        uint8_t battery_01v = (uint8_t)(voltage * BAT_VOLTAGE_DIVIDER * 10.0f);
+        ESP_LOGI(TAG, "[Battery] raw=%d, voltage=%.2fV, battery=%d.%dV",
+                 adc_raw, voltage, battery_01v / 10, battery_01v % 10);
+        vTaskDelay(pdMS_TO_TICKS(2000));
+    }
 }
 
 // 编码器读取
@@ -686,17 +738,19 @@ static void handle_client(int client_sock)
                     int header_size;
                     
                     if (i == 0) {
-                        // 第一分片：[帧号2B][总分片1B][索引1B][左电机PWM 1B][右电机PWM 1B][编码器L 2B][编码器R 2B][数据...]
+                        // 第一分片：[帧号2B][总分片1B][索引1B][电压1B][左电机PWM 1B][右电机PWM 1B][编码器L 2B][编码器R 2B][数据...]
                         int enc_l = 0, enc_r = 0;
                         encoder_read(&enc_l, &enc_r);
-                        chunk_buf = (uint8_t *)malloc(10 + current_chunk_size);
-                        header_size = 10;
-                        chunk_buf[4] = g_motor_l_pwm;  // 左电机PWM值
-                        chunk_buf[5] = g_motor_r_pwm;  // 右电机PWM值
-                        chunk_buf[6] = (enc_l >> 8) & 0xFF;  // 左编码器 高字节
-                        chunk_buf[7] = enc_l & 0xFF;          // 左编码器 低字节
-                        chunk_buf[8] = (enc_r >> 8) & 0xFF;  // 右编码器 高字节
-                        chunk_buf[9] = enc_r & 0xFF;          // 右编码器 低字节
+                        uint8_t bat_voltage = battery_read_voltage();
+                        chunk_buf = (uint8_t *)malloc(11 + current_chunk_size);
+                        header_size = 11;
+                        chunk_buf[4] = bat_voltage;   // 电池电压(十分之一伏特)
+                        chunk_buf[5] = g_motor_l_pwm;  // 左电机PWM值
+                        chunk_buf[6] = g_motor_r_pwm;  // 右电机PWM值
+                        chunk_buf[7] = (enc_l >> 8) & 0xFF;  // 左编码器 高字节
+                        chunk_buf[8] = enc_l & 0xFF;          // 左编码器 低字节
+                        chunk_buf[9] = (enc_r >> 8) & 0xFF;  // 右编码器 高字节
+                        chunk_buf[10] = enc_r & 0xFF;         // 右编码器 低字节
                     } else {
                         // 其他分片：[帧号2B][总分片1B][索引1B][数据...]
                         chunk_buf = (uint8_t *)malloc(4 + current_chunk_size);
@@ -901,6 +955,10 @@ extern "C" void app_main(void)
     encoder_init();
     wifi_init_ap();
     udp_init();
+
+    // ADC初始化放最后，避免影响摄像头GPIO
+    battery_adc_init();
+    xTaskCreatePinnedToCore(battery_monitor_task, "battery_mon", 4096, NULL, 3, NULL, 0);
 
     // TCP服务器任务绑定到Core 1，推理任务与WiFi底层(Core 0)分离
     xTaskCreatePinnedToCore(tcp_server_task, "tcp_server", 16384, NULL, 5, NULL, 1);

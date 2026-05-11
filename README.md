@@ -80,3 +80,44 @@ python py_scripts/net/quantize_onnx_model.py
 idf.py build flash monitor
 ```
 
+## ESP32 引脚定义
+
+### 硬件连接表
+
+| 功能 | GPIO | 说明 |
+|------|------|------|
+| **摄像头** | | |
+| XCLK | GPIO15 | 摄像头时钟 |
+| SDA | GPIO4 | SCCB数据 |
+| SCL | GPIO5 | SCCB时钟 |
+| D0-D7 | GPIO11,9,8,10,12,18,17,16 | 数据总线 |
+| VSYNC | GPIO6 | 帧同步 |
+| HREF | GPIO7 | 行同步 |
+| PCLK | GPIO13 | 像素时钟 |
+| **电机 (TB6612FNG)** | | |
+| 左轮PWM | GPIO39 | PWMB速度控制 |
+| 左轮IN1 | GPIO45 | BIN1方向控制 |
+| 左轮IN2 | GPIO48 | BIN2方向控制 |
+| 右轮PWM | GPIO14 | PWMA速度控制 |
+| 右轮IN1 | GPIO2 | AIN1方向控制 |
+| 右轮IN2 | GPIO42 | AIN2方向控制 |
+| **编码器** | | |
+| 左A相 | GPIO47 | E2A |
+| 左B相 | GPIO21 | E2B |
+| 右A相 | GPIO41 | E1A |
+| 右B相 | GPIO40 | E1B |
+| **电池ADC** | | |
+| 电压采样 | GPIO1 | ADC1_CH0，分压比1/11 |
+
+### 通信接口
+
+| 协议 | 端口 | 说明 |
+|------|------|------|
+| TCP Server | 5000 | 控制命令 |
+| UDP Server | 5001 | 视频流 |
+
+### WiFi AP
+
+- SSID: ESP32-CAM
+- 密码: 12345678
+
