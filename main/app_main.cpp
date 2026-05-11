@@ -286,20 +286,6 @@ static uint8_t battery_read_voltage(void)
     return battery_01v;
 }
 
-// 电池监控任务
-static void battery_monitor_task(void *pvParameters)
-{
-    while (1) {
-        int adc_raw;
-        adc_oneshot_read(adc_handle, BAT_ADC_CHANNEL, &adc_raw);
-        float voltage = adc_raw * 3.3f / 4095.0f;
-        uint8_t battery_01v = (uint8_t)(voltage * BAT_VOLTAGE_DIVIDER * 10.0f);
-        ESP_LOGI(TAG, "[Battery] raw=%d, voltage=%.2fV, battery=%d.%dV",
-                 adc_raw, voltage, battery_01v / 10, battery_01v % 10);
-        vTaskDelay(pdMS_TO_TICKS(2000));
-    }
-}
-
 // 编码器读取
 static void encoder_read(int *l_count, int *r_count)
 {
@@ -958,7 +944,6 @@ extern "C" void app_main(void)
 
     // ADC初始化放最后，避免影响摄像头GPIO
     battery_adc_init();
-    xTaskCreatePinnedToCore(battery_monitor_task, "battery_mon", 4096, NULL, 3, NULL, 0);
 
     // TCP服务器任务绑定到Core 1，推理任务与WiFi底层(Core 0)分离
     xTaskCreatePinnedToCore(tcp_server_task, "tcp_server", 16384, NULL, 5, NULL, 1);
