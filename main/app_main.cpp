@@ -74,6 +74,13 @@ static dl::Model *g_model = nullptr;
 #define BAT_ADC_CHANNEL  ADC_CHANNEL_0  // GPIO1 = ADC1_CH0
 #define BAT_VOLTAGE_DIVIDER  11          // 分压比例 1/11
 
+// ===========================
+// 呼吸灯LED引脚定义
+// ===========================
+#define BREATH_LED_GPIO     GPIO_NUM_38   // 呼吸灯GPIO
+#define BREATH_LED_CHANNEL  LEDC_CHANNEL_3  // 使用通道3（0/1/2已被占用）
+#define BREATH_LED_TIMER    LEDC_TIMER_2    // 使用定时器2
+
 // LEDC PWM 配置
 #define MOTOR_LEDC_TIMER      LEDC_TIMER_1
 #define MOTOR_LEDC_MODE       LEDC_LOW_SPEED_MODE
@@ -284,6 +291,70 @@ static uint8_t battery_read_voltage(void)
     float voltage = adc_raw * 3.3f / 4095.0f;
     uint8_t battery_01v = (uint8_t)(voltage * BAT_VOLTAGE_DIVIDER * 10.0f);
     return battery_01v;
+}
+
+// ===========================
+// 呼吸灯初始化与任务
+// ===========================
+
+// 呼吸灯PWM初始化
+static void breath_led_init(void)
+{
+    // 配置LEDC定时器
+    ledc_timer_config_t timer_conf = {};
+    timer_conf.speed_mode = LEDC_LOW_SPEED_MODE;
+    timer_conf.duty_resolution = LEDC_TIMER_10_BIT;  // 10位分辨率，1024级
+    timer_conf.timer_num = BREATH_LED_TIMER;
+    timer_conf.freq_hz = 5000;  // 5kHz
+    timer_conf.clk_cfg = LEDC_AUTO_CLK;
+    ledc_timer_config(&timer_conf);
+
+    // 配置LEDC通道
+    ledc_channel_config_t led_conf = {};
+    led_conf.gpio_num = BREATH_LED_GPIO;
+    led_conf.speed_mode = LEDC_LOW_SPEED_MODE;
+    led_conf.channel = BREATH_LED_CHANNEL;
+    led_conf.intr_type = LEDC_INTR_DISABLE;
+    led_conf.timer_sel = BREATH_LED_TIMER;
+    led_conf.duty = 0;
+    led_conf.hpoint = 0;
+    ledc_channel_config(&led_conf);
+
+    ESP_LOGI(TAG, "[BreathLED] 初始化完成 GPIO=%d", BREATH_LED_GPIO);
+}
+
+// 呼吸灯任务 - 使用余弦波实现平滑呼吸效果
+static void breath_led_task(void *pvParameters)
+{
+    ESP_LOGI(TAG, "[BreathLED] 呼吸灯任务启动");
+
+    uint32_t max_duty = (1 << LEDC_TIMER_10_BIT) - 1;  // 1023
+    int i = 0;
+    int direction = 1;  // 1=渐亮, -1=渐暗
+
+    while (1) {
+        // 余弦波实现平滑呼吸
+        float phase = i * M_PI / 100.0f;
+        float duty_ratio = (1.0f - cosf(phase)) / 2.0f;
+        uint32_t duty = (uint32_t)(duty_ratio * max_duty);
+
+        ledc_set_duty(LEDC_LOW_SPEED_MODE, BREATH_LED_CHANNEL, duty);
+        ledc_update_duty(LEDC_LOW_SPEED_MODE, BREATH_LED_CHANNEL);
+
+        // 递增/递减计数器
+        i += direction;
+        if (i >= 100) {
+            i = 100;
+            direction = -1;  // 到达最亮，开始渐暗
+        } else if (i <= 0) {
+            i = 0;
+            direction = 1;   // 到达最暗，开始渐亮
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(30));  // 30ms * 200 = 6秒一个完整周期
+    }
+
+    vTaskDelete(NULL);
 }
 
 // 编码器读取
@@ -945,6 +1016,10 @@ extern "C" void app_main(void)
     // ADC初始化放最后，避免影响摄像头GPIO
     battery_adc_init();
 
+    // 呼吸灯初始化（所有功能初始化完成后开始）
+    breath_led_init();
+    xTaskCreate(breath_led_task, "breath_led", 4096, NULL, 2, NULL);
+
     // TCP服务器任务绑定到Core 1，推理任务与WiFi底层(Core 0)分离
     xTaskCreatePinnedToCore(tcp_server_task, "tcp_server", 16384, NULL, 5, NULL, 1);
 
@@ -952,5 +1027,6 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "系统启动完成!");
     ESP_LOGI(TAG, "热点: %s  密码: %s", AP_SSID, AP_PASSWORD);
     ESP_LOGI(TAG, "TCP端口: %d  UDP端口: %d", TCP_PORT, UDP_PORT);
+    ESP_LOGI(TAG, "呼吸灯: GPIO%d", BREATH_LED_GPIO);
     ESP_LOGI(TAG, "========================================");
 }
