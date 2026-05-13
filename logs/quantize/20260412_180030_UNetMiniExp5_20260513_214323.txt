@@ -1,0 +1,96 @@
+从 E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA 加载 128 个校准样本...
+开始量化模型...
+输入模型: E:\AICleanBot\py_scripts\models\20260412_180030_UNetMiniExp5\model.onnx
+输出模型: E:\AICleanBot\py_scripts\models\20260412_180030_UNetMiniExp5\model.espdl
+目标平台: esp32s3
+量化位数: 8 bit
+[21:43:24] ConvTranspose Decomposition Pass Running ... Finished.
+[21:43:24] PPQ Quantization Fusion Pass Running ...       Finished.
+[21:43:24] PPQ Quantize Simplify Pass Running ...         Finished.
+[21:43:24] PPQ Parameter Quantization Pass Running ...    Finished.
+Calibration Progress(Phase 1): 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 128/128 [00:04<00:00, 25.75it/s]
+Calibration Progress(Phase 2): 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 128/128 [00:07<00:00, 17.78it/s]
+Finished.
+[21:43:37] PPQ Quantization Alignment Pass Running ...    Finished.
+[21:43:37] PPQ Passive Parameter Quantization Running ... Finished.
+--------- Network Snapshot ---------
+Num of Op:                    [69]
+Num of Quantized Op:          [69]
+Num of Variable:              [137]
+Num of Quantized Var:         [137]
+------- Quantization Snapshot ------
+Num of Quant Config:          [208]
+ACTIVATED:                    [65]
+OVERLAPPED:                   [93]
+PASSIVE:                      [44]
+FP32:                         [6]
+Network Quantization Finished.
+Analysing Graphwise Quantization Error(Phrase 1):: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [00:00<00:00,  9.75it/s]
+Analysing Graphwise Quantization Error(Phrase 2):: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [00:01<00:00,  6.56it/s]
+Layer                         | NOISE:SIGNAL POWER RATIO 
+/dec1/conv/conv.6/Conv:       | ████████████████████ | 75.059%
+/dec1/conv/conv.3/Conv:       | ███████████████████  | 69.572%
+/dec2/conv/conv.9/Conv:       | ██████████████████   | 68.223%
+/conv1/Conv:                  | ██████████████████   | 67.809%
+/dec1/conv/conv.9/Conv:       | █████████████████    | 64.743%
+/dec3/conv/conv.6/Conv:       | ███████████████      | 58.033%
+/dec1/conv/conv.0/Conv:       | ███████████████      | 56.641%
+/dec3/conv/conv.9/Conv:       | ███████████████      | 55.984%
+/dec3/conv/conv.0/Conv:       | ███████████████      | 55.573%
+/bottleneck/conv/conv.6/Conv: | ███████████████      | 55.220%
+/dec3/conv/conv.3/Conv:       | ██████████████       | 53.944%
+/bottleneck/conv/conv.9/Conv: | ██████████████       | 53.205%
+/dec2/conv/conv.0/Conv:       | █████████████        | 49.961%
+/conv3/Conv:                  | █████████████        | 49.065%
+/conv2/Conv:                  | █████████████        | 47.836%
+/bottleneck/conv/conv.3/Conv: | █████████████        | 47.576%
+/dec2/conv/conv.6/Conv:       | ████████████         | 46.620%
+/dec2/conv/conv.3/Conv:       | ████████████         | 44.592%
+/enc3/conv/conv.9/Conv:       | ███████████          | 43.040%
+/bottleneck/conv/conv.0/Conv: | ███████████          | 42.738%
+/enc3/conv/conv.6/Conv:       | ██████████           | 38.467%
+/enc2/conv/conv.6/Conv:       | █████████            | 35.647%
+/enc2/conv/conv.3/Conv:       | █████████            | 34.371%
+/enc2/conv/conv.9/Conv:       | █████████            | 34.020%
+/enc3/conv/conv.3/Conv:       | █████████            | 31.984%
+/enc3/conv/conv.0/Conv:       | ████████             | 30.649%
+/enc1/conv/conv.9/Conv:       | █████                | 18.694%
+/enc2/conv/conv.0/Conv:       | █████                | 18.154%
+/out/Conv:                    | █████                | 18.031%
+/enc1/conv/conv.6/Conv:       |                      | 0.538%
+/enc1/conv/conv.3/Conv:       |                      | 0.050%
+/enc1/conv/conv.0/Conv:       |                      | 0.009%
+Analysing Layerwise quantization error:: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 32/32 [00:12<00:00,  2.65it/s]
+Layer                         | NOISE:SIGNAL POWER RATIO 
+/conv1/Conv:                  | ████████████████████ | 0.367%
+/enc2/conv/conv.0/Conv:       | ███████              | 0.127%
+/enc1/conv/conv.0/Conv:       | ███████              | 0.127%
+/conv3/Conv:                  | █████                | 0.088%
+/enc1/conv/conv.6/Conv:       | █████                | 0.083%
+/dec1/conv/conv.6/Conv:       | ████                 | 0.074%
+/enc1/conv/conv.3/Conv:       | █                    | 0.017%
+/enc2/conv/conv.6/Conv:       | █                    | 0.015%
+/enc3/conv/conv.6/Conv:       | █                    | 0.013%
+/dec1/conv/conv.3/Conv:       | █                    | 0.013%
+/out/Conv:                    | █                    | 0.012%
+/enc3/conv/conv.0/Conv:       |                      | 0.009%
+/conv2/Conv:                  |                      | 0.008%
+/enc1/conv/conv.9/Conv:       |                      | 0.007%
+/dec1/conv/conv.0/Conv:       |                      | 0.006%
+/enc2/conv/conv.9/Conv:       |                      | 0.005%
+/enc2/conv/conv.3/Conv:       |                      | 0.005%
+/enc3/conv/conv.3/Conv:       |                      | 0.004%
+/bottleneck/conv/conv.0/Conv: |                      | 0.002%
+/dec3/conv/conv.0/Conv:       |                      | 0.002%
+/dec2/conv/conv.6/Conv:       |                      | 0.002%
+/dec3/conv/conv.3/Conv:       |                      | 0.001%
+/dec2/conv/conv.9/Conv:       |                      | 0.001%
+/enc3/conv/conv.9/Conv:       |                      | 0.001%
+/dec1/conv/conv.9/Conv:       |                      | 0.001%
+/dec3/conv/conv.6/Conv:       |                      | 0.001%
+/bottleneck/conv/conv.3/Conv: |                      | 0.001%
+/dec3/conv/conv.9/Conv:       |                      | 0.001%
+/bottleneck/conv/conv.6/Conv: |                      | 0.001%
+/dec2/conv/conv.3/Conv:       |                      | 0.000%
+/bottleneck/conv/conv.9/Conv: |                      | 0.000%
+/dec2/conv/conv.0/Conv:       |                      | 0.000%
