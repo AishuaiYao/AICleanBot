@@ -21,38 +21,24 @@
 备注：
     使用UDP协议回传小程序数据时，数据第一分片格式：[帧号2B][总分片1B][索引1B][电压1B][左PWM1B][右PWM1B][编码器L2B][编码器R2B][数据...]
 需求/问题：
-    请阅读最新量化日志E:\AICleanBot\logs\quantize\20260412_180030_UNetMiniExp5_20260513_214323.txt，告诉我“
-    Layer                         | NOISE:SIGNAL POWER RATIO 
-/dec1/conv/conv.6/Conv:       | ████████████████████ | 75.059%
-/dec1/conv/conv.3/Conv:       | ███████████████████  | 69.572%
-/dec2/conv/conv.9/Conv:       | ██████████████████   | 68.223%
-/conv1/Conv:                  | ██████████████████   | 67.809%
-/dec1/conv/conv.9/Conv:       | █████████████████    | 64.743%
-/dec3/conv/conv.6/Conv:       | ███████████████      | 58.033%
-/dec1/conv/conv.0/Conv:       | ███████████████      | 56.641%
-/dec3/conv/conv.9/Conv:       | ███████████████      | 55.984%
-/dec3/conv/conv.0/Conv:       | ███████████████      | 55.573%
-/bottleneck/conv/conv.6/Conv: | ███████████████      | 55.220%
-/dec3/conv/conv.3/Conv:       | ██████████████       | 53.944%
-/bottleneck/conv/conv.9/Conv: | ██████████████       | 53.205%
-/dec2/conv/conv.0/Conv:       | █████████████        | 49.961%
-/conv3/Conv:                  | █████████████        | 49.065%
-/conv2/Conv:                  | █████████████        | 47.836%
-/bottleneck/conv/conv.3/Conv: | █████████████        | 47.576%
-/dec2/conv/conv.6/Conv:       | ████████████         | 46.620%
-/dec2/conv/conv.3/Conv:       | ████████████         | 44.592%
-/enc3/conv/conv.9/Conv:       | ███████████          | 43.040%
-/bottleneck/conv/conv.0/Conv: | ███████████          | 42.738%
-/enc3/conv/conv.6/Conv:       | ██████████           | 38.467%
-/enc2/conv/conv.6/Conv:       | █████████            | 35.647%
-/enc2/conv/conv.3/Conv:       | █████████            | 34.371%
-/enc2/conv/conv.9/Conv:       | █████████            | 34.020%
-/enc3/conv/conv.3/Conv:       | █████████            | 31.984%
-/enc3/conv/conv.0/Conv:       | ████████             | 30.649%
-/enc1/conv/conv.9/Conv:       | █████                | 18.694%
-/enc2/conv/conv.0/Conv:       | █████                | 18.154%
-/out/Conv:                    | █████                | 18.031%
-/enc1/conv/conv.6/Conv:       |                      | 0.538%
-/enc1/conv/conv.3/Conv:       |                      | 0.050%
-/enc1/conv/conv.0/Conv:       |                      | 0.009%
-    ”这些是什么意思
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
