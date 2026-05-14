@@ -100,19 +100,25 @@ static void handle_client(int client_sock)
     send(client_sock, device_info, strlen(device_info), 0);
     ESP_LOGI(TAG, "[TCP] 握手成功: %s", device_info);
 
-    char buf[64];
     uint8_t *image_buf = (uint8_t *)malloc(INPUT_WIDTH * INPUT_HEIGHT);
     uint8_t *pred_buf = (uint8_t *)malloc(INPUT_WIDTH * INPUT_HEIGHT);
 
     while (1) {
-        int len = recv(client_sock, buf, sizeof(buf) - 1, 0);
-        if (len <= 0) {
+        char cmd[32] = {};
+        int ci = 0;
+        while (ci < (int)sizeof(cmd) - 1) {
+            int r = recv(client_sock, cmd + ci, 1, 0);
+            if (r <= 0) break;
+            if (cmd[ci] == '\n') break;
+            ci++;
+        }
+        if (ci <= 0) {
             ESP_LOGI(TAG, "[TCP] 客户端断开");
             break;
         }
-        buf[len] = '\0';
+        cmd[ci] = '\0';
 
-        if (strncmp(buf, "PREDICT", 7) == 0) {
+        if (strncmp(cmd, "PREDICT", 7) == 0) {
             ESP_LOGI(TAG, "[PREDICT] 收到PREDICT命令");
             
             // 等待数据分离
@@ -202,7 +208,7 @@ static void handle_client(int client_sock)
 
             ESP_LOGI(TAG, "[PREDICT] 结果发送完成: %lu bytes", (unsigned long)result_size);
         }
-        else if (strncmp(buf, "EXIT", 4) == 0) {
+        else if (strncmp(cmd, "EXIT", 4) == 0) {
             ESP_LOGI(TAG, "[TCP] 收到EXIT命令，断开连接");
             break;
         }

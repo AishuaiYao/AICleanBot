@@ -510,18 +510,18 @@ if __name__ == "__main__":
     
     # # 分析ONNX模型
     # # 从.pth导出ONNX示例
-    # import sys
-    # sys.path.append(r'E:\AICleanBot\py_scripts\net')
-    # from train_student import UNetMiniExp5
-    # export_pth_to_onnx(
-    #     UNetMiniExp5,
-    #     r"E:\AICleanBot\py_scripts\models\20260412_180030_UNetMiniExp5\best_model.pth",
-    #     r"E:\AICleanBot\py_scripts\models\20260412_180030_UNetMiniExp5",
-    #     input_shape=(1, 1, 120, 160)
-    # )
+    import sys
+    sys.path.append(r'E:\AICleanBot\py_scripts\net')
+    from train_student import UNetMiniExp5
+    export_pth_to_onnx(
+        UNetMiniExp5,
+        r"E:\AICleanBot\py_scripts\models\20260416_225153_UNetMiniExp5_KD\best_model.pth",
+        r"E:\AICleanBot\py_scripts\models\20260416_225153_UNetMiniExp5_KD",
+        input_shape=(1, 1, 120, 160)
+    )
 
     # 分析ONNX模型示例
-    analyze_onnx_model(r"E:\AICleanBot\py_scripts\models\20260412_180030_UNetMiniExp5\model.onnx")
+    analyze_onnx_model(r"E:\AICleanBot\py_scripts\models\20260416_225153_UNetMiniExp5_KD\model.onnx")
     
 
 
