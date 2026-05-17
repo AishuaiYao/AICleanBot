@@ -505,6 +505,143 @@ static void udp_init(void)
 // ===========================
 // 处理客户端连接
 // ===========================
+// ===========================
+// 实验模式视频流（独立实现，不复用STREAM）
+// ===========================
+static void experiment_stream(int client_sock)
+{
+    ESP_LOGI(TAG, "========== EXPERIMENT 开始 ==========");
+    ESP_LOGI(TAG, "[Exp] UDP状态: ready=%d, sock=%d", g_udp_client_ready, g_udp_sock);
+    
+    if (!g_udp_client_ready || g_udp_sock < 0) {
+        ESP_LOGE(TAG, "[Exp] UDP未就绪，请先发送UDP_HELLO");
+        send(client_sock, "UDP_NOT_READY\n", 14, 0);
+        ESP_LOGI(TAG, "===================================");
+        return;
+    }
+    
+    ESP_LOGI(TAG, "[Exp] UDP目标: %s:%d", 
+             inet_ntoa(g_udp_client_addr.sin_addr), 
+             ntohs(g_udp_client_addr.sin_port));
+    int frame_count = 0;
+    int64_t stream_start_time = esp_timer_get_time();
+    
+    // 分片参数（MTU安全：每包<1500字节，使用8分片，每分片2400字节）
+    const uint32_t frame_size = INPUT_WIDTH * INPUT_HEIGHT;  // 19200
+    const int total_chunks = 8;
+    const int chunk_data_size = 2400;  // 每分片图像数据大小
+    // 第一分片数据 = chunk_data_size - 7 = 2393
+    // 总计：2393 + 2400*7 = 19193，接近19200
+    // 其他分片：[帧号2B][总分片1B][索引1B][图像数据...]
+    
+    ESP_LOGI(TAG, "[Exp] 分片数: %d, 每分片: %d字节", total_chunks, chunk_data_size);
+    ESP_LOGI(TAG, "===================================");
+    
+    char cmd_buf[64];
+    
+    while (1) {
+        int64_t frame_start = esp_timer_get_time();
+        
+        camera_fb_t *fb = esp_camera_fb_get();
+        if (!fb) {
+            ESP_LOGE(TAG, "[Exp] 帧%d: 采集失败", frame_count);
+            continue;
+        }
+
+        int chunks_sent = 0;
+        
+        // 分片0：电压 + 电机PWM + 图像数据(chunk_data_size-7=2393字节)
+        uint8_t *chunk0 = (uint8_t *)malloc(4 + chunk_data_size);
+        if (chunk0) {
+            chunk0[0] = (frame_count >> 8) & 0xFF;
+            chunk0[1] = frame_count & 0xFF;
+            chunk0[2] = total_chunks;
+            chunk0[3] = 0;
+            chunk0[4] = battery_read_voltage();
+            chunk0[5] = g_motor_l_pwm;
+            chunk0[6] = g_motor_r_pwm;
+            memcpy(chunk0 + 7, fb->buf, chunk_data_size - 7);
+            sendto(g_udp_sock, chunk0, 4 + chunk_data_size, 0,
+                   (struct sockaddr *)&g_udp_client_addr, sizeof(g_udp_client_addr));
+            chunks_sent++;
+            free(chunk0);
+        }
+        
+        // 分片1-7：图像数据(各2400字节)
+        // 偏移：(chunk_data_size-7) + i*chunk_data_size
+        for (int i = 1; i < total_chunks; i++) {
+            uint8_t *chunk = (uint8_t *)malloc(4 + chunk_data_size);
+            if (chunk) {
+                chunk[0] = (frame_count >> 8) & 0xFF;
+                chunk[1] = frame_count & 0xFF;
+                chunk[2] = total_chunks;
+                chunk[3] = i;
+                memcpy(chunk + 4, fb->buf + (chunk_data_size - 7) + i * chunk_data_size, chunk_data_size);
+                sendto(g_udp_sock, chunk, 4 + chunk_data_size, 0,
+                       (struct sockaddr *)&g_udp_client_addr, sizeof(g_udp_client_addr));
+                chunks_sent++;
+                free(chunk);
+            }
+        }
+        
+        int64_t frame_end = esp_timer_get_time();
+        
+        if (chunks_sent == total_chunks) {
+            frame_count++;
+            if (frame_count % 100 == 0) {
+                float fps = frame_count * 1000.0f / ((frame_end - stream_start_time) / 1000.0f);
+                ESP_LOGI(TAG, "[Exp] 帧%d: FPS=%.1f", frame_count, fps);
+            }
+        }
+
+        esp_camera_fb_return(fb);
+
+        // 非阻塞检查命令
+        int len = recv(client_sock, cmd_buf, sizeof(cmd_buf) - 1, MSG_DONTWAIT);
+        if (len > 0) {
+            cmd_buf[len] = '\0';
+            ESP_LOGI(TAG, "[Exp] 收到命令: %s", cmd_buf);
+            
+            if (strncmp(cmd_buf, "STOP_EXPERIMENT", 15) == 0) {
+                motor_stop();
+                g_motor_base_speed = 0;
+                g_motor_running = false;
+                ESP_LOGI(TAG, "[Exp] 收到STOP_EXPERIMENT，停止实验模式");
+                ESP_LOGI(TAG, "[Exp] 累计帧数: %d", frame_count);
+                ESP_LOGI(TAG, "===================================");
+                return;
+            }
+            else if (strncmp(cmd_buf, "START:", 6) == 0) {
+                int speed = atoi(cmd_buf + 6);
+                if (speed >= 1 && speed <= 100) {
+                    g_motor_running = true;
+                    g_motor_base_speed = speed * 255 / 100;
+                    motor_l_forward(g_motor_base_speed);
+                    motor_r_forward(g_motor_base_speed);
+                    ESP_LOGI(TAG, "[Exp] 启动速度%d%%, PWM=%d", speed, g_motor_base_speed);
+                }
+            }
+            else if (strncmp(cmd_buf, "STOP", 4) == 0) {
+                motor_stop();
+                g_motor_base_speed = 0;
+                g_motor_running = false;
+                ESP_LOGI(TAG, "[Exp] 电机停止");
+            }
+            else if (strncmp(cmd_buf, "SPEED:", 6) == 0) {
+                if (!g_motor_running) continue;
+                int speed = atoi(cmd_buf + 6);
+                if (speed >= 1 && speed <= 100) {
+                    g_motor_base_speed = speed * 255 / 100;
+                    motor_l_forward(g_motor_base_speed);
+                    motor_r_forward(g_motor_base_speed);
+                }
+            }
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(20));
+    }
+}
+
 static void handle_client(int client_sock)
 {
     ESP_LOGI(TAG, "[TCP] 客户端已连接");
@@ -937,6 +1074,9 @@ static void handle_client(int client_sock)
                 // 小延时，控制帧率
                 vTaskDelay(pdMS_TO_TICKS(20));
             }
+        }
+        else if (strncmp(cmd, "EXPERIMENT", 10) == 0) {
+            experiment_stream(client_sock);
         }
     }
 
