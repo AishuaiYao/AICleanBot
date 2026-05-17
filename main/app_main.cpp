@@ -530,17 +530,24 @@ static void handle_client(int client_sock)
     char buf[64];
 
     while (1) {
-        int len = recv(client_sock, buf, sizeof(buf) - 1, 0);
-        if (len <= 0) {
+        char cmd[32] = {};
+        int ci = 0;
+        while (ci < (int)sizeof(cmd) - 1) {
+            int r = recv(client_sock, cmd + ci, 1, 0);
+            if (r <= 0) break;
+            if (cmd[ci] == '\n') break;
+            ci++;
+        }
+        if (ci <= 0) {
             ESP_LOGI(TAG, "[TCP] 客户端断开");
             break;
         }
-        buf[len] = '\0';
+        cmd[ci] = '\0';
 
-        ESP_LOGI(TAG, "[TCP] 收到命令: %s", buf);
+        ESP_LOGI(TAG, "[TCP] 收到命令: %s", cmd);
 
-        if (strncmp(buf, "START:", 6) == 0) {
-            int speed = atoi(buf + 6);
+        if (strncmp(cmd, "START:", 6) == 0) {
+            int speed = atoi(cmd + 6);
             if (speed >= 1 && speed <= 100) {
                 g_motor_running = true;
                 g_motor_base_speed = speed * 255 / 100;
@@ -549,12 +556,12 @@ static void handle_client(int client_sock)
                 ESP_LOGI(TAG, "[Motor] 启动速度%d%%, PWM=%d", speed, g_motor_base_speed);
             }
         }
-        else if (strncmp(buf, "SPEED:", 6) == 0) {
+        else if (strncmp(cmd, "SPEED:", 6) == 0) {
             if (!g_motor_running) {
                 ESP_LOGI(TAG, "[Motor] 电机未启动，忽略SPEED命令");
                 continue;
             }
-            int speed = atoi(buf + 6);
+            int speed = atoi(cmd + 6);
             if (speed >= 1 && speed <= 100) {
                 g_motor_base_speed = speed * 255 / 100;
                 motor_l_forward(g_motor_base_speed);
@@ -562,31 +569,31 @@ static void handle_client(int client_sock)
                 ESP_LOGI(TAG, "[Motor] 速度设置为%d%%, PWM=%d", speed, g_motor_base_speed);
             }
         }
-        else if (strncmp(buf, "MOTOR_LEFT", 10) == 0) {
+        else if (strncmp(cmd, "MOTOR_LEFT", 10) == 0) {
             if (!g_motor_running) continue;
             motor_r_forward(g_motor_base_speed);
             motor_l_forward(g_motor_base_speed / 2);
             ESP_LOGI(TAG, "[Motor] 左转: L=%d, R=%d", g_motor_base_speed / 2, g_motor_base_speed);
         }
-        else if (strncmp(buf, "MOTOR_RIGHT", 11) == 0) {
+        else if (strncmp(cmd, "MOTOR_RIGHT", 11) == 0) {
             if (!g_motor_running) continue;
             motor_l_forward(g_motor_base_speed);
             motor_r_forward(g_motor_base_speed / 2);
             ESP_LOGI(TAG, "[Motor] 右转: L=%d, R=%d", g_motor_base_speed, g_motor_base_speed / 2);
         }
-        else if (strncmp(buf, "MOTOR_FORWARD", 13) == 0) {
+        else if (strncmp(cmd, "MOTOR_FORWARD", 13) == 0) {
             if (!g_motor_running) continue;
             motor_l_forward(g_motor_base_speed);
             motor_r_forward(g_motor_base_speed);
             ESP_LOGI(TAG, "[Motor] 直行: L=%d, R=%d", g_motor_base_speed, g_motor_base_speed);
         }
-        else if (strncmp(buf, "STOP", 4) == 0 && (buf[4] == '\0' || buf[4] == '\n' || buf[4] == '\r')) {
+        else if (strncmp(cmd, "STOP", 4) == 0 && (cmd[4] == '\0' || cmd[4] == '\n' || cmd[4] == '\r')) {
             motor_stop();
             g_motor_base_speed = 0;
             g_motor_running = false;
             ESP_LOGI(TAG, "[Motor] 收到STOP命令，电机已停止");
         }
-        else if (strncmp(buf, "CAPTURE", 7) == 0) {
+        else if (strncmp(cmd, "CAPTURE", 7) == 0) {
             int64_t t_start = esp_timer_get_time();
 
             int64_t t1 = esp_timer_get_time();
@@ -605,21 +612,26 @@ static void handle_client(int client_sock)
 
             // ========== 图像预处理 ==========
             int64_t t3 = esp_timer_get_time();
-            
-            // 获取模型输入 tensor
+
+            // 获取模型输入tensor和量化参数
             dl::TensorBase *input_tensor = g_model->get_input("input");
             std::vector<int> in_shape = input_tensor->get_shape();
-            ESP_LOGI(TAG, "[Input] Tensor shape: %d x %d x %d x %d", 
+            ESP_LOGI(TAG, "[Input] Tensor shape: %d x %d x %d x %d",
                      in_shape.size() > 0 ? in_shape[0] : 0,
                      in_shape.size() > 1 ? in_shape[1] : 0,
                      in_shape.size() > 2 ? in_shape[2] : 0,
                      in_shape.size() > 3 ? in_shape[3] : 0);
-            
-            uint8_t *model_input = (uint8_t *)input_tensor->data;
-            
-            // 直接复制原始图像到模型输入 (不resize)
-            memcpy(model_input, fb->buf, INPUT_WIDTH * INPUT_HEIGHT);
-            
+
+            int8_t *model_input = (int8_t *)input_tensor->data;
+            int exponent = input_tensor->get_exponent();
+            float inv_scale = DL_RESCALE(exponent);
+
+            // 归一化并量化: uint8 [0,255] -> float [0.0,1.0] -> int8
+            for (int i = 0; i < INPUT_WIDTH * INPUT_HEIGHT; i++) {
+                float normalized = fb->buf[i] / 255.0f;
+                model_input[i] = (int8_t)DL_CLIP(dl::tool::round(normalized * inv_scale), -128, 127);
+            }
+
             int64_t t4 = esp_timer_get_time();
             ESP_LOGI(TAG, "[Preprocess] 预处理耗时%.1fms", (t4 - t3) / 1000.0);
 
@@ -711,10 +723,10 @@ static void handle_client(int client_sock)
             
             esp_camera_fb_return(fb);
         }
-        else if (strncmp(buf, "UDP_HELLO", 9) == 0) {
+        else if (strncmp(cmd, "UDP_HELLO", 9) == 0) {
             // 解析客户端UDP端口: UDP_HELLO:端口
             int client_udp_port = 0;
-            char *port_str = strchr(buf, ':');
+            char *port_str = strchr(cmd, ':');
             if (port_str) {
                 client_udp_port = atoi(port_str + 1);
             }
@@ -747,7 +759,7 @@ static void handle_client(int client_sock)
                          client_udp_port, g_udp_sock);
             }
         }
-        else if (strncmp(buf, "STREAM", 6) == 0) {
+        else if (strncmp(cmd, "STREAM", 6) == 0) {
             ESP_LOGI(TAG, "========== STREAM 开始 ==========");
             ESP_LOGI(TAG, "[Stream] UDP状态: ready=%d, sock=%d", g_udp_client_ready, g_udp_sock);
             

@@ -4,6 +4,8 @@
 
 FRAME_QQVGA
 FRAME_QQVGA_label
+FRAME_QQVGA2
+FRAME_QQVGA_label2
 models/
 build/
 managed_components/
