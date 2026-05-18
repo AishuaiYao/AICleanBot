@@ -526,61 +526,56 @@ static void experiment_stream(int client_sock)
     int frame_count = 0;
     int64_t stream_start_time = esp_timer_get_time();
     
-    // 分片参数（MTU安全：每包<1500字节，使用8分片，每分片2400字节）
+    // 分片参数（参考STREAM）
     const uint32_t frame_size = INPUT_WIDTH * INPUT_HEIGHT;  // 19200
-    const int total_chunks = 8;
-    const int chunk_data_size = 2400;  // 每分片图像数据大小
-    // 第一分片数据 = chunk_data_size - 7 = 2393
-    // 总计：2393 + 2400*7 = 19193，接近19200
-    // 其他分片：[帧号2B][总分片1B][索引1B][图像数据...]
+    const int total_chunks = 3;
+    const int chunk_size = 6400;  // 固定每分片6400字节
+    const int last_chunk_size = frame_size - chunk_size * (total_chunks - 1);  // 6400
     
-    ESP_LOGI(TAG, "[Exp] 分片数: %d, 每分片: %d字节", total_chunks, chunk_data_size);
+    ESP_LOGI(TAG, "[Exp] 分片数: %d, 每分片: %d/%d字节", total_chunks, chunk_size, last_chunk_size);
     ESP_LOGI(TAG, "===================================");
     
     char cmd_buf[64];
     
     while (1) {
-        int64_t frame_start = esp_timer_get_time();
-        
         camera_fb_t *fb = esp_camera_fb_get();
         if (!fb) {
             ESP_LOGE(TAG, "[Exp] 帧%d: 采集失败", frame_count);
             continue;
         }
 
+        // UDP分片发送（参考STREAM）
         int chunks_sent = 0;
-        
-        // 分片0：电压 + 电机PWM + 图像数据(chunk_data_size-7=2393字节)
-        uint8_t *chunk0 = (uint8_t *)malloc(4 + chunk_data_size);
-        if (chunk0) {
-            chunk0[0] = (frame_count >> 8) & 0xFF;
-            chunk0[1] = frame_count & 0xFF;
-            chunk0[2] = total_chunks;
-            chunk0[3] = 0;
-            chunk0[4] = battery_read_voltage();
-            chunk0[5] = g_motor_l_pwm;
-            chunk0[6] = g_motor_r_pwm;
-            memcpy(chunk0 + 7, fb->buf, chunk_data_size - 7);
-            sendto(g_udp_sock, chunk0, 4 + chunk_data_size, 0,
-                   (struct sockaddr *)&g_udp_client_addr, sizeof(g_udp_client_addr));
-            chunks_sent++;
-            free(chunk0);
-        }
-        
-        // 分片1-7：图像数据(各2400字节)
-        // 偏移：(chunk_data_size-7) + i*chunk_data_size
-        for (int i = 1; i < total_chunks; i++) {
-            uint8_t *chunk = (uint8_t *)malloc(4 + chunk_data_size);
-            if (chunk) {
-                chunk[0] = (frame_count >> 8) & 0xFF;
-                chunk[1] = frame_count & 0xFF;
-                chunk[2] = total_chunks;
-                chunk[3] = i;
-                memcpy(chunk + 4, fb->buf + (chunk_data_size - 7) + i * chunk_data_size, chunk_data_size);
-                sendto(g_udp_sock, chunk, 4 + chunk_data_size, 0,
+        for (int i = 0; i < total_chunks; i++) {
+            int current_chunk_size = (i == total_chunks - 1) ? last_chunk_size : chunk_size;
+            int offset = i * chunk_size;
+            
+            uint8_t *chunk_buf;
+            int header_size;
+            
+            if (i == 0) {
+                // 分片0：[帧号2B][总分片1B][索引1B][电压1B][左电机PWM 1B][右电机PWM 1B][数据...]
+                chunk_buf = (uint8_t *)malloc(7 + current_chunk_size);
+                header_size = 7;
+                chunk_buf[4] = battery_read_voltage();
+                chunk_buf[5] = g_motor_l_pwm;
+                chunk_buf[6] = g_motor_r_pwm;
+            } else {
+                // 分片1+：[帧号2B][总分片1B][索引1B][数据...]
+                chunk_buf = (uint8_t *)malloc(4 + current_chunk_size);
+                header_size = 4;
+            }
+            
+            if (chunk_buf) {
+                chunk_buf[0] = (frame_count >> 8) & 0xFF;
+                chunk_buf[1] = frame_count & 0xFF;
+                chunk_buf[2] = total_chunks;
+                chunk_buf[3] = i;
+                memcpy(chunk_buf + header_size, fb->buf + offset, current_chunk_size);
+                sendto(g_udp_sock, chunk_buf, header_size + current_chunk_size, 0,
                        (struct sockaddr *)&g_udp_client_addr, sizeof(g_udp_client_addr));
                 chunks_sent++;
-                free(chunk);
+                free(chunk_buf);
             }
         }
         
