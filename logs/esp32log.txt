@@ -1,3 +1,5 @@
+PS E:\AICleanBot> $env:IDF_PATH = 'E:/aishuai/Espressif/frameworks/esp-idf-v5.3.1/';
+PS E:\AICleanBot>  & 'E:\aishuai\Espressif\python_env\idf5.3_py3.11_env\Scripts\python.exe' 'E:\aishuai\Espressif\frameworks\esp-idf-v5.3.1\tools\idf_monitor.py' -p COM8 -b 115200 --toolchain-prefix xtensa-esp32s3-elf- --make '''E:\aishuai\Espressif\python_env\idf5.3_py3.11_env\Scripts\python.exe'' ''E:\aishuai\Espressif\frameworks\esp-idf-v5.3.1\tools\idf.py''' --target esp32s3 'e:\AICleanBot\build\model_in_flash_rodata.elf'
 --- Warning: GDB cannot open serial ports accessed as COMx
 --- Using \\.\COM8 instead...
 --- esp-idf-monitor 1.5.0 on \\.\COM8 115200
@@ -13,7 +15,7 @@ load:0x403c8704,len:0xe5c
 load:0x403cb700,len:0x303c
 entry 0x403c893c
 I (27) boot: ESP-IDF v5.3.1-dirty 2nd stage bootloader
-I (27) boot: compile time May  7 2026 21:41:04
+I (27) boot: compile time May 19 2026 22:44:21
 I (27) boot: Multicore bootloader
 I (30) boot: chip revision: v0.2
 I (34) qio_mode: Enabling default flash chip QIO
@@ -26,217 +28,304 @@ I (63) boot: ## Label            Usage          Type ST Offset   Length
 I (70) boot:  0 nvs              WiFi data        01 02 00010000 00006000
 I (77) boot:  1 factory          factory app      00 00 00020000 0079e000
 I (85) boot: End of partition table
-I (89) esp_image: segment 0: paddr=00020020 vaddr=3c020020 size=0b370h ( 45936) map
-I (105) esp_image: segment 1: paddr=0002b398 vaddr=3fc96600 size=02ebch ( 11964) load
-I (108) esp_image: segment 2: paddr=0002e25c vaddr=40378000 size=01dbch (  7612) load
-I (116) esp_image: segment 3: paddr=00030020 vaddr=42000020 size=197d0h (104400) map
-I (139) esp_image: segment 4: paddr=000497f8 vaddr=40379dbc size=0c810h ( 51216) load
-I (155) boot: Loaded app from partition at offset 0x20000
-I (155) boot: Disabling RNG early entropy source...
-I (167) octal_psram: vendor id    : 0x0d (AP)
-I (167) octal_psram: dev id       : 0x02 (generation 3)
-I (167) octal_psram: density      : 0x03 (64 Mbit)
-I (172) octal_psram: good-die     : 0x01 (Pass)
-I (177) octal_psram: Latency      : 0x01 (Fixed)
-I (182) octal_psram: VCC          : 0x01 (3V)
-I (188) octal_psram: SRF          : 0x01 (Fast Refresh)
-I (193) octal_psram: BurstType    : 0x01 (Hybrid Wrap)
-I (199) octal_psram: BurstLen     : 0x01 (32 Byte)
-I (205) octal_psram: Readlatency  : 0x02 (10 cycles@Fixed)
-I (211) octal_psram: DriveStrength: 0x00 (1/1)
-I (217) MSPI Timing: PSRAM timing tuning index: 5
-I (221) esp_psram: Found 8MB PSRAM device
-I (226) esp_psram: Speed: 80MHz
-I (230) cpu_start: Multicore app
-I (519) esp_psram: SPI SRAM memory test OK
-I (528) cpu_start: Pro cpu start user code
-I (528) cpu_start: cpu freq: 240000000 Hz
-I (528) app_init: Application information:
-I (531) app_init: Project name:     model_in_flash_rodata
-I (537) app_init: App version:      3cd7ebb-dirty
-I (542) app_init: Compile time:     May  8 2026 22:17:33
-I (548) app_init: ELF file SHA256:  e463872e7...
-I (553) app_init: ESP-IDF:          v5.3.1-dirty
-I (559) efuse_init: Min chip rev:     v0.0
-I (563) efuse_init: Max chip rev:     v0.99 
-I (568) efuse_init: Chip rev:         v0.2
-I (573) heap_init: Initializing. RAM available for dynamic allocation:
-I (580) heap_init: At 3FC99E38 len 0004F8D8 (318 KiB): RAM
-I (587) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
-I (593) esp_psram: Adding pool of 8192K of PSRAM memory to heap allocator
-I (601) spi_flash: detected chip: boya
-I (605) spi_flash: flash io: qio
-W (608) spi_flash: Detected size(16384k) larger than the size in the binary image header(8192k). Using the size in the binary image header.
-I (622) sleep: Configure to isolate all GPIO pins in sleep state
-I (629) sleep: Enable automatic switching of GPIO sleep configuration
-I (636) main_task: Started on CPU0
-I (646) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
-I (646) main_task: Calling app_main()
-I (656) ENC_TEST: ===== Encoder Test =====
-I (656) gpio: GPIO[2]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
-I (666) gpio: GPIO[39]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
-I (676) gpio: GPIO[40]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
-I (686) gpio: GPIO[42]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
-I (696) gpio: GPIO[14]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
-I (706) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
-I (716) gpio: GPIO[47]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
-I (726) gpio: GPIO[48]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
-I (736) gpio: GPIO[48]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (746) gpio: GPIO[0]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (746) gpio: GPIO[47]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (756) gpio: GPIO[0]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (766) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (776) gpio: GPIO[0]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (786) gpio: GPIO[14]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (796) gpio: GPIO[0]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
-I (806) ENC_TEST: Motor started, 20% duty
-I (806) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(0,0) R(0,0)
-I (1016) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(0,0) R(0,0)
-I (1216) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(0,0) R(0,0)
-I (1416) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(0,0) R(0,0)
-I (1616) ENC_TEST: LA=0 LB=0 RA=0 RB=0 | GPIO L(0,0) R(0,0)
-I (1816) ENC_TEST: LA=59 LB=45 RA=39 RB=19 | GPIO L(1,1) R(1,1)
-I (2016) ENC_TEST: LA=59 LB=45 RA=39 RB=19 | GPIO L(1,1) R(1,1)
-I (2216) ENC_TEST: LA=59 LB=45 RA=39 RB=19 | GPIO L(1,1) R(1,1)
-I (2416) ENC_TEST: LA=59 LB=45 RA=39 RB=19 | GPIO L(1,1) R(1,1)
-I (2616) ENC_TEST: LA=59 LB=45 RA=39 RB=19 | GPIO L(1,1) R(1,1)
-I (2816) ENC_TEST: LA=59 LB=45 RA=39 RB=19 | GPIO L(1,1) R(1,1)
-I (3016) ENC_TEST: LA=1470 LB=1267 RA=1090 RB=1076 | GPIO L(0,0) R(0,0)
-I (3216) ENC_TEST: LA=1509 LB=1300 RA=1116 RB=1113 | GPIO L(1,1) R(1,1)
-I (3416) ENC_TEST: LA=1509 LB=1300 RA=1116 RB=1113 | GPIO L(1,1) R(1,1)
-I (3616) ENC_TEST: LA=1509 LB=1300 RA=1116 RB=1113 | GPIO L(1,1) R(1,1)
-I (3816) ENC_TEST: LA=1509 LB=1300 RA=1116 RB=1113 | GPIO L(1,1) R(1,1)
-I (4016) ENC_TEST: LA=1509 LB=1300 RA=1116 RB=1113 | GPIO L(1,1) R(1,1)
-I (4216) ENC_TEST: LA=2765 LB=2378 RA=2032 RB=2086 | GPIO L(0,0) R(0,0)
-I (4416) ENC_TEST: LA=2812 LB=2423 RA=2056 RB=2133 | GPIO L(1,1) R(1,1)
-I (4616) ENC_TEST: LA=2812 LB=2423 RA=2056 RB=2133 | GPIO L(1,1) R(1,1)
-I (4816) ENC_TEST: LA=2812 LB=2423 RA=2056 RB=2133 | GPIO L(1,1) R(1,1)
-I (5016) ENC_TEST: LA=2812 LB=2423 RA=2056 RB=2133 | GPIO L(1,1) R(1,1)
-I (5216) ENC_TEST: LA=4346 LB=3782 RA=3304 RB=3352 | GPIO L(0,0) R(0,0)
-I (5416) ENC_TEST: LA=4346 LB=3782 RA=3304 RB=3352 | GPIO L(0,0) R(0,0)
-I (5616) ENC_TEST: LA=4346 LB=3782 RA=3304 RB=3352 | GPIO L(0,0) R(0,0)
-I (5816) ENC_TEST: LA=4346 LB=3782 RA=3304 RB=3352 | GPIO L(0,0) R(0,0)
-I (6016) ENC_TEST: LA=4346 LB=3782 RA=3304 RB=3352 | GPIO L(0,0) R(0,0)
-I (6216) ENC_TEST: LA=4346 LB=3782 RA=3304 RB=3352 | GPIO L(0,0) R(0,0)
-I (6416) ENC_TEST: LA=4346 LB=3782 RA=3304 RB=3352 | GPIO L(0,0) R(0,0)
-I (6616) ENC_TEST: LA=4346 LB=3782 RA=3304 RB=3352 | GPIO L(0,0) R(0,0)
-I (6816) ENC_TEST: LA=4399 LB=3814 RA=3340 RB=3395 | GPIO L(1,1) R(1,1)
-I (7016) ENC_TEST: LA=4399 LB=3814 RA=3340 RB=3395 | GPIO L(1,1) R(1,1)
-I (7216) ENC_TEST: LA=4399 LB=3814 RA=3340 RB=3395 | GPIO L(1,1) R(1,1)
-I (7416) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (7616) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (7816) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (8016) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (8216) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (8416) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (8616) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (8816) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (9016) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (9216) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (9416) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (9616) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (9816) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (10016) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (10216) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (10416) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (10616) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (10816) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (11016) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (11216) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (11416) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (11616) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (11816) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (12016) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (12216) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (12416) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (12616) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (12816) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (13016) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (13216) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (13416) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (13616) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (13816) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (14016) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (14216) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (14416) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (14616) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (14816) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (15016) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (15216) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (15416) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (15616) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (15816) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (16016) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (16216) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (16416) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (16616) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (16816) ENC_TEST: LA=5800 LB=4963 RA=4380 RB=4483 | GPIO L(0,0) R(0,0)
-I (17016) ENC_TEST: LA=5862 LB=5000 RA=4427 RB=4510 | GPIO L(1,1) R(1,1)
-I (17216) ENC_TEST: LA=5862 LB=5000 RA=4427 RB=4510 | GPIO L(1,1) R(1,1)
-I (17416) ENC_TEST: LA=7100 LB=6152 RA=5404 RB=5477 | GPIO L(0,0) R(0,0)
-I (17616) ENC_TEST: LA=7100 LB=6152 RA=5404 RB=5477 | GPIO L(0,0) R(0,0)
-I (17816) ENC_TEST: LA=7100 LB=6152 RA=5404 RB=5477 | GPIO L(0,0) R(0,0)
-I (18016) ENC_TEST: LA=7100 LB=6152 RA=5404 RB=5477 | GPIO L(0,0) R(0,0)
-I (18216) ENC_TEST: LA=7100 LB=6152 RA=5404 RB=5477 | GPIO L(0,0) R(0,0)
-I (18416) ENC_TEST: LA=7100 LB=6152 RA=5404 RB=5477 | GPIO L(0,0) R(0,0)
-I (18616) ENC_TEST: LA=7100 LB=6152 RA=5404 RB=5477 | GPIO L(0,0) R(0,0)
-I (18816) ENC_TEST: LA=7100 LB=6152 RA=5404 RB=5477 | GPIO L(0,0) R(0,0)
-I (19016) ENC_TEST: LA=7150 LB=6192 RA=5442 RB=5518 | GPIO L(1,1) R(1,1)
-I (19216) ENC_TEST: LA=7150 LB=6192 RA=5442 RB=5518 | GPIO L(1,1) R(1,1)
-I (19416) ENC_TEST: LA=8502 LB=7354 RA=6429 RB=6513 | GPIO L(0,0) R(0,0)
-I (19616) ENC_TEST: LA=8502 LB=7354 RA=6429 RB=6513 | GPIO L(0,0) R(0,0)
-I (19816) ENC_TEST: LA=8502 LB=7354 RA=6429 RB=6513 | GPIO L(0,0) R(0,0)
-I (20016) ENC_TEST: LA=8502 LB=7354 RA=6429 RB=6513 | GPIO L(0,0) R(0,0)
-I (20216) ENC_TEST: LA=8502 LB=7354 RA=6429 RB=6513 | GPIO L(0,0) R(0,0)
-I (20416) ENC_TEST: LA=8539 LB=7411 RA=6465 RB=6538 | GPIO L(1,1) R(1,1)
-I (20616) ENC_TEST: LA=8539 LB=7411 RA=6465 RB=6538 | GPIO L(1,1) R(1,1)
-I (20816) ENC_TEST: LA=9784 LB=8485 RA=7475 RB=7593 | GPIO L(0,0) R(0,0)
-I (21016) ENC_TEST: LA=9784 LB=8485 RA=7475 RB=7593 | GPIO L(0,0) R(0,0)
-I (21216) ENC_TEST: LA=9784 LB=8485 RA=7475 RB=7593 | GPIO L(0,0) R(0,0)
-I (21416) ENC_TEST: LA=9784 LB=8485 RA=7475 RB=7593 | GPIO L(0,0) R(0,0)
-I (21616) ENC_TEST: LA=9784 LB=8485 RA=7475 RB=7593 | GPIO L(0,0) R(0,0)
-I (21816) ENC_TEST: LA=9829 LB=8532 RA=7515 RB=7633 | GPIO L(1,1) R(1,1)
-I (22016) ENC_TEST: LA=9829 LB=8532 RA=7515 RB=7633 | GPIO L(1,1) R(1,1)
-I (22216) ENC_TEST: LA=9829 LB=8532 RA=7515 RB=7633 | GPIO L(1,1) R(1,1)
-I (22416) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (22616) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (22816) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (23016) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (23216) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (23416) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (23616) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (23816) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (24016) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (24216) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (24416) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (24616) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (24816) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (25016) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (25216) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (25416) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (25616) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (25816) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (26016) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (26216) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (26416) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (26616) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (26816) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (27016) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (27216) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (27416) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (27616) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (27816) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (28016) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (28216) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (28416) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (28616) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (28816) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (29016) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (29216) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (29416) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (29616) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (29816) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (30016) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (30216) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
-I (30416) ENC_TEST: LA=11198 LB=9778 RA=8422 RB=8463 | GPIO L(0,0) R(0,0)
---- Error: GetOverlappedResult failed (PermissionError(13, '鎷掔粷璁块棶銆?
+I (89) esp_image: segment 0: paddr=00020020 vaddr=3c180020 size=747c0h (477120) map
+I (170) esp_image: segment 1: paddr=000947e8 vaddr=3fca0100 size=076f4h ( 30452) load
+I (176) esp_image: segment 2: paddr=0009bee4 vaddr=40378000 size=04134h ( 16692) load
+I (179) esp_image: segment 3: paddr=000a0020 vaddr=42000020 size=1760e4h (1532132) map
+--- To exit from IDF monitor please use "Ctrl+]". Alternatively, you can use Ctrl+T Ctrl+X to exit.
+I (416) esp_image: segment 4: paddr=0021610c vaddr=4037c134 size=13fach ( 81836) load
+I (432) esp_image: segment 5: paddr=0022a0c0 vaddr=600fe100 size=00004h (     4) load
+I (443) boot: Loaded app from partition at offset 0x20000
+I (443) boot: Disabling RNG early entropy source...
+I (455) octal_psram: vendor id    : 0x0d (AP)
+I (455) octal_psram: dev id       : 0x02 (generation 3)
+I (455) octal_psram: density      : 0x03 (64 Mbit)
+I (460) octal_psram: good-die     : 0x01 (Pass)
+I (466) octal_psram: Latency      : 0x01 (Fixed)
+I (471) octal_psram: VCC          : 0x01 (3V)
+I (476) octal_psram: SRF          : 0x01 (Fast Refresh)
+I (482) octal_psram: BurstType    : 0x01 (Hybrid Wrap)
+I (488) octal_psram: BurstLen     : 0x01 (32 Byte)
+I (493) octal_psram: Readlatency  : 0x02 (10 cycles@Fixed)
+I (499) octal_psram: DriveStrength: 0x00 (1/1)
+I (505) MSPI Timing: PSRAM timing tuning index: 5
+I (510) esp_psram: Found 8MB PSRAM device
+I (514) esp_psram: Speed: 80MHz
+I (518) cpu_start: Multicore app
+I (807) esp_psram: SPI SRAM memory test OK
+I (816) cpu_start: Pro cpu start user code
+I (816) cpu_start: cpu freq: 240000000 Hz
+I (816) app_init: Application information:
+I (819) app_init: Project name:     model_in_flash_rodata
+I (825) app_init: App version:      717a018-dirty
+I (830) app_init: Compile time:     May 19 2026 22:42:58
+I (836) app_init: ELF file SHA256:  f38003abb...
+I (842) app_init: ESP-IDF:          v5.3.1-dirty
+I (847) efuse_init: Min chip rev:     v0.0
+I (852) efuse_init: Max chip rev:     v0.99 
+I (857) efuse_init: Chip rev:         v0.2
+I (862) heap_init: Initializing. RAM available for dynamic allocation:
+I (869) heap_init: At 3FCAC858 len 0003CEB8 (243 KiB): RAM
+I (875) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (881) esp_psram: Adding pool of 8192K of PSRAM memory to heap allocator
+I (889) spi_flash: detected chip: boya
+I (893) spi_flash: flash io: qio
+W (897) spi_flash: Detected size(16384k) larger than the size in the binary image header(8192k). Using the size in the binary image header.
+W (910) i2c: This driver is an old driver, please migrate your application code to adapt `driver/i2c_master.h`
+I (921) sleep: Configure to isolate all GPIO pins in sleep state
+I (928) sleep: Enable automatic switching of GPIO sleep configuration
+I (935) main_task: Started on CPU0
+I (945) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+I (945) main_task: Calling app_main()
+I (955) CAM_TCP: ========================================
+I (955) CAM_TCP: ESP32 Camera Server (WiFi AP + TCP)
+I (965) CAM_TCP: ========================================
+I (985) CAM_TCP: [Model] 加载模型...
+
+I (1395) dl::Model: Testing output output.
+I (1395) dl::Model: Test Pass!
+
+I (1395) dl::Model: model:main_graph, version:0
+I (1395) dl::Model: MODEL LOCATION IN FLASH RODATA
+I (1405) dl::Model: +----------------+--------------+-----------+-------------+
+I (1405) dl::Model: |                     memory summary                      |
+I (1415) dl::Model: +----------------+--------------+-----------+-------------+
+I (1425) dl::Model: |                | internal RAM | PSRAM     | FLASH       |
+I (1435) dl::Model: +----------------+--------------+-----------+-------------+
+I (1445) dl::Model: | fbs_model      |              |           | 148.25KB    |
+I (1445) dl::Model: |  -- parameter  |              |           |  -- 69.70KB |
+I (1455) dl::Model: +----------------+--------------+-----------+-------------+
+I (1465) dl::Model: | parameter_copy |              | 69.70KB   |             |
+I (1475) dl::Model: +----------------+--------------+-----------+-------------+
+I (1485) dl::Model: | variable       |              | 1500.00KB |             |
+I (1485) dl::Model: +----------------+--------------+-----------+-------------+
+I (1495) dl::Model: | others         | 16.30KB      | 10.69KB   |             |
+I (1505) dl::Model: +----------------+--------------+-----------+-------------+
+I (1515) dl::Model: | total          | 16.30KB      | 1580.39KB | 148.25KB    |
+I (1525) dl::Model: +----------------+--------------+-----------+-------------+
+
+I (1865) dl::Model: +------------------------------+------------------+----------+
+I (1865) dl::Model: |                       module summary                       |
+I (1875) dl::Model: +------------------------------+------------------+----------+
+I (1885) dl::Model: | name                         | type             | latency  |
+I (1895) dl::Model: +------------------------------+------------------+----------+
+I (1905) dl::Model: | /enc1/conv/conv.0/Conv       | Conv             | 23184us  |
+I (1905) dl::Model: +------------------------------+------------------+----------+
+I (1915) dl::Model: | /enc1/conv/conv.3/Conv       | Conv             | 14262us  |
+I (1925) dl::Model: +------------------------------+------------------+----------+
+I (1935) dl::Model: | /enc1/conv/conv.6/Conv       | Conv             | 12632us  |
+I (1945) dl::Model: +------------------------------+------------------+----------+
+I (1945) dl::Model: | /enc1/conv/conv.9/Conv       | Conv             | 12862us  |
+I (1955) dl::Model: +------------------------------+------------------+----------+
+I (1965) dl::Model: | /pool/MaxPool                | MaxPool          | 5492us   |
+I (1975) dl::Model: +------------------------------+------------------+----------+
+I (1985) dl::Model: | PPQ_Operation_2              | RequantizeLinear | 5984us   |
+I (1995) dl::Model: +------------------------------+------------------+----------+
+I (1995) dl::Model: | /enc2/conv/conv.0/Conv       | Conv             | 3323us   |
+I (2005) dl::Model: +------------------------------+------------------+----------+
+I (2015) dl::Model: | /enc2/conv/conv.3/Conv       | Conv             | 4757us   |
+I (2025) dl::Model: +------------------------------+------------------+----------+
+I (2035) dl::Model: | /enc2/conv/conv.6/Conv       | Conv             | 6032us   |
+I (2045) dl::Model: +------------------------------+------------------+----------+
+I (2045) dl::Model: | /enc2/conv/conv.9/Conv       | Conv             | 5608us   |
+I (2055) dl::Model: +------------------------------+------------------+----------+
+I (2065) dl::Model: | /pool_1/MaxPool              | MaxPool          | 2677us   |
+I (2075) dl::Model: +------------------------------+------------------+----------+
+I (2085) dl::Model: | PPQ_Operation_1              | RequantizeLinear | 2821us   |
+I (2085) dl::Model: +------------------------------+------------------+----------+
+I (2095) dl::Model: | /enc3/conv/conv.0/Conv       | Conv             | 1639us   |
+I (2105) dl::Model: +------------------------------+------------------+----------+
+I (2115) dl::Model: | /enc3/conv/conv.3/Conv       | Conv             | 2456us   |
+I (2125) dl::Model: +------------------------------+------------------+----------+
+I (2135) dl::Model: | /enc3/conv/conv.6/Conv       | Conv             | 2754us   |
+I (2135) dl::Model: +------------------------------+------------------+----------+
+I (2145) dl::Model: | /enc3/conv/conv.9/Conv       | Conv             | 3544us   |
+I (2155) dl::Model: +------------------------------+------------------+----------+
+I (2165) dl::Model: | /pool_2/MaxPool              | MaxPool          | 1389us   |
+I (2175) dl::Model: +------------------------------+------------------+----------+
+I (2185) dl::Model: | PPQ_Operation_0              | RequantizeLinear | 1192us   |
+I (2185) dl::Model: +------------------------------+------------------+----------+
+I (2195) dl::Model: | /bottleneck/conv/conv.0/Conv | Conv             | 854us    |
+I (2205) dl::Model: +------------------------------+------------------+----------+
+I (2215) dl::Model: | /bottleneck/conv/conv.3/Conv | Conv             | 1399us   |
+I (2225) dl::Model: +------------------------------+------------------+----------+
+I (2225) dl::Model: | /bottleneck/conv/conv.6/Conv | Conv             | 821us    |
+I (2235) dl::Model: +------------------------------+------------------+----------+
+I (2245) dl::Model: | /bottleneck/conv/conv.9/Conv | Conv             | 2488us   |
+I (2255) dl::Model: +------------------------------+------------------+----------+
+I (2265) dl::Model: | /up3/Resize                  | Resize           | 3483us   |
+I (2275) dl::Model: +------------------------------+------------------+----------+
+I (2275) dl::Model: | /conv3/Conv                  | Conv             | 5681us   |
+I (2285) dl::Model: +------------------------------+------------------+----------+
+I (2295) dl::Model: | /Concat                      | Concat           | 4757us   |
+I (2305) dl::Model: +------------------------------+------------------+----------+
+I (2315) dl::Model: | /dec3/conv/conv.0/Conv       | Conv             | 5198us   |
+I (2325) dl::Model: +------------------------------+------------------+----------+
+I (2325) dl::Model: | /dec3/conv/conv.3/Conv       | Conv             | 5731us   |
+I (2335) dl::Model: +------------------------------+------------------+----------+
+I (2345) dl::Model: | /dec3/conv/conv.6/Conv       | Conv             | 2624us   |
+I (2355) dl::Model: +------------------------------+------------------+----------+
+I (2365) dl::Model: | /dec3/conv/conv.9/Conv       | Conv             | 3519us   |
+I (2375) dl::Model: +------------------------------+------------------+----------+
+I (2375) dl::Model: | /up2/Resize                  | Resize           | 6998us   |
+I (2385) dl::Model: +------------------------------+------------------+----------+
+I (2395) dl::Model: | /conv2/Conv                  | Conv             | 8491us   |
+I (2405) dl::Model: +------------------------------+------------------+----------+
+I (2415) dl::Model: | /Concat_1                    | Concat           | 9785us   |
+I (2415) dl::Model: +------------------------------+------------------+----------+
+I (2425) dl::Model: | /dec2/conv/conv.0/Conv       | Conv             | 10248us  |
+I (2435) dl::Model: +------------------------------+------------------+----------+
+I (2445) dl::Model: | /dec2/conv/conv.3/Conv       | Conv             | 8619us   |
+I (2455) dl::Model: +------------------------------+------------------+----------+
+I (2465) dl::Model: | /dec2/conv/conv.6/Conv       | Conv             | 5885us   |
+I (2465) dl::Model: +------------------------------+------------------+----------+
+I (2475) dl::Model: | /dec2/conv/conv.9/Conv       | Conv             | 5646us   |
+I (2485) dl::Model: +------------------------------+------------------+----------+
+I (2495) dl::Model: | /up1/Resize                  | Resize           | 14181us  |
+I (2505) dl::Model: +------------------------------+------------------+----------+
+I (2515) dl::Model: | /conv1/Conv                  | Conv             | 16416us  |
+I (2515) dl::Model: +------------------------------+------------------+----------+
+I (2525) dl::Model: | /Concat_2                    | Concat           | 22134us  |
+I (2535) dl::Model: +------------------------------+------------------+----------+
+I (2545) dl::Model: | /dec1/conv/conv.0/Conv       | Conv             | 24025us  |
+I (2555) dl::Model: +------------------------------+------------------+----------+
+I (2555) dl::Model: | /dec1/conv/conv.3/Conv       | Conv             | 16786us  |
+I (2565) dl::Model: +------------------------------+------------------+----------+
+I (2575) dl::Model: | /dec1/conv/conv.6/Conv       | Conv             | 12383us  |
+I (2585) dl::Model: +------------------------------+------------------+----------+
+I (2595) dl::Model: | /dec1/conv/conv.9/Conv       | Conv             | 12982us  |
+I (2605) dl::Model: +------------------------------+------------------+----------+
+I (2605) dl::Model: | /out/Conv                    | Conv             | 11715us  |
+I (2615) dl::Model: +------------------------------+------------------+----------+
+I (2625) dl::Model: | total                        |                  | 335457us |
+I (2635) dl::Model: +------------------------------+------------------+----------+
+
+I (2645) CAM_TCP: [Model] 输入数量: 1
+I (2645) CAM_TCP: [Model] 输入名称: input
+I (2655) CAM_TCP: [Model] 输出数量: 1
+I (2655) CAM_TCP: [Model] 输出名称: output
+I (2665) CAM_TCP: [Model] 模型加载成功
+I (2665) CAM_TCP: [Init] Sigmoid查表初始化完成 (exponent=-3, scale=0.125000)
+I (2675) CAM_TCP: [Camera] 初始化摄像头...
+I (2685) s3 ll_cam: DMA Channel=0
+I (2685) cam_hal: cam init ok
+I (2685) sccb: pin_sda 4 pin_scl 5
+I (2695) sccb: sccb_i2c_port=1
+I (2705) camera: Camera PID=0x26 VER=0x42 MIDL=0x7f MIDH=0xa2
+I (2705) camera: Detected OV2640 camera
+I (2705) camera: Detected camera at address=0x30
+I (2785) cam_hal: PSRAM DMA mode disabled
+I (2785) s3 ll_cam: node_size: 3840, nodes_per_line: 1, lines_per_node: 12
+I (2785) s3 ll_cam: dma_half_buffer_min:  3840, dma_half_buffer:  7680, lines_per_half_buffer: 24, dma_buffer_size: 30720
+I (2795) cam_hal: buffer_size: 30720, half_buffer_size: 7680, node_buffer_size: 3840, node_cnt: 8, total_cnt: 5
+I (2805) cam_hal: Allocating 19200 Byte frame buffer in PSRAM
+I (2815) cam_hal: cam config ok
+I (2815) ov2640: Set PLL: clk_2x: 1, clk_div: 3, pclk_auto: 1, pclk_div: 8
+I (2885) CAM_TCP: [Camera] 初始化成功 (QQVGA 160x120 灰度)
+I (2885) gpio: GPIO[2]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2895) gpio: GPIO[42]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2905) gpio: GPIO[45]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2915) gpio: GPIO[48]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2925) CAM_TCP: [Motor] 初始化完成
+I (2925) CAM_TCP: [Encoder] 初始化开始 (单通道一倍频)...
+I (2935) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2945) gpio: GPIO[40]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2955) gpio: GPIO[41]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2965) gpio: GPIO[47]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (2975) gpio: GPIO[47]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2975) gpio: GPIO[41]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (2985) CAM_TCP: [Encoder] 初始化完成: 左轮=GPIO47/GPIO21, 右轮=GPIO41/GPIO40
+I (2995) pp: pp rom version: e7ae62f
+I (3005) net80211: net80211 rom version: e7ae62f
+I (3015) wifi:wifi driver task: 3fcbd1a8, prio:23, stack:6656, core=0
+I (3025) wifi:wifi firmware version: ccaebfa
+I (3025) wifi:wifi certification version: v7.0
+I (3025) wifi:config NVS flash: enabled
+I (3025) wifi:config nano formating: disabled
+I (3025) wifi:Init data frame dynamic rx buffer num: 32
+I (3035) wifi:Init static rx mgmt buffer num: 5
+I (3035) wifi:Init management short buffer num: 32
+I (3045) wifi:Init static tx buffer num: 16
+I (3045) wifi:Init tx cache buffer num: 32
+I (3055) wifi:Init static tx FG buffer num: 2
+I (3055) wifi:Init static rx buffer size: 1600
+I (3055) wifi:Init static rx buffer num: 10
+I (3065) wifi:Init dynamic rx buffer num: 32
+I (3065) wifi_init: rx ba win: 6
+I (3075) wifi_init: accept mbox: 6
+I (3075) wifi_init: tcpip mbox: 32
+I (3075) wifi_init: udp mbox: 6
+I (3085) wifi_init: tcp mbox: 6
+I (3085) wifi_init: tcp tx win: 5760
+I (3095) wifi_init: tcp rx win: 5760
+I (3095) wifi_init: tcp mss: 1440
+I (3095) wifi_init: WiFi IRAM OP enabled
+I (3105) wifi_init: WiFi RX IRAM OP enabled
+I (3115) phy_init: phy_version 680,a6008b2,Jun  4 2024,16:41:10
+I (3145) wifi:mode : softAP (3c:0f:02:d7:57:01)
+I (3145) wifi:Total power save buffer number: 8
+I (3145) wifi:Init max length of beacon: 752/752
+I (3145) wifi:Init max length of beacon: 752/752
+I (3155) CAM_TCP: [WiFi] AP已启动 SSID=ESP32-CAM 密码=12345678 IP=192.168.4.1
+I (3155) esp_netif_lwip: DHCP server started on interface WIFI_AP_DEF with IP: 192.168.4.1
+I (3165) CAM_TCP: [UDP] UDP socket已启动, 端口=5001
+I (3175) CAM_TCP: [Battery] ADC初始化, GPIO14, 分压比1/11...
+I (3185) CAM_TCP: [Battery] ADC初始化完成
+I (3185) CAM_TCP: [BreathLED] 初始化完成 GPIO=38
+I (3195) CAM_TCP: [BreathLED] 呼吸灯任务启动
+I (3195) CAM_TCP: ========================================
+I (3195) CAM_TCP: [TCP] Server已启动, 端口=5000
+I (3205) CAM_TCP: 系统启动完成!
+I (3215) CAM_TCP: 热点: ESP32-CAM  密码: 12345678
+I (3215) CAM_TCP: TCP端口: 5000  UDP端口: 5001
+I (3225) CAM_TCP: 呼吸灯: GPIO38
+I (3225) CAM_TCP: ========================================
+I (3235) main_task: Returned from app_main()
+I (12895) wifi:new:<1,0>, old:<1,1>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0
+I (12895) wifi:station: 16:45:6c:37:f5:aa join, AID=1, bgn, 20
+I (13315) esp_netif_lwip: DHCP server assigned IP to a client, IP is: 192.168.4.2
+I (13675) wifi:<ba-add>idx:2 (ifx:1, 16:45:6c:37:f5:aa), tid:0, ssn:3037, winSize:64
+I (16565) wifi:<ba-add>idx:3 (ifx:1, 16:45:6c:37:f5:aa), tid:2, ssn:2464, winSize:64
+I (16685) CAM_TCP: [TCP] 客户端已连接
+I (16695) CAM_TCP: [TCP] 握手成功: LinePatrol V1|😊|3C:0F:02:D7:57:01
+
+I (16705) CAM_TCP: [TCP] 客户端断开
+I (16805) CAM_TCP: [TCP] 客户端已连接
+I (16805) CAM_TCP: [TCP] 握手成功: LinePatrol V1|😊|3C:0F:02:D7:57:01
+
+I (20195) CAM_TCP: [TCP] 收到命令: UDP_HELLO:5003
+I (20195) CAM_TCP: ========== UDP_HELLO ==========
+I (20195) CAM_TCP: [UDP] 收到UDP_HELLO, 端口=5003
+I (20195) CAM_TCP: [UDP] UDP socket状态: OK
+I (20205) CAM_TCP: [UDP] 客户端UDP地址: 192.168.4.2:5003
+I (20215) CAM_TCP: [UDP] UDP客户端就绪!
+I (20215) CAM_TCP: ================================
+I (20415) CAM_TCP: [TCP] 收到命令: EXPERIMENT
+I (20415) CAM_TCP: ========== EXPERIMENT 开始 ==========
+I (20415) CAM_TCP: [Exp] UDP状态: ready=1, sock=54
+I (20415) CAM_TCP: [Exp] UDP目标: 192.168.4.2:5003
+I (20425) CAM_TCP: [Exp] 拼接图: 320x120, 分片数: 6, 每分片: 6400字节
+I (20435) CAM_TCP: ===================================
+I (24735) CAM_TCP: [Exp] 帧10: 总耗时=414.3ms, 采集=58.5ms, 预处理=22.5ms, 推理=336.6ms, 后处理=0.8ms, 网络传输=2.8ms, FPS=2.3
+I (29135) CAM_TCP: [Exp] 帧20: 总耗时=420.1ms, 采集=56.7ms, 预处理=22.5ms, 推理=336.3ms, 后处理=0.8ms, 网络传输=3.0ms, FPS=2.3
+I (33535) CAM_TCP: [Exp] 帧30: 总耗时=419.3ms, 采集=55.0ms, 预处理=22.5ms, 推理=336.0ms, 后处理=0.8ms, 网络传输=2.5ms, FPS=2.3
+I (37935) CAM_TCP: [Exp] 帧40: 总耗时=417.1ms, 采集=53.2ms, 预处理=22.5ms, 推理=335.8ms, 后处理=0.8ms, 网络传输=2.5ms, FPS=2.3
+I (42325) CAM_TCP: [Exp] 帧50: 总耗时=418.2ms, 采集=61.4ms, 预处理=22.7ms, 推理=336.1ms, 后处理=0.8ms, 网络传输=2.5ms, FPS=2.3
+I (46725) CAM_TCP: [Exp] 帧60: 总耗时=422.9ms, 采集=59.7ms, 预处理=22.5ms, 推理=336.5ms, 后处理=0.8ms, 网络传输=2.5ms, FPS=2.3
+I (51125) CAM_TCP: [Exp] 帧70: 总耗时=420.8ms, 采集=57.9ms, 预处理=22.6ms, 推理=336.5ms, 后处理=0.8ms, 网络传输=2.5ms, FPS=2.3
+I (55525) CAM_TCP: [Exp] 帧80: 总耗时=420.2ms, 采集=56.2ms, 预处理=22.6ms, 推理=336.3ms, 后处理=0.8ms, 网络传输=2.5ms, FPS=2.3
+I (59925) CAM_TCP: [Exp] 帧90: 总耗时=418.3ms, 采集=54.4ms, 预处理=22.7ms, 推理=336.0ms, 后处理=0.8ms, 网络传输=2.5ms, FPS=2.3
+I (64325) CAM_TCP: [Exp] 帧100: 总耗时=416.3ms, 采集=52.6ms, 预处理=22.6ms, 推理=336.8ms, 后处理=0.8ms, 网络传输=2.5ms, FPS=2.3
+I (64325) CAM_TCP: [Exp] 收到命令: STOP_EXPERIMENT
+
+I (64335) CAM_TCP: [Exp] 收到STOP_EXPERIMENT，停止实验模式
+I (64335) CAM_TCP: [Exp] 累计帧数: 100
+I (64345) CAM_TCP: ===================================
+I (68575) CAM_TCP: [TCP] 收到命令: STOP
+I (68575) CAM_TCP: [Motor] 收到STOP命令，电机已停止
+I (68575) CAM_TCP: [TCP] 客户端断开
+W (558885) wifi:inactive timer: now=214fdfcb last_rx_time=f539a75 diff=49ab1, aid[1]16:45:6c:37:f5:aa leave
+I (558905) wifi:station: 16:45:6c:37:f5:aa leave, AID = 1, reason = 4, bss_flags is 167027, bss:0x3fcaf1b8
+I (558905) wifi:new:<1,0>, old:<1,0>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0
+I (558905) wifi:<ba-del>idx:2, tid:0
+I (558915) wifi:<ba-del>idx:3, tid:2

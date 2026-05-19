@@ -506,7 +506,7 @@ static void udp_init(void)
 // 处理客户端连接
 // ===========================
 // ===========================
-// 实验模式视频流（独立实现，不复用STREAM）
+// 实验模式视频流（推理+拼接图）
 // ===========================
 static void experiment_stream(int client_sock)
 {
@@ -523,29 +523,85 @@ static void experiment_stream(int client_sock)
     ESP_LOGI(TAG, "[Exp] UDP目标: %s:%d", 
              inet_ntoa(g_udp_client_addr.sin_addr), 
              ntohs(g_udp_client_addr.sin_port));
-    int frame_count = 0;
-    int64_t stream_start_time = esp_timer_get_time();
     
-    // 分片参数（参考STREAM）
-    const uint32_t frame_size = INPUT_WIDTH * INPUT_HEIGHT;  // 19200
-    const int total_chunks = 3;
-    const int chunk_size = 6400;  // 固定每分片6400字节
-    const int last_chunk_size = frame_size - chunk_size * (total_chunks - 1);  // 6400
+    // 拼接图尺寸：320x120 = 38400字节
+    const uint32_t concat_size = OUTPUT_WIDTH * 2 * OUTPUT_HEIGHT;  // 38400
+    const int total_chunks = 6;  // 38400 / 6400 = 6
+    const int chunk_size = 6400;
+    const int last_chunk_size = concat_size - chunk_size * (total_chunks - 1);  // 6400
     
-    ESP_LOGI(TAG, "[Exp] 分片数: %d, 每分片: %d/%d字节", total_chunks, chunk_size, last_chunk_size);
+    // 分配临时缓冲区
+    uint8_t *pred_data = (uint8_t *)malloc(INPUT_WIDTH * INPUT_HEIGHT);
+    uint8_t *concat_data = (uint8_t *)malloc(concat_size);
+    
+    if (!pred_data || !concat_data) {
+        ESP_LOGE(TAG, "[Exp] 内存分配失败");
+        if (pred_data) free(pred_data);
+        if (concat_data) free(concat_data);
+        return;
+    }
+    
+    ESP_LOGI(TAG, "[Exp] 拼接图: %dx%d, 分片数: %d, 每分片: %d字节", 
+             OUTPUT_WIDTH * 2, OUTPUT_HEIGHT, total_chunks, chunk_size);
     ESP_LOGI(TAG, "===================================");
     
+    int frame_count = 0;
+    int64_t stream_start_time = esp_timer_get_time();
+    int64_t total_latency_us = 0;
     char cmd_buf[64];
     
     while (1) {
+        int64_t t0 = esp_timer_get_time();  // 总开始
+        
+        // ========== 图像采集 ==========
         camera_fb_t *fb = esp_camera_fb_get();
         if (!fb) {
             ESP_LOGE(TAG, "[Exp] 帧%d: 采集失败", frame_count);
             continue;
         }
+        int64_t t1 = esp_timer_get_time();  // 采集结束
 
-        // UDP分片发送（参考STREAM）
+        // ========== 图像预处理 ==========
+        dl::TensorBase *input_tensor = g_model->get_input("input");
+        int8_t *model_input = (int8_t *)input_tensor->data;
+        int exponent = input_tensor->get_exponent();
+        float inv_scale = DL_RESCALE(exponent);
+        
+        for (int i = 0; i < INPUT_WIDTH * INPUT_HEIGHT; i++) {
+            float normalized = fb->buf[i] / 255.0f;
+            model_input[i] = (int8_t)DL_CLIP(dl::tool::round(normalized * inv_scale), -128, 127);
+        }
+        int64_t t2 = esp_timer_get_time();  // 预处理结束
+
+        // ========== 模型推理 ==========
+        g_model->run();
+        dl::TensorBase *output_tensor = g_model->get_output("output");
+        int8_t *output_data = (int8_t *)output_tensor->data;
+        int64_t t3 = esp_timer_get_time();  // 推理结束
+        
+        // ========== 后处理：sigmoid查表二值化 ==========
+        for (int i = 0; i < OUTPUT_WIDTH * OUTPUT_HEIGHT; i++) {
+            uint8_t idx = (uint8_t)(output_data[i] + 128);
+            pred_data[i] = sigmoid_lut[idx];
+        }
+        int64_t t4 = esp_timer_get_time();  // 后处理结束
+        
+        // ========== 横向拼接：原图(160x120) + 预测图(160x120) ==========
+        for (int y = 0; y < OUTPUT_HEIGHT; y++) {
+            memcpy(concat_data + y * OUTPUT_WIDTH * 2, 
+                   fb->buf + y * OUTPUT_WIDTH, 
+                   OUTPUT_WIDTH);
+            memcpy(concat_data + y * OUTPUT_WIDTH * 2 + OUTPUT_WIDTH, 
+                   pred_data + y * OUTPUT_WIDTH, 
+                   OUTPUT_WIDTH);
+        }
+        int64_t t5 = esp_timer_get_time();  // 拼接结束
+        
+        esp_camera_fb_return(fb);
+
+        // ========== UDP分片发送 ==========
         int chunks_sent = 0;
+        
         for (int i = 0; i < total_chunks; i++) {
             int current_chunk_size = (i == total_chunks - 1) ? last_chunk_size : chunk_size;
             int offset = i * chunk_size;
@@ -571,7 +627,7 @@ static void experiment_stream(int client_sock)
                 chunk_buf[1] = frame_count & 0xFF;
                 chunk_buf[2] = total_chunks;
                 chunk_buf[3] = i;
-                memcpy(chunk_buf + header_size, fb->buf + offset, current_chunk_size);
+                memcpy(chunk_buf + header_size, concat_data + offset, current_chunk_size);
                 sendto(g_udp_sock, chunk_buf, header_size + current_chunk_size, 0,
                        (struct sockaddr *)&g_udp_client_addr, sizeof(g_udp_client_addr));
                 chunks_sent++;
@@ -579,17 +635,29 @@ static void experiment_stream(int client_sock)
             }
         }
         
-        int64_t frame_end = esp_timer_get_time();
+        int64_t t6 = esp_timer_get_time();  // 传输结束
+        
+        // 各阶段耗时(微秒→毫秒)
+        float cap_ms = (t1 - t0) / 1000.0f;
+        float pre_ms = (t2 - t1) / 1000.0f;
+        float infer_ms = (t3 - t2) / 1000.0f;
+        float post_ms = (t4 - t3) / 1000.0f;
+        float send_ms = (t6 - t5) / 1000.0f;
+        float total_ms = (t6 - t0) / 1000.0f;
+        
+        total_latency_us += total_ms * 1000;
         
         if (chunks_sent == total_chunks) {
             frame_count++;
-            if (frame_count % 100 == 0) {
-                float fps = frame_count * 1000.0f / ((frame_end - stream_start_time) / 1000.0f);
-                ESP_LOGI(TAG, "[Exp] 帧%d: FPS=%.1f", frame_count, fps);
+            // 每10帧打印一次延迟统计
+            if (frame_count % 10 == 0) {
+                float avg_total_ms = (total_latency_us / 10.0f) / 1000.0f;
+                float fps = frame_count * 1000.0f / ((t6 - stream_start_time) / 1000.0f);
+                ESP_LOGI(TAG, "[Exp] 帧%d: 总耗时=%.1fms, 采集=%.1fms, 预处理=%.1fms, 推理=%.1fms, 后处理=%.1fms, 网络传输=%.1fms, FPS=%.1f", 
+                         frame_count, avg_total_ms, cap_ms, pre_ms, infer_ms, post_ms, send_ms, fps);
+                total_latency_us = 0;
             }
         }
-
-        esp_camera_fb_return(fb);
 
         // 非阻塞检查命令
         int len = recv(client_sock, cmd_buf, sizeof(cmd_buf) - 1, MSG_DONTWAIT);
@@ -604,6 +672,8 @@ static void experiment_stream(int client_sock)
                 ESP_LOGI(TAG, "[Exp] 收到STOP_EXPERIMENT，停止实验模式");
                 ESP_LOGI(TAG, "[Exp] 累计帧数: %d", frame_count);
                 ESP_LOGI(TAG, "===================================");
+                free(pred_data);
+                free(concat_data);
                 return;
             }
             else if (strncmp(cmd_buf, "START:", 6) == 0) {
