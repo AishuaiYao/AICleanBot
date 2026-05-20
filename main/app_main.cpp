@@ -119,6 +119,9 @@ static bool g_motor_running = false;    // 电机运行状态
 static uint8_t g_motor_l_pwm = 0;       // 左电机实际PWM值
 static uint8_t g_motor_r_pwm = 0;       // 右电机实际PWM值
 
+// PID控制相关
+static float g_pid_kp = 0.5f;           // 比例系数，默认0.5
+
 // 编码器相关 - PCNT外设
 static pcnt_unit_handle_t g_pcnt_l = NULL;  // 左轮 PCNT 单元句柄
 static pcnt_unit_handle_t g_pcnt_r = NULL;  // 右轮 PCNT 单元句柄
@@ -147,6 +150,163 @@ static void init_sigmoid_lut(float out_scale)
 float sigmoid(float x)
 {
     return 1.0f / (1.0f + expf(-x));
+}
+
+// 计算一行中预测值为1的连通区域的质心x坐标
+// 返回质心x坐标，-1表示没有找到有效区域
+static float calc_row_centroid(uint8_t* pred, int start_x, int width)
+{
+    int sum_x = 0;
+    int count = 0;
+    bool in_region = false;
+    
+    for (int x = start_x; x < start_x + width; x++) {
+        if (pred[x] > 128) {  // 预测值为1（二值化后）
+            if (!in_region) {
+                in_region = true;
+            }
+            sum_x += x;
+            count++;
+        } else {
+            if (in_region) {
+                // 区域结束
+                in_region = false;
+            }
+        }
+    }
+    
+    if (count > 0) {
+        return (float)sum_x / count;
+    }
+    return -1.0f;
+}
+
+// 计算指定行的质心（使用连通区域检测）
+static float calc_line_centroid(uint8_t* pred, int width, int line_y)
+{
+    int sum_x = 0;
+    int count = 0;
+    int start_x = -1;
+    
+    for (int x = 0; x < width; x++) {
+        if (pred[line_y * width + x] > 128) {
+            if (start_x < 0) start_x = x;
+            sum_x += x;
+            count++;
+        } else {
+            if (start_x >= 0 && count > 0) {
+                // 区域结束，返回这个区域的质心
+                return (float)sum_x / count;
+            }
+            start_x = -1;
+            sum_x = 0;
+            count = 0;
+        }
+    }
+    
+    // 检查最后一个区域
+    if (count > 0) {
+        return (float)sum_x / count;
+    }
+    return -1.0f;
+}
+
+// 从预测图中计算引导线与图像中心横轴的交点
+// center_x: 图像中心x坐标（目标点）
+// point_x: 输出的实际点x坐标
+// 返回true表示成功，false表示失败
+static bool calc_guide_point(uint8_t* pred, int width, int height, int* point_x)
+{
+    const int center_x = width / 2;  // 80
+    const int scan_rows = 5;         // 扫描5行
+    const int top_y = 0;             // 最上面
+    const int bottom_y = height - 1; // 最下面
+    
+    // 计算上5行和下5行的质心
+    float top_sum_x = 0, top_count = 0;
+    float bottom_sum_x = 0, bottom_count = 0;
+    
+    // 上5行质心
+    for (int y = 0; y < scan_rows; y++) {
+        float cx = calc_line_centroid(pred, width, y);
+        if (cx >= 0) {
+            top_sum_x += cx;
+            top_count++;
+        }
+    }
+    
+    // 下5行质心
+    for (int y = height - scan_rows; y < height; y++) {
+        float cx = calc_line_centroid(pred, width, y);
+        if (cx >= 0) {
+            bottom_sum_x += cx;
+            bottom_count++;
+        }
+    }
+    
+    // 计算两个质心
+    float p1_x = -1, p1_y = scan_rows / 2.0f;
+    float p2_x = -1, p2_y = height - scan_rows / 2.0f;
+    
+    if (top_count > 0) {
+        p1_x = top_sum_x / top_count;
+    }
+    if (bottom_count > 0) {
+        p2_x = bottom_sum_x / bottom_count;
+    }
+    
+    // 如果只有一个点有效，使用该点垂直于center_x
+    if (p1_x < 0 && p2_x >= 0) {
+        *point_x = (int)p2_x;
+        return true;
+    }
+    if (p2_x < 0 && p1_x >= 0) {
+        *point_x = (int)p1_x;
+        return true;
+    }
+    if (p1_x < 0 && p2_x < 0) {
+        // 没有找到任何有效点，返回中心点
+        *point_x = center_x;
+        return false;
+    }
+    
+    // 计算直线方程 y = kx + b
+    // p1_y = k * p1_x + b
+    // p2_y = k * p2_x + b
+    float k = (p2_y - p1_y) / (p2_x - p1_x);  // 斜率
+    float b = p1_y - k * p1_x;                 // 截距
+    
+    // 中心横轴 y = center_x
+    // 代入: center_x = k * point_x + b
+    // point_x = (center_x - b) / k
+    float px = (center_x - b) / k;
+    
+    // 限制在图像范围内
+    *point_x = (int)px;
+    if (*point_x < 0) *point_x = 0;
+    if (*point_x >= width) *point_x = width - 1;
+    
+    ESP_LOGD(TAG, "[PID] 上质心=(%.1f,%d), 下质心=(%.1f,%d), 交点=%d", 
+             p1_x, (int)p1_y, p2_x, (int)p2_y, *point_x);
+    
+    return true;
+}
+
+// PID比例控制：根据偏差计算左右电机PWM调整值
+// center_x: 图像中心x坐标
+// point_x: 实际点x坐标
+// 返回左右电机PWM调整值 (正值=左偏需右转，负值=右偏需左转)
+static int pid_compute(int center_x, int point_x)
+{
+    int error = center_x - point_x;  // 偏差：正值=目标偏左，负值=目标偏右
+    int output = (int)(g_pid_kp * error);
+    
+    // 限制输出范围
+    int max_adjust = g_motor_base_speed / 2;  // 最大调整为基础速度的一半
+    if (output > max_adjust) output = max_adjust;
+    if (output < -max_adjust) output = -max_adjust;
+    
+    return output;
 }
 
 // ===========================
@@ -598,7 +758,27 @@ static void experiment_stream(int client_sock)
         int64_t t5 = esp_timer_get_time();  // 拼接结束
         
         esp_camera_fb_return(fb);
-
+        
+        // ========== PID控制：计算引导线与中心轴交点 ==========
+        int center_x = OUTPUT_WIDTH / 2;  // 80
+        int point_x = center_x;
+        bool line_found = calc_guide_point(pred_data, OUTPUT_WIDTH, OUTPUT_HEIGHT, &point_x);
+        
+        int pid_adjust = 0;
+        if (g_motor_running && g_motor_base_speed > 0) {
+            pid_adjust = pid_compute(center_x, point_x);
+            // 应用PID调整：左偏时右转（减少左电机或增加右电机）
+            int left_pwm = g_motor_base_speed - pid_adjust;
+            int right_pwm = g_motor_base_speed + pid_adjust;
+            // 限制PWM范围
+            if (left_pwm < 0) left_pwm = 0;
+            if (left_pwm > 255) left_pwm = 255;
+            if (right_pwm < 0) right_pwm = 0;
+            if (right_pwm > 255) right_pwm = 255;
+            motor_l_forward(left_pwm);
+            motor_r_forward(right_pwm);
+        }
+        
         // ========== UDP分片发送 ==========
         int chunks_sent = 0;
         
@@ -653,8 +833,9 @@ static void experiment_stream(int client_sock)
             if (frame_count % 10 == 0) {
                 float avg_total_ms = (total_latency_us / 10.0f) / 1000.0f;
                 float fps = frame_count * 1000.0f / ((t6 - stream_start_time) / 1000.0f);
-                ESP_LOGI(TAG, "[Exp] 帧%d: 总耗时=%.1fms, 采集=%.1fms, 预处理=%.1fms, 推理=%.1fms, 后处理=%.1fms, 网络传输=%.1fms, FPS=%.1f", 
-                         frame_count, avg_total_ms, cap_ms, pre_ms, infer_ms, post_ms, send_ms, fps);
+                ESP_LOGI(TAG, "[Exp] 帧%d: 总耗时=%.1fms, 采集=%.1fms, 预处理=%.1fms, 推理=%.1fms, 后处理=%.1fms, 网络传输=%.1fms, FPS=%.1f, 目标=%d, 实际=%d, 偏差=%d", 
+                         frame_count, avg_total_ms, cap_ms, pre_ms, infer_ms, post_ms, send_ms, fps,
+                         center_x, point_x, center_x - point_x);
                 total_latency_us = 0;
             }
         }
@@ -699,6 +880,13 @@ static void experiment_stream(int client_sock)
                     g_motor_base_speed = speed * 255 / 100;
                     motor_l_forward(g_motor_base_speed);
                     motor_r_forward(g_motor_base_speed);
+                }
+            }
+            else if (strncmp(cmd_buf, "KP:", 3) == 0) {
+                float kp = atof(cmd_buf + 3);
+                if (kp >= 0.0f && kp <= 5.0f) {
+                    g_pid_kp = kp;
+                    ESP_LOGI(TAG, "[Exp] PID比例系数Kp=%.2f", g_pid_kp);
                 }
             }
         }
