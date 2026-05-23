@@ -121,6 +121,9 @@ static uint8_t g_motor_r_pwm = 0;       // 右电机实际PWM值
 
 // PID控制相关
 static float g_pid_kp = 0.5f;           // 比例系数，默认0.5
+static float g_smoothed_error = 0.0f;   // 平滑后的误差（指数滑动平均）
+static int g_line_lost_count = 0;       // 连续丢线帧数
+static int g_last_valid_guide_x = 80;   // 上一帧有效的guide_x，丢线时保持
 
 // 编码器相关 - PCNT外设
 static pcnt_unit_handle_t g_pcnt_l = NULL;  // 左轮 PCNT 单元句柄
@@ -251,18 +254,21 @@ static bool calc_guide_point(uint8_t* pred, int width, int height, int* guide_x)
     }
     
     // 计算直线方程 y = kx + b
-    // p1_y = k * p1_x + b
-    // p2_y = k * p2_x + b
-    float k = (p2_y - p1_y) / (p2_x - p1_x);  // 斜率
-    float b = p1_y - k * p1_x;                 // 截距
-    
-    // 中心横轴 y = target_x
-    // 代入: target_x = k * guide_x + b
-    // guide_x = (target_x - b) / k
-    float px = (target_x - b) / k;
+    // 处理竖直引导线（p1_x == p2_x），此时斜率无穷大
+    if (fabsf(p2_x - p1_x) < 0.01f) {
+        // 竖直引导线：所有点 x 坐标相同
+        *guide_x = (int)p1_x;
+    } else {
+        float k = (p2_y - p1_y) / (p2_x - p1_x);  // 斜率
+        float b = p1_y - k * p1_x;                 // 截距
+        
+        // 求直线与 y = target_x 的交点
+        // target_x = k * guide_x + b  →  guide_x = (target_x - b) / k
+        float px = (target_x - b) / k;
+        *guide_x = (int)px;
+    }
     
     // 限制在图像范围内
-    *guide_x = (int)px;
     if (*guide_x < 0) *guide_x = 0;
     if (*guide_x >= width) *guide_x = width - 1;
     
@@ -278,8 +284,20 @@ static bool calc_guide_point(uint8_t* pred, int width, int height, int* guide_x)
 // 返回左右电机PWM调整值 (正值=引导线偏左需右转，负值=引导线偏右需左转)
 static int pid_compute(int target_x, int guide_x)
 {
-    int error = target_x - guide_x;  // 偏差：正值=引导线偏左，负值=引导线偏右
-    int output = (int)(g_pid_kp * error);
+    static const int DEADBAND = 2;          // 死区：|误差|<2px 视为0，避免微抖
+    static const float SMOOTH_ALPHA = 0.3f; // 平滑系数：30%本次 + 70%历史
+    
+    int raw_error = target_x - guide_x;  // 原始偏差
+    
+    // 死区：小误差直接归零
+    if (raw_error >= -DEADBAND && raw_error <= DEADBAND) {
+        raw_error = 0;
+    }
+    
+    // 指数滑动平均平滑
+    g_smoothed_error = SMOOTH_ALPHA * raw_error + (1.0f - SMOOTH_ALPHA) * g_smoothed_error;
+    
+    int output = (int)(g_pid_kp * g_smoothed_error);
     
     // 限制输出范围
     int max_adjust = g_motor_base_speed / 2;  // 最大调整为基础速度的一半
@@ -690,6 +708,11 @@ static void experiment_stream(int client_sock)
     int64_t total_latency_us = 0;
     char cmd_buf[64];
     
+    // 重置 PID 状态
+    g_smoothed_error = 0.0f;
+    g_line_lost_count = 0;
+    g_last_valid_guide_x = OUTPUT_WIDTH / 2;
+    
     while (1) {
         int64_t t0 = esp_timer_get_time();  // 总开始
         
@@ -744,12 +767,26 @@ static void experiment_stream(int client_sock)
         esp_camera_fb_return(fb);
         
         // ========== PID控制：计算引导线与中心轴交点 ==========
+        static const int MAX_LOST_FRAMES = 5;  // 连续丢线超过5帧则停车
         int target_x = OUTPUT_WIDTH / 2;  // 80
         int guide_x = target_x;
-        calc_guide_point(pred_data, OUTPUT_WIDTH, OUTPUT_HEIGHT, &guide_x);
+        bool line_ok = calc_guide_point(pred_data, OUTPUT_WIDTH, OUTPUT_HEIGHT, &guide_x);
+        
+        if (line_ok) {
+            g_line_lost_count = 0;
+            g_last_valid_guide_x = guide_x;
+        } else {
+            g_line_lost_count++;
+            guide_x = g_last_valid_guide_x;  // 保持上一帧有效方向
+        }
         
         int pid_adjust = 0;
-        if (g_motor_running && g_motor_base_speed > 0) {
+        
+        if (g_line_lost_count >= MAX_LOST_FRAMES) {
+            // 连续丢线过多 → 停车
+            ESP_LOGW(TAG, "[PID] 连续丢线%d帧，紧急停车！", g_line_lost_count);
+            motor_stop();
+        } else if (g_motor_running && g_motor_base_speed > 0) {
             pid_adjust = pid_compute(target_x, guide_x);
             // 应用PID调整：左偏时右转（减少左电机或增加右电机）
             int left_pwm = g_motor_base_speed - pid_adjust;
