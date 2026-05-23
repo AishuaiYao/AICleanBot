@@ -284,25 +284,14 @@ static bool calc_guide_point(uint8_t* pred, int width, int height, int* guide_x)
 // 返回左右电机PWM调整值 (正值=引导线偏左需右转，负值=引导线偏右需左转)
 static int pid_compute(int target_x, int guide_x)
 {
-    static const int DEADBAND = 2;          // 死区：|误差|<2px 视为0，避免微抖
     static const float SMOOTH_ALPHA = 0.3f; // 平滑系数：30%本次 + 70%历史
     
     int raw_error = target_x - guide_x;  // 原始偏差
-    
-    // 死区：小误差直接归零
-    if (raw_error >= -DEADBAND && raw_error <= DEADBAND) {
-        raw_error = 0;
-    }
     
     // 指数滑动平均平滑
     g_smoothed_error = SMOOTH_ALPHA * raw_error + (1.0f - SMOOTH_ALPHA) * g_smoothed_error;
     
     int output = (int)(g_pid_kp * g_smoothed_error);
-    
-    // 限制输出范围
-    int max_adjust = g_motor_base_speed / 2;  // 最大调整为基础速度的一半
-    if (output > max_adjust) output = max_adjust;
-    if (output < -max_adjust) output = -max_adjust;
     
     return output;
 }
@@ -705,7 +694,6 @@ static void experiment_stream(int client_sock)
     
     int frame_count = 0;
     int64_t stream_start_time = esp_timer_get_time();
-    int64_t total_latency_us = 0;
     char cmd_buf[64];
     
     // 重置 PID 状态
@@ -847,19 +835,18 @@ static void experiment_stream(int client_sock)
         float send_ms = (t6 - t5) / 1000.0f;
         float total_ms = (t6 - t0) / 1000.0f;
         
-        total_latency_us += total_ms * 1000;
-        
         if (chunks_sent == total_chunks) {
             frame_count++;
-            // 每10帧打印一次延迟统计
-            if (frame_count % 10 == 0) {
-                float avg_total_ms = (total_latency_us / 10.0f) / 1000.0f;
-                float fps = frame_count * 1000.0f / ((t6 - stream_start_time) / 1000.0f);
-                ESP_LOGI(TAG, "[Exp] 帧%d: 总耗时=%.1fms, 采集=%.1fms, 预处理=%.1fms, 推理=%.1fms, 后处理=%.1fms, 网络传输=%.1fms, FPS=%.1f, 目标=%d, 实际=%d, 偏差=%d", 
-                         frame_count, avg_total_ms, cap_ms, pre_ms, infer_ms, post_ms, send_ms, fps,
-                         target_x, guide_x, target_x - guide_x);
-                total_latency_us = 0;
-            }
+            // [诊断] 逐帧打印完整流水线耗时
+            ESP_LOGI(TAG, "[Exp] 帧%04d | 采%.0f 预%.0f 推%.0f 后%.0f 网%.0f | 总%.0fms | x=%d err=%d | 线%s | 片%d/%d",
+                     frame_count,
+                     cap_ms, pre_ms, infer_ms, post_ms, send_ms,
+                     total_ms,
+                     guide_x, target_x - guide_x,
+                     line_ok ? "OK" : "LOST",
+                     chunks_sent, total_chunks);
+        } else {
+            ESP_LOGW(TAG, "[Exp] 帧%04d | 仅发送了%d/%d分片!", frame_count, chunks_sent, total_chunks);
         }
 
         // 非阻塞检查命令
