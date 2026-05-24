@@ -653,7 +653,7 @@ static void udp_init(void)
 // 处理客户端连接
 // ===========================
 // ===========================
-// 实验模式视频流（推理+拼接图）
+// 实验模式视频流（推理+叠加图）
 // ===========================
 static void experiment_stream(int client_sock)
 {
@@ -671,25 +671,25 @@ static void experiment_stream(int client_sock)
              inet_ntoa(g_udp_client_addr.sin_addr), 
              ntohs(g_udp_client_addr.sin_port));
     
-    // 拼接图尺寸：320x120 = 38400字节
-    const uint32_t concat_size = OUTPUT_WIDTH * 2 * OUTPUT_HEIGHT;  // 38400
-    const int total_chunks = 6;  // 38400 / 6400 = 6
-    const int chunk_size = 6400;
-    const int last_chunk_size = concat_size - chunk_size * (total_chunks - 1);  // 6400
+    // 叠加图尺寸：160x120 = 19200字节, 每片<1400避免IP分片
+    const uint32_t overlay_size = OUTPUT_WIDTH * OUTPUT_HEIGHT;  // 19200
+    const int chunk_size = 1400;
+    const int total_chunks = (overlay_size + chunk_size - 1) / chunk_size;  // 14
+    const int last_chunk_size = overlay_size - chunk_size * (total_chunks - 1);
     
     // 分配临时缓冲区
     uint8_t *pred_data = (uint8_t *)malloc(INPUT_WIDTH * INPUT_HEIGHT);
-    uint8_t *concat_data = (uint8_t *)malloc(concat_size);
+    uint8_t *overlay_data = (uint8_t *)malloc(overlay_size);
     
-    if (!pred_data || !concat_data) {
+    if (!pred_data || !overlay_data) {
         ESP_LOGE(TAG, "[Exp] 内存分配失败");
         if (pred_data) free(pred_data);
-        if (concat_data) free(concat_data);
+        if (overlay_data) free(overlay_data);
         return;
     }
     
-    ESP_LOGI(TAG, "[Exp] 拼接图: %dx%d, 分片数: %d, 每分片: %d字节", 
-             OUTPUT_WIDTH * 2, OUTPUT_HEIGHT, total_chunks, chunk_size);
+    ESP_LOGI(TAG, "[Exp] 叠加图: %dx%d, 分片数: %d, 每分片: %d字节", 
+             OUTPUT_WIDTH, OUTPUT_HEIGHT, total_chunks, chunk_size);
     ESP_LOGI(TAG, "===================================");
     
     int frame_count = 0;
@@ -741,16 +741,15 @@ static void experiment_stream(int client_sock)
         }
         int64_t t4 = esp_timer_get_time();  // 后处理结束
         
-        // ========== 横向拼接：原图(160x120) + 预测图(160x120) ==========
-        for (int y = 0; y < OUTPUT_HEIGHT; y++) {
-            memcpy(concat_data + y * OUTPUT_WIDTH * 2, 
-                   fb->buf + y * OUTPUT_WIDTH, 
-                   OUTPUT_WIDTH);
-            memcpy(concat_data + y * OUTPUT_WIDTH * 2 + OUTPUT_WIDTH, 
-                   pred_data + y * OUTPUT_WIDTH, 
-                   OUTPUT_WIDTH);
+        // ========== 叠加：预测线区域(白色) → 亮显在原图上 ==========
+        for (int i = 0; i < OUTPUT_WIDTH * OUTPUT_HEIGHT; i++) {
+            if (pred_data[i] == 255) {
+                overlay_data[i] = 200;  // 亮灰：预测线区域
+            } else {
+                overlay_data[i] = fb->buf[i];  // 暗区：原图灰度
+            }
         }
-        int64_t t5 = esp_timer_get_time();  // 拼接结束
+        int64_t t5 = esp_timer_get_time();  // 叠加结束
         
         esp_camera_fb_return(fb);
         
@@ -817,7 +816,7 @@ static void experiment_stream(int client_sock)
                 chunk_buf[1] = frame_count & 0xFF;
                 chunk_buf[2] = total_chunks;
                 chunk_buf[3] = i;
-                memcpy(chunk_buf + header_size, concat_data + offset, current_chunk_size);
+                memcpy(chunk_buf + header_size, overlay_data + offset, current_chunk_size);
                 sendto(g_udp_sock, chunk_buf, header_size + current_chunk_size, 0,
                        (struct sockaddr *)&g_udp_client_addr, sizeof(g_udp_client_addr));
                 chunks_sent++;
@@ -863,7 +862,7 @@ static void experiment_stream(int client_sock)
                 ESP_LOGI(TAG, "[Exp] 累计帧数: %d", frame_count);
                 ESP_LOGI(TAG, "===================================");
                 free(pred_data);
-                free(concat_data);
+                free(overlay_data);
                 return;
             }
             else if (strncmp(cmd_buf, "START:", 6) == 0) {
