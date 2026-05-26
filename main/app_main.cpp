@@ -655,27 +655,22 @@ static void udp_init(void)
 // ===========================
 // 实验模式视频流（推理+叠加图）
 // ===========================
-static void experiment_stream(int client_sock)
+// 实验模式TCP发送：[帧号2B][电压1B][左PWM 1B][右PWM 1B][引导线x 1B][图像数据19200B] = 19206字节/帧
+static void experiment_stream(int cmd_sock, int img_sock)
 {
-    ESP_LOGI(TAG, "========== EXPERIMENT 开始 ==========");
-    ESP_LOGI(TAG, "[Exp] UDP状态: ready=%d, sock=%d", g_udp_client_ready, g_udp_sock);
-    
-    if (!g_udp_client_ready || g_udp_sock < 0) {
-        ESP_LOGE(TAG, "[Exp] UDP未就绪，请先发送UDP_HELLO");
-        send(client_sock, "UDP_NOT_READY\n", 14, 0);
-        ESP_LOGI(TAG, "===================================");
+    ESP_LOGI(TAG, "========== EXPERIMENT(TCP)开始 ==========");
+    ESP_LOGI(TAG, "[Exp] 命令通道=%d, 图像通道=%d", cmd_sock, img_sock);
+
+    if (img_sock < 0) {
+        ESP_LOGE(TAG, "[Exp] 图像通道无效");
+        send(cmd_sock, "IMG_NOT_READY\n", 15, 0);
         return;
     }
-    
-    ESP_LOGI(TAG, "[Exp] UDP目标: %s:%d", 
-             inet_ntoa(g_udp_client_addr.sin_addr), 
-             ntohs(g_udp_client_addr.sin_port));
-    
-    // 叠加图尺寸：160x120 = 19200字节, 3分片
+
+    // 叠加图尺寸：160x120 = 19200字节
     const uint32_t overlay_size = OUTPUT_WIDTH * OUTPUT_HEIGHT;  // 19200
-    const int total_chunks = 3;
-    const int chunk_size = 6400;
-    const int last_chunk_size = overlay_size - chunk_size * (total_chunks - 1);  // 6400
+    const int header_size = 6;  // 帧号2 + 电压1 + 左PWM1 + 右PWM1 + 引导线x1
+    const int frame_packet_size = header_size + overlay_size;   // 19206 字节
     
     // 分配临时缓冲区
     uint8_t *pred_data = (uint8_t *)malloc(INPUT_WIDTH * INPUT_HEIGHT);
@@ -688,8 +683,8 @@ static void experiment_stream(int client_sock)
         return;
     }
     
-    ESP_LOGI(TAG, "[Exp] 叠加图: %dx%d, 分片数: %d, 每分片: %d字节", 
-             OUTPUT_WIDTH, OUTPUT_HEIGHT, total_chunks, chunk_size);
+    ESP_LOGI(TAG, "[Exp] TCP图像流: %dx%d=%luB + 头%dB = 每帧%luB", 
+             OUTPUT_WIDTH, OUTPUT_HEIGHT, (unsigned long)overlay_size, header_size, (unsigned long)frame_packet_size);
     ESP_LOGI(TAG, "===================================");
     
     int frame_count = 0;
@@ -788,44 +783,28 @@ static void experiment_stream(int client_sock)
         }
         
         int64_t t_pid = esp_timer_get_time();  // PID结束
-        
-        // ========== UDP分片发送 ==========
-        int chunks_sent = 0;
-        
-        for (int i = 0; i < total_chunks; i++) {
-            int current_chunk_size = (i == total_chunks - 1) ? last_chunk_size : chunk_size;
-            int offset = i * chunk_size;
-            
-            uint8_t *chunk_buf;
-            int header_size;
-            
-            if (i == 0) {
-                // 分片0：[帧号2B][总分片1B][索引1B][电压1B][左电机PWM 1B][右电机PWM 1B][引导线x 1B][数据...]
-                chunk_buf = (uint8_t *)malloc(8 + current_chunk_size);
-                header_size = 8;
-                chunk_buf[4] = battery_read_voltage();
-                chunk_buf[5] = g_motor_l_pwm;
-                chunk_buf[6] = g_motor_r_pwm;
-                chunk_buf[7] = (uint8_t)guide_x;
-            } else {
-                // 分片1+：[帧号2B][总分片1B][索引1B][数据...]
-                chunk_buf = (uint8_t *)malloc(4 + current_chunk_size);
-                header_size = 4;
+
+        // ========== TCP发送完整帧 ==========
+        // [帧号2B][电压1B][左PWM 1B][右PWM 1B][引导线x 1B][图像数据19200B] = 19206字节
+        uint8_t *send_buf = (uint8_t *)malloc(frame_packet_size);
+        int sent_ok = 0;
+
+        if (send_buf) {
+            send_buf[0] = (frame_count >> 8) & 0xFF;
+            send_buf[1] = frame_count & 0xFF;
+            send_buf[2] = battery_read_voltage();
+            send_buf[3] = g_motor_l_pwm;
+            send_buf[4] = g_motor_r_pwm;
+            send_buf[5] = (uint8_t)guide_x;
+            memcpy(send_buf + header_size, overlay_data, overlay_size);
+
+            int total_sent = send(img_sock, send_buf, frame_packet_size, 0);
+            if (total_sent == frame_packet_size) {
+                sent_ok = 1;
             }
-            
-            if (chunk_buf) {
-                chunk_buf[0] = (frame_count >> 8) & 0xFF;
-                chunk_buf[1] = frame_count & 0xFF;
-                chunk_buf[2] = total_chunks;
-                chunk_buf[3] = i;
-                memcpy(chunk_buf + header_size, overlay_data + offset, current_chunk_size);
-                sendto(g_udp_sock, chunk_buf, header_size + current_chunk_size, 0,
-                       (struct sockaddr *)&g_udp_client_addr, sizeof(g_udp_client_addr));
-                chunks_sent++;
-                free(chunk_buf);
-            }
+            free(send_buf);
         }
-        
+
         int64_t t6 = esp_timer_get_time();  // 传输结束
         
         // 各阶段耗时(微秒→毫秒)
@@ -838,9 +817,8 @@ static void experiment_stream(int client_sock)
         float send_ms = (t6 - t_pid) / 1000.0f;
         float total_ms = (t6 - t0) / 1000.0f;
         
-        if (chunks_sent == total_chunks) {
+        if (sent_ok) {
             frame_count++;
-            // [诊断] 逐帧打印完整流水线耗时
             ESP_LOGI(TAG, "[Exp] 帧%04d | 采%.0f 预%.0f 推%.0f 后%.0f 叠%.0f | 控%.0f 传%.0f | 总%.0fms | x=%d err=%d | 线%s",
                      frame_count,
                      cap_ms, pre_ms, infer_ms, post_ms, overlay_ms,
@@ -849,11 +827,11 @@ static void experiment_stream(int client_sock)
                      guide_x, target_x - guide_x,
                      line_ok ? "OK" : "LOST");
         } else {
-            ESP_LOGW(TAG, "[Exp] 帧%04d | 仅发送了%d/%d分片!", frame_count, chunks_sent, total_chunks);
+            ESP_LOGW(TAG, "[Exp] 帧%04d | TCP发送失败!", frame_count);
         }
 
         // 非阻塞检查命令
-        int len = recv(client_sock, cmd_buf, sizeof(cmd_buf) - 1, MSG_DONTWAIT);
+        int len = recv(cmd_sock, cmd_buf, sizeof(cmd_buf) - 1, MSG_DONTWAIT);
         if (len > 0) {
             cmd_buf[len] = '\0';
             ESP_LOGI(TAG, "[Exp] 收到命令: %s", cmd_buf);
@@ -907,7 +885,7 @@ static void experiment_stream(int client_sock)
     }
 }
 
-static void handle_client(int client_sock)
+static void handle_client(int client_sock, int server_sock)
 {
     ESP_LOGI(TAG, "[TCP] 客户端已连接");
 
@@ -1341,7 +1319,33 @@ static void handle_client(int client_sock)
             }
         }
         else if (strncmp(cmd, "EXPERIMENT", 10) == 0) {
-            experiment_stream(client_sock);
+            // 等待小程序建立第二条图像TCP连接
+            ESP_LOGI(TAG, "[Exp] 等待图像通道连接...");
+            send(client_sock, "WAITING_IMG_CONN\n", 17, 0);
+
+            struct sockaddr_in img_addr;
+            socklen_t img_addr_len = sizeof(img_addr);
+            int img_sock = accept(server_sock, (struct sockaddr *)&img_addr, &img_addr_len);
+
+            if (img_sock >= 0) {
+                // 读取图像通道握手
+                char img_handshake[32] = {};
+                int img_hs_len = recv(img_sock, img_handshake, sizeof(img_handshake) - 1, 0);
+                if (img_hs_len > 0) {
+                    img_handshake[img_hs_len] = '\0';
+                    ESP_LOGI(TAG, "[Exp] 图像通道握手: %s", img_handshake);
+                    send(img_sock, "IMG_OK\n", 7, 0);
+                }
+
+                ESP_LOGI(TAG, "[Exp] 图像通道已连接(sock=%d), 开始实验模式", img_sock);
+                experiment_stream(client_sock, img_sock);
+
+                close(img_sock);
+                ESP_LOGI(TAG, "[Exp] 图像通道已关闭");
+            } else {
+                ESP_LOGE(TAG, "[Exp] 图像通道accept失败");
+                send(client_sock, "IMG_CONN_FAILED\n", 17, 0);
+            }
         }
     }
 
@@ -1364,7 +1368,7 @@ static void tcp_server_task(void *pvParameters)
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
     bind(server_sock, (struct sockaddr *)&addr, sizeof(addr));
-    listen(server_sock, 1);
+    listen(server_sock, 2);  // 支持命令+图像两条连接
 
     ESP_LOGI(TAG, "[TCP] Server已启动, 端口=%d", TCP_PORT);
 
@@ -1374,7 +1378,7 @@ static void tcp_server_task(void *pvParameters)
         int client_sock = accept(server_sock, (struct sockaddr *)&client_addr, &addr_len);
 
         if (client_sock >= 0) {
-            handle_client(client_sock);
+            handle_client(client_sock, server_sock);
         }
     }
 
