@@ -671,11 +671,11 @@ static void experiment_stream(int client_sock)
              inet_ntoa(g_udp_client_addr.sin_addr), 
              ntohs(g_udp_client_addr.sin_port));
     
-    // 叠加图尺寸：160x120 = 19200字节, 每片<1400避免IP分片
+    // 叠加图尺寸：160x120 = 19200字节, 3分片
     const uint32_t overlay_size = OUTPUT_WIDTH * OUTPUT_HEIGHT;  // 19200
-    const int chunk_size = 1400;
-    const int total_chunks = (overlay_size + chunk_size - 1) / chunk_size;  // 14
-    const int last_chunk_size = overlay_size - chunk_size * (total_chunks - 1);
+    const int total_chunks = 3;
+    const int chunk_size = 6400;
+    const int last_chunk_size = overlay_size - chunk_size * (total_chunks - 1);  // 6400
     
     // 分配临时缓冲区
     uint8_t *pred_data = (uint8_t *)malloc(INPUT_WIDTH * INPUT_HEIGHT);
@@ -787,6 +787,8 @@ static void experiment_stream(int client_sock)
             motor_r_forward(right_pwm);
         }
         
+        int64_t t_pid = esp_timer_get_time();  // PID结束
+        
         // ========== UDP分片发送 ==========
         int chunks_sent = 0;
         
@@ -831,19 +833,21 @@ static void experiment_stream(int client_sock)
         float pre_ms = (t2 - t1) / 1000.0f;
         float infer_ms = (t3 - t2) / 1000.0f;
         float post_ms = (t4 - t3) / 1000.0f;
-        float send_ms = (t6 - t5) / 1000.0f;
+        float overlay_ms = (t5 - t4) / 1000.0f;
+        float pid_ms = (t_pid - t5) / 1000.0f;
+        float send_ms = (t6 - t_pid) / 1000.0f;
         float total_ms = (t6 - t0) / 1000.0f;
         
         if (chunks_sent == total_chunks) {
             frame_count++;
             // [诊断] 逐帧打印完整流水线耗时
-            ESP_LOGI(TAG, "[Exp] 帧%04d | 采%.0f 预%.0f 推%.0f 后%.0f 网%.0f | 总%.0fms | x=%d err=%d | 线%s | 片%d/%d",
+            ESP_LOGI(TAG, "[Exp] 帧%04d | 采%.0f 预%.0f 推%.0f 后%.0f 叠%.0f | 控%.0f 传%.0f | 总%.0fms | x=%d err=%d | 线%s",
                      frame_count,
-                     cap_ms, pre_ms, infer_ms, post_ms, send_ms,
+                     cap_ms, pre_ms, infer_ms, post_ms, overlay_ms,
+                     pid_ms, send_ms,
                      total_ms,
                      guide_x, target_x - guide_x,
-                     line_ok ? "OK" : "LOST",
-                     chunks_sent, total_chunks);
+                     line_ok ? "OK" : "LOST");
         } else {
             ESP_LOGW(TAG, "[Exp] 帧%04d | 仅发送了%d/%d分片!", frame_count, chunks_sent, total_chunks);
         }
