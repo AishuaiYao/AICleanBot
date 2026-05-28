@@ -196,20 +196,16 @@ static float calc_line_centroid(uint8_t* pred, int width, int line_y)
     return -1.0f;
 }
 
-// 从预测图中计算引导线与图像中心横轴的交点
-// target_x: 图像中心x坐标（目标位置）
-// guide_x: 输出的引导线实际x坐标
-// 返回true表示成功，false表示失败
-static bool calc_guide_point(uint8_t* pred, int width, int height, int* guide_x)
+// 从预测图中计算顶部和底部质心坐标
+// g1: 输出顶部质心x坐标（图像上方区域）
+// g2: 输出底部质心x坐标（图像下方区域）
+// 返回true表示两个点都有效，false表示丢线
+static bool calc_centroids(uint8_t* pred, int width, int height, float* g1, float* g2)
 {
-    const int target_x = width / 2;  // 80
-    const int scan_rows = 5;         // 扫描5行
-    
-    // 计算上5行和下5行的质心
+    const int scan_rows = 5;
+
+    // 上5行质心 → G1
     float top_sum_x = 0, top_count = 0;
-    float bottom_sum_x = 0, bottom_count = 0;
-    
-    // 上5行质心
     for (int y = 0; y < scan_rows; y++) {
         float cx = calc_line_centroid(pred, width, y);
         if (cx >= 0) {
@@ -217,8 +213,9 @@ static bool calc_guide_point(uint8_t* pred, int width, int height, int* guide_x)
             top_count++;
         }
     }
-    
-    // 下5行质心
+
+    // 下5行质心 → G2
+    float bottom_sum_x = 0, bottom_count = 0;
     for (int y = height - scan_rows; y < height; y++) {
         float cx = calc_line_centroid(pred, width, y);
         if (cx >= 0) {
@@ -226,74 +223,58 @@ static bool calc_guide_point(uint8_t* pred, int width, int height, int* guide_x)
             bottom_count++;
         }
     }
-    
-    // 计算两个质心
-    float p1_x = -1, p1_y = scan_rows / 2.0f;
-    float p2_x = -1, p2_y = height - scan_rows / 2.0f;
-    
-    if (top_count > 0) {
-        p1_x = top_sum_x / top_count;
-    }
-    if (bottom_count > 0) {
-        p2_x = bottom_sum_x / bottom_count;
-    }
-    
-    // 如果只有一个点有效，使用该点垂直于target_x
-    if (p1_x < 0 && p2_x >= 0) {
-        *guide_x = (int)p2_x;
-        return true;
-    }
-    if (p2_x < 0 && p1_x >= 0) {
-        *guide_x = (int)p1_x;
-        return true;
-    }
-    if (p1_x < 0 && p2_x < 0) {
-        // 没有找到任何有效点，返回目标位置
-        *guide_x = target_x;
-        return false;
-    }
-    
-    // 计算直线方程 y = kx + b
-    // 处理竖直引导线（p1_x == p2_x），此时斜率无穷大
-    if (fabsf(p2_x - p1_x) < 0.01f) {
-        // 竖直引导线：所有点 x 坐标相同
-        *guide_x = (int)p1_x;
-    } else {
-        float k = (p2_y - p1_y) / (p2_x - p1_x);  // 斜率
-        float b = p1_y - k * p1_x;                 // 截距
-        
-        // 求直线与 y = target_x 的交点
-        // target_x = k * guide_x + b  →  guide_x = (target_x - b) / k
-        float px = (target_x - b) / k;
-        *guide_x = (int)px;
-    }
-    
-    // 限制在图像范围内
-    if (*guide_x < 0) *guide_x = 0;
-    if (*guide_x >= width) *guide_x = width - 1;
-    
-    ESP_LOGD(TAG, "[PID] 上质心=(%.1f,%d), 下质心=(%.1f,%d), 交点=%d", 
-             p1_x, (int)p1_y, p2_x, (int)p2_y, *guide_x);
-    
-    return true;
+
+    if (top_count > 0) *g1 = top_sum_x / top_count;
+    else *g1 = -1.0f;
+    if (bottom_count > 0) *g2 = bottom_sum_x / bottom_count;
+    else *g2 = -1.0f;
+
+    bool ok = (*g1 >= 0 && *g2 >= 0);
+
+    ESP_LOGI(TAG, "[PID] calc_centroids: G1=%.1f, G2=%.1f, ok=%d", *g1, *g2, (int)ok);
+
+    return ok;
 }
 
-// PID比例控制：根据偏差计算左右电机PWM调整值
-// target_x: 图像中心x坐标（目标位置）
-// guide_x: 引导线实际x坐标
-// 返回左右电机PWM调整值 (正值=引导线偏左需右转，负值=引导线偏右需左转)
-static int pid_compute(int target_x, int guide_x)
+// PID比例控制：基于G1/G2质心偏差
+// g1: 顶部质心x坐标, g2: 底部质心x坐标, g0: 图像中点x坐标
+// out_pwm: 输出增量PWM（始终>=0）
+// out_turn_right: true=右转(左轮加速/右轮减速), false=左转(左轮减速/右轮加速)
+static void pid_compute(float g1, float g2, int g0, int* out_pwm, bool* out_turn_right)
 {
-    static const float SMOOTH_ALPHA = 0.3f; // 平滑系数：30%本次 + 70%历史
-    
-    int raw_error = target_x - guide_x;  // 原始偏差
-    
-    // 指数滑动平均平滑
-    g_smoothed_error = SMOOTH_ALPHA * raw_error + (1.0f - SMOOTH_ALPHA) * g_smoothed_error;
-    
-    int output = (int)(g_pid_kp * g_smoothed_error);
-    
-    return output;
+    float error;
+    bool turn_right;
+    const float NEAR_EQUAL_THRESH = 10.0f;  // |G1-G2| < 10 视为近似相等
+
+    if (fabsf(g1 - g2) >= NEAR_EQUAL_THRESH) {
+        // G1/G2 差距大：用 G1-G2 偏差
+        if (g1 > g2) {
+            turn_right = true;   // 右转
+            error = g1 - g2;
+        } else {
+            turn_right = false;  // 左转
+            error = g2 - g1;
+        }
+    } else {
+        // G1≈G2：与中点G0比较
+        float mid = (g1 + g2) / 2;
+        if (mid > g0) {
+            turn_right = true;
+            error = mid - g0;
+        } else if (mid < g0) {
+            turn_right = false;
+            error = g0 - mid;
+        } else {
+            error = 0;
+            turn_right = false;
+        }
+    }
+
+    *out_pwm = (int)(g_pid_kp * error);
+    *out_turn_right = turn_right;
+
+    ESP_LOGI(TAG, "[PID] pid_compute: G1=%.1f G2=%.1f error=%.1f kp=%.2f delta=%d %s",
+             g1, g2, error, g_pid_kp, *out_pwm, turn_right ? "RIGHT" : "LEFT");
 }
 
 // ===========================
@@ -669,8 +650,8 @@ static void experiment_stream(int cmd_sock, int img_sock)
 
     // 叠加图尺寸：160x120 = 19200字节
     const uint32_t overlay_size = OUTPUT_WIDTH * OUTPUT_HEIGHT;  // 19200
-    const int header_size = 6;  // 帧号2 + 电压1 + 左PWM1 + 右PWM1 + 引导线x1
-    const int frame_packet_size = header_size + overlay_size;   // 19206 字节
+    const int header_size = 7;  // 帧号2 + 电压1 + 左PWM1 + 右PWM1 + G1(顶部质心)1 + G2(底部质心)1
+    const int frame_packet_size = header_size + overlay_size;   // 19207 字节
     
     // 分配临时缓冲区
     uint8_t *pred_data = (uint8_t *)malloc(INPUT_WIDTH * INPUT_HEIGHT);
@@ -694,7 +675,8 @@ static void experiment_stream(int cmd_sock, int img_sock)
     // 重置 PID 状态
     g_smoothed_error = 0.0f;
     g_line_lost_count = 0;
-    g_last_valid_guide_x = OUTPUT_WIDTH / 2;
+    float g_last_valid_g1 = OUTPUT_WIDTH / 2;
+    float g_last_valid_g2 = OUTPUT_WIDTH / 2;
     
     while (1) {
         int64_t t0 = esp_timer_get_time();  // 总开始
@@ -748,44 +730,57 @@ static void experiment_stream(int cmd_sock, int img_sock)
         
         esp_camera_fb_return(fb);
         
-        // ========== PID控制：计算引导线与中心轴交点 ==========
+        // ========== PID控制：基于G1/G2质心偏差 ==========
         static const int MAX_LOST_FRAMES = 5;  // 连续丢线超过5帧则停车
-        int target_x = OUTPUT_WIDTH / 2;  // 80
-        int guide_x = target_x;
-        bool line_ok = calc_guide_point(pred_data, OUTPUT_WIDTH, OUTPUT_HEIGHT, &guide_x);
-        
+        int g0 = OUTPUT_WIDTH / 2;  // 图像中点x = 80
+        float g1 = -1, g2 = -1;
+        bool line_ok = calc_centroids(pred_data, OUTPUT_WIDTH, OUTPUT_HEIGHT, &g1, &g2);
+
         if (line_ok) {
             g_line_lost_count = 0;
-            g_last_valid_guide_x = guide_x;
+            g_last_valid_g1 = g1;
+            g_last_valid_g2 = g2;
         } else {
             g_line_lost_count++;
-            guide_x = g_last_valid_guide_x;  // 保持上一帧有效方向
+            g1 = g_last_valid_g1;
+            g2 = g_last_valid_g2;
         }
-        
-        int pid_adjust = 0;
-        
+
         if (g_line_lost_count >= MAX_LOST_FRAMES) {
-            // 连续丢线过多 → 停车
             ESP_LOGW(TAG, "[PID] 连续丢线%d帧，紧急停车！", g_line_lost_count);
             motor_stop();
         } else if (g_motor_running && g_motor_base_speed > 0) {
-            pid_adjust = pid_compute(target_x, guide_x);
-            // 应用PID调整：左偏时右转（减少左电机或增加右电机）
-            int left_pwm = g_motor_base_speed - pid_adjust;
-            int right_pwm = g_motor_base_speed + pid_adjust;
-            // 限制PWM范围
+            int delta_pwm;
+            bool turn_right;
+            pid_compute(g1, g2, g0, &delta_pwm, &turn_right);
+
+            int left_pwm, right_pwm;
+            if (turn_right) {
+                // 右转：左轮加速，右轮减速
+                left_pwm = g_motor_base_speed + delta_pwm;
+                right_pwm = g_motor_base_speed - delta_pwm;
+            } else {
+                // 左转：左轮减速，右轮加速
+                left_pwm = g_motor_base_speed - delta_pwm;
+                right_pwm = g_motor_base_speed + delta_pwm;
+            }
             if (left_pwm < 0) left_pwm = 0;
             if (left_pwm > 255) left_pwm = 255;
             if (right_pwm < 0) right_pwm = 0;
             if (right_pwm > 255) right_pwm = 255;
             motor_l_forward(left_pwm);
             motor_r_forward(right_pwm);
+
+            ESP_LOGI(TAG, "[PID] PWM输出: base=%d delta=%d %s → L=%d R=%d",
+                     g_motor_base_speed, delta_pwm, turn_right ? "RIGHT" : "LEFT", left_pwm, right_pwm);
+        } else {
+            ESP_LOGW(TAG, "[PID] 跳过: running=%d base_speed=%d", (int)g_motor_running, g_motor_base_speed);
         }
         
         int64_t t_pid = esp_timer_get_time();  // PID结束
 
         // ========== TCP发送完整帧 ==========
-        // [帧号2B][电压1B][左PWM 1B][右PWM 1B][引导线x 1B][图像数据19200B] = 19206字节
+        // [帧号2B][电压1B][左PWM 1B][右PWM 1B][G1 1B][G2 1B][图像数据19200B] = 19207字节
         uint8_t *send_buf = (uint8_t *)malloc(frame_packet_size);
         int sent_ok = 0;
 
@@ -795,7 +790,8 @@ static void experiment_stream(int cmd_sock, int img_sock)
             send_buf[2] = battery_read_voltage();
             send_buf[3] = g_motor_l_pwm;
             send_buf[4] = g_motor_r_pwm;
-            send_buf[5] = (uint8_t)guide_x;
+            send_buf[5] = (uint8_t)g1;   // G1: 顶部质心x
+            send_buf[6] = (uint8_t)g2;   // G2: 底部质心x
             memcpy(send_buf + header_size, overlay_data, overlay_size);
 
             int total_sent = send(img_sock, send_buf, frame_packet_size, 0);
@@ -819,13 +815,15 @@ static void experiment_stream(int cmd_sock, int img_sock)
         
         if (sent_ok) {
             frame_count++;
-            ESP_LOGI(TAG, "[Exp] 帧%04d | 采%.0f 预%.0f 推%.0f 后%.0f 叠%.0f | 控%.0f 传%.0f | 总%.0fms | x=%d err=%d | 线%s",
-                     frame_count,
-                     cap_ms, pre_ms, infer_ms, post_ms, overlay_ms,
-                     pid_ms, send_ms,
-                     total_ms,
-                     guide_x, target_x - guide_x,
-                     line_ok ? "OK" : "LOST");
+            if (frame_count % 100 == 0) {
+                ESP_LOGI(TAG, "[Exp] 帧%04d | 采%.0f 预%.0f 推%.0f 后%.0f 叠%.0f | 控%.0f 传%.0f | 总%.0fms | G1=%.0f G2=%.0f | 线%s",
+                         frame_count,
+                         cap_ms, pre_ms, infer_ms, post_ms, overlay_ms,
+                         pid_ms, send_ms,
+                         total_ms,
+                         g1, g2,
+                         line_ok ? "OK" : "LOST");
+            }
         } else {
             ESP_LOGW(TAG, "[Exp] 帧%04d | TCP发送失败!", frame_count);
         }
