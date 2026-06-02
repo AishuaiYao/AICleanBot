@@ -13,6 +13,9 @@ import cv2
 import numpy as np
 import torch
 import onnx
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 
 def export_onnx(model, save_dir, input_shape=(1, 1, 120, 160), model_name='model.onnx'):
@@ -495,6 +498,128 @@ def split_dataset(image_dir, label_dir, train_dir, val_dir, train_ratio=0.8, see
     return len(train_names), len(val_names)
 
 
+def parse_and_plot_enc_log(log_path, output_dir=None):
+    """
+    解析ESP32编码器日志并绘制综合折线图
+
+    功能:
+        解析 [Enc] 格式的编码器日志，提取各字段数值并绑制2x2综合overview图
+
+    日志格式示例:
+        [Enc] OK | cur L= 457 R= 404 | delta L= 81 R= 105 | change L= 35 R= 46 (thr=50) | running=1
+        [Enc] TRIGGER | cur L= 963 R= 786 | delta L= 81 R= 103 | change L= 47 R= 56 (thr=50) | running=0
+
+    入参:
+        log_path: str - 日志文件路径（如 esp32log.txt）
+        output_dir: str - 图片保存目录，默认为 E:\\AICleanBot\\py_scripts\\figure
+
+    出参:
+        dict - 解析后的数据字典，包含所有字段列表
+    """
+    if output_dir is None:
+        output_dir = r'E:\AICleanBot\py_scripts\figure'
+    os.makedirs(output_dir, exist_ok=True)
+
+    # ---- 1. 解析日志 ----
+    pattern = re.compile(
+        r'\[Enc\]\s+(\w+)\s*\|\s*cur\s+L=\s*(-?\d+)\s+R=\s*(-?\d+)'
+        r'\s*\|\s*delta\s+L=\s*(-?\d+)\s+R=\s*(-?\d+)'
+        r'\s*\|\s*change\s+L=\s*(-?\d+)\s+R=\s*(-?\d+)'
+        r'\s*\(thr=(\d+)\)\s*\|\s*running=(\d+)'
+    )
+
+    records = []
+    with open(log_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    for m in pattern.finditer(content):
+        records.append({
+            'status':   m.group(1),
+            'cur_L':    int(m.group(2)),
+            'cur_R':    int(m.group(3)),
+            'delta_L':  int(m.group(4)),
+            'delta_R':  int(m.group(5)),
+            'change_L': int(m.group(6)),
+            'change_R': int(m.group(7)),
+            'thr':      int(m.group(8)),
+            'running':  int(m.group(9)),
+        })
+
+    n = len(records)
+    if n == 0:
+        print(f"[parse_enc_log] 未找到匹配的 [Enc] 日志行: {log_path}")
+        return {}
+
+    print(f"[parse_enc_log] 解析完成，共 {n} 条记录")
+
+    # 提取各字段数组
+    idx = np.arange(n)
+    status   = [r['status']   for r in records]
+    cur_L    = np.array([r['cur_L']    for r in records], dtype=np.int64)
+    cur_R    = np.array([r['cur_R']    for r in records], dtype=np.int64)
+    delta_L  = np.array([r['delta_L']  for r in records], dtype=np.int64)
+    delta_R  = np.array([r['delta_R']  for r in records], dtype=np.int64)
+    change_L = np.array([r['change_L'] for r in records], dtype=np.int64)
+    change_R = np.array([r['change_R'] for r in records], dtype=np.int64)
+    thr      = np.array([r['thr']      for r in records], dtype=np.int32)
+    running  = np.array([r['running']  for r in records], dtype=np.int32)
+
+    # 标记TRIGGER位置
+    trigger_idx = [i for i, s in enumerate(status) if s == 'TRIGGER']
+
+    # ---- 2. 绑制综合overview图 (2x2) ----
+    plt.style.use('dark_background')
+    base_name = os.path.splitext(os.path.basename(log_path))[0]
+
+    fig, axes = plt.subplots(2, 2, figsize=(16, 10))
+
+    axes[0,0].plot(idx, cur_L,    label='cur_L',  color='#00CCFF', linewidth=1.2)
+    axes[0,0].plot(idx, cur_R,    label='cur_R',  color='#FF8844', linewidth=1.2)
+    for ti in trigger_idx:
+        axes[0,0].axvline(x=ti, color='red', linestyle='--', alpha=0.6, linewidth=1)
+    axes[0,0].set_title('Cumulative (cur)', fontsize=12, fontweight='bold')
+    axes[0,0].legend(fontsize=9); axes[0,0].grid(alpha=0.3)
+
+    axes[0,1].plot(idx, delta_L,  label='delta_L', color='#00CC88', linewidth=1.2)
+    axes[0,1].plot(idx, delta_R,  label='delta_R', color='#FF4444', linewidth=1.2)
+    for ti in trigger_idx:
+        axes[0,1].axvline(x=ti, color='red', linestyle='--', alpha=0.6, linewidth=1)
+    axes[0,1].set_title('Delta (1st-diff)', fontsize=12, fontweight='bold')
+    axes[0,1].legend(fontsize=9); axes[0,1].grid(alpha=0.3)
+
+    axes[1,0].plot(idx, change_L, label='change_L', color='#CC88FF', linewidth=1.2)
+    axes[1,0].plot(idx, change_R, label='change_R', color='#FFCC00', linewidth=1.2)
+    axes[1,0].axhline(y=thr[0], color='#FF4444', linestyle='-', label=f'thr={thr[0]}', alpha=0.7, linewidth=1.5)
+    for ti in trigger_idx:
+        axes[1,0].axvline(x=ti, color='red', linestyle='--', alpha=0.6, linewidth=1)
+    axes[1,0].set_title('Change (2nd-diff)', fontsize=12, fontweight='bold')
+    axes[1,0].legend(fontsize=9); axes[1,0].grid(alpha=0.3)
+
+    axes[1,1].fill_between(idx, running, step='mid', color='#00FF88', alpha=0.4)
+    axes[1,1].step(idx, running, where='mid', color='#00FF88', linewidth=1.2)
+    for ti in trigger_idx:
+        axes[1,1].axvline(x=ti, color='red', linestyle='--', alpha=0.6, linewidth=1)
+    axes[1,1].set_title('Running State', fontsize=12, fontweight='bold')
+    axes[1,1].set_ylim(-0.2, 1.2); axes[1,1].grid(alpha=0.3)
+
+    fig.suptitle(f'Encoder Log Overview - {base_name} (N={n})', fontsize=14, fontweight='bold')
+    fig.tight_layout()
+    save_path = os.path.join(output_dir, f'{base_name}_overview.png')
+    fig.savefig(save_path, dpi=150)
+    plt.close(fig)
+
+    print(f"[parse_enc_log] overview图已保存到: {save_path}")
+
+    return {
+        'n': n, 'status': status,
+        'cur_L': cur_L, 'cur_R': cur_R,
+        'delta_L': delta_L, 'delta_R': delta_R,
+        'change_L': change_L, 'change_R': change_R,
+        'thr': thr, 'running': running,
+        'trigger_idx': trigger_idx,
+    }
+
+
 if __name__ == "__main__":
     # # 默认：批量重命名
     # target_directory = r"E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA"
@@ -510,22 +635,23 @@ if __name__ == "__main__":
     
     # # 分析ONNX模型
     # # 从.pth导出ONNX示例
-    import sys
-    sys.path.append(r'E:\AICleanBot\py_scripts\net')
-    from train_student import UNetMiniExp5
-    export_pth_to_onnx(
-        UNetMiniExp5,
-        r"E:\AICleanBot\py_scripts\models\20260416_225153_UNetMiniExp5_KD\best_model.pth",
-        r"E:\AICleanBot\py_scripts\models\20260416_225153_UNetMiniExp5_KD",
-        input_shape=(1, 1, 120, 160)
-    )
+    # import sys
+    # sys.path.append(r'E:\AICleanBot\py_scripts\net')
+    # from train_student import UNetMiniExp5
+    # export_pth_to_onnx(
+    #     UNetMiniExp5,
+    #     r"E:\AICleanBot\py_scripts\models\20260416_225153_UNetMiniExp5_KD\best_model.pth",
+    #     r"E:\AICleanBot\py_scripts\models\20260416_225153_UNetMiniExp5_KD",
+    #     input_shape=(1, 1, 120, 160)
+    # )
 
-    # 分析ONNX模型示例
-    analyze_onnx_model(r"E:\AICleanBot\py_scripts\models\20260416_225153_UNetMiniExp5_KD\model.onnx")
+    # # 分析ONNX模型示例
+    # analyze_onnx_model(r"E:\AICleanBot\py_scripts\models\20260416_225153_UNetMiniExp5_KD\model.onnx")
     
 
 
-
+    my_log_path = r"E:\AICleanBot\logs\esp32log.txt"
+    parse_and_plot_enc_log(my_log_path)
 
 
     

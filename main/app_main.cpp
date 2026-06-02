@@ -123,7 +123,6 @@ static uint8_t g_motor_r_pwm = 0;       // 右电机实际PWM值
 static float g_pid_kp = 0.5f;           // 比例系数，默认0.5
 static float g_smoothed_error = 0.0f;   // 平滑后的误差（指数滑动平均）
 static int g_line_lost_count = 0;       // 连续丢线帧数
-static int g_last_valid_guide_x = 80;   // 上一帧有效的guide_x，丢线时保持
 
 // 编码器相关 - PCNT外设
 static pcnt_unit_handle_t g_pcnt_l = NULL;  // 左轮 PCNT 单元句柄
@@ -231,7 +230,7 @@ static bool calc_centroids(uint8_t* pred, int width, int height, float* g1, floa
 
     bool ok = (*g1 >= 0 && *g2 >= 0);
 
-    ESP_LOGI(TAG, "[PID] calc_centroids: G1=%.1f, G2=%.1f, ok=%d", *g1, *g2, (int)ok);
+    //ESP_LOGI(TAG, "[PID] calc_centroids: G1=%.1f, G2=%.1f, ok=%d", *g1, *g2, (int)ok);
 
     return ok;
 }
@@ -273,8 +272,8 @@ static void pid_compute(float g1, float g2, int g0, int* out_pwm, bool* out_turn
     *out_pwm = (int)(g_pid_kp * error);
     *out_turn_right = turn_right;
 
-    ESP_LOGI(TAG, "[PID] pid_compute: G1=%.1f G2=%.1f error=%.1f kp=%.2f delta=%d %s",
-             g1, g2, error, g_pid_kp, *out_pwm, turn_right ? "RIGHT" : "LEFT");
+    //ESP_LOGI(TAG, "[PID] pid_compute: G1=%.1f G2=%.1f error=%.1f kp=%.2f delta=%d %s",
+    //         g1, g2, error, g_pid_kp, *out_pwm, turn_right ? "RIGHT" : "LEFT");
 }
 
 // ===========================
@@ -650,8 +649,8 @@ static void experiment_stream(int cmd_sock, int img_sock)
 
     // 叠加图尺寸：160x120 = 19200字节
     const uint32_t overlay_size = OUTPUT_WIDTH * OUTPUT_HEIGHT;  // 19200
-    const int header_size = 7;  // 帧号2 + 电压1 + 左PWM1 + 右PWM1 + G1(顶部质心)1 + G2(底部质心)1
-    const int frame_packet_size = header_size + overlay_size;   // 19207 字节
+    const int header_size = 9;  // 帧号2 + 电压1 + 左PWM1 + 右PWM1 + G1(顶部质心)1 + G2(底部质心)1 + 左跳变率1 + 右跳变率1
+    const int frame_packet_size = header_size + overlay_size;   // 19209 字节
     
     // 分配临时缓冲区
     uint8_t *pred_data = (uint8_t *)malloc(INPUT_WIDTH * INPUT_HEIGHT);
@@ -669,7 +668,6 @@ static void experiment_stream(int cmd_sock, int img_sock)
     ESP_LOGI(TAG, "===================================");
     
     int frame_count = 0;
-    int64_t stream_start_time = esp_timer_get_time();
     char cmd_buf[64];
     
     // 重置 PID 状态
@@ -677,6 +675,21 @@ static void experiment_stream(int cmd_sock, int img_sock)
     g_line_lost_count = 0;
     float g_last_valid_g1 = OUTPUT_WIDTH / 2;
     float g_last_valid_g2 = OUTPUT_WIDTH / 2;
+
+    // 编码器跳变检测（碰撞检测）
+    static int prev_enc_l = 0, prev_enc_r = 0;       // 上一帧累计脉冲值
+    static int prev_delta_l = 0, prev_delta_r = 0;    // 上一帧的增量(用于二阶差分)
+    static bool enc_init_done = false;
+    
+    // 碰撞检测参数：相邻帧间"增量的变化量"超过此阈值视为突变
+    static const int DELTA_CHANGE_THRESHOLD = 50;       // 脉冲数
+    // 需要至少累计这么多脉冲才认为增量有效(过滤启动阶段噪声)
+    static const int ENC_MIN_DELTA = 5;
+    // 需要连续多少帧有效增量后才启用检测(需要至少2帧才能算二阶差分)
+    static const int ENC_WARMUP_FRAMES = 3;
+    // 正式检测前，prev_delta必须达到此值才允许TRIGGER(防止加速阶段误触)
+    static const int BASELINE_MIN_DELTA = 10;
+    static int warmup_count = 0;
     
     while (1) {
         int64_t t0 = esp_timer_get_time();  // 总开始
@@ -729,7 +742,97 @@ static void experiment_stream(int cmd_sock, int img_sock)
         int64_t t5 = esp_timer_get_time();  // 叠加结束
         
         esp_camera_fb_return(fb);
-        
+
+        // ========== 编码器跳变检测（碰撞检测）：二阶差分 = 增量的突变 ==========
+        int log_change_l = 0, log_change_r = 0;  // 供外层send_buf使用
+        {
+            int enc_l = 0, enc_r = 0;
+            encoder_read(&enc_l, &enc_r);
+
+            const char *enc_state = "OK";
+            
+
+            if (!enc_init_done) {
+                enc_init_done = true;
+                warmup_count = 0;
+                prev_delta_l = 0;
+                prev_delta_r = 0;
+                enc_state = "INIT";
+            } else {
+                // 计算本帧增量
+                int cur_delta_l = enc_l - prev_enc_l;
+                int cur_delta_r = enc_r - prev_enc_r;
+
+                // 溢出检测：ESP32编码器每32768清零
+                bool overflow_l = (enc_l < 100 && prev_enc_l > 30000);
+                bool overflow_r = (enc_r < 100 && prev_enc_r > 30000);
+                
+                if (overflow_l || overflow_r) {
+                    enc_state = "OVERFLOW";
+                    // 重置warmup，重新积累
+                    warmup_count = 0;
+                    prev_delta_l = 0;
+                    prev_delta_r = 0;
+                    log_change_l = 0;
+                    log_change_r = 0;
+                } else if (warmup_count < ENC_WARMUP_FRAMES) {
+                    // ===== 预热阶段：还没凑够2帧有效历史 =====
+                    if (abs(cur_delta_l) >= ENC_MIN_DELTA && abs(cur_delta_r) >= ENC_MIN_DELTA) {
+                        // 增量够大，记入历史
+                        warmup_count++;
+                        prev_delta_l = cur_delta_l;
+                        prev_delta_r = cur_delta_r;
+                    }
+                    // 增量太小就不计数，但也不重置（等车动起来就行）
+                    enc_state = "WARMUP";
+                    log_change_l = abs(cur_delta_l - prev_delta_l);
+                    log_change_r = abs(cur_delta_r - prev_delta_r);
+                } else {
+                    // ===== 正式检测阶段：已过warmup，永远不再回退(除非overflow) =====
+                    // 核心逻辑：比较"本帧增量"与"上帧增量"的变化幅度
+                    // 注意：碰撞时delta会骤降(如24→3)，这恰恰是我们要检测的！
+                    int change_l = abs(cur_delta_l - prev_delta_l);
+                    int change_r = abs(cur_delta_r - prev_delta_r);
+                    log_change_l = change_l;
+                    log_change_r = change_r;
+
+                    // 触发条件：
+                    //   1. 任一轮change超过阈值（OR逻辑：单轮卡住也算碰撞）
+                    //   2. 上帧prev_delta必须够大（说明已有正常行驶基线，不是刚启动）
+                    bool baseline_ok = (abs(prev_delta_l) >= BASELINE_MIN_DELTA && abs(prev_delta_r) >= BASELINE_MIN_DELTA);
+                    if ((change_l > DELTA_CHANGE_THRESHOLD || change_r > DELTA_CHANGE_THRESHOLD) && baseline_ok) {
+                        // 出现增量突变 → 碰撞！
+                        motor_stop();
+                        g_motor_base_speed = 0;
+                        g_motor_running = false;
+                        enc_state = "TRIGGER";
+                    } else {
+                        enc_state = "OK";
+                    }
+
+                    // 滚动更新：本轮delta成为下一轮的prev_delta（即使很小也更新）
+                    prev_delta_l = cur_delta_l;
+                    prev_delta_r = cur_delta_r;
+                }
+            }
+
+            // 每帧统一打印编码器状态
+            char enc_log_buf[160];
+            int enc_log_len = snprintf(enc_log_buf, sizeof(enc_log_buf),
+                "[Enc] %-7s | cur L=%5d R=%5d | delta L=%5d R=%5d | change L=%3d R=%3d (thr=%2d) | running=%d",
+                enc_state, enc_l, enc_r,
+                enc_l - prev_enc_l, enc_r - prev_enc_r,
+                log_change_l, log_change_r,
+                DELTA_CHANGE_THRESHOLD, (int)g_motor_running);
+            ESP_LOGI(TAG, "%s", enc_log_buf);  // 串口
+            strcat(enc_log_buf, "\n");
+            send(cmd_sock, enc_log_buf, enc_log_len + 1, 0);  // TCP给小程序
+
+            // 更新上一帧累计值
+            prev_enc_l = enc_l;
+            prev_enc_r = enc_r;
+        }
+
         // ========== PID控制：基于G1/G2质心偏差 ==========
         static const int MAX_LOST_FRAMES = 5;  // 连续丢线超过5帧则停车
         int g0 = OUTPUT_WIDTH / 2;  // 图像中点x = 80
@@ -747,7 +850,7 @@ static void experiment_stream(int cmd_sock, int img_sock)
         }
 
         if (g_line_lost_count >= MAX_LOST_FRAMES) {
-            ESP_LOGW(TAG, "[PID] 连续丢线%d帧，紧急停车！", g_line_lost_count);
+            //ESP_LOGW(TAG, "[PID] 连续丢线%d帧，紧急停车！", g_line_lost_count);
             motor_stop();
         } else if (g_motor_running && g_motor_base_speed > 0) {
             int delta_pwm;
@@ -771,16 +874,16 @@ static void experiment_stream(int cmd_sock, int img_sock)
             motor_l_forward(left_pwm);
             motor_r_forward(right_pwm);
 
-            ESP_LOGI(TAG, "[PID] PWM输出: base=%d delta=%d %s → L=%d R=%d",
-                     g_motor_base_speed, delta_pwm, turn_right ? "RIGHT" : "LEFT", left_pwm, right_pwm);
+            //ESP_LOGI(TAG, "[PID] PWM输出: base=%d delta=%d %s → L=%d R=%d",
+            //         g_motor_base_speed, delta_pwm, turn_right ? "RIGHT" : "LEFT", left_pwm, right_pwm);
         } else {
-            ESP_LOGW(TAG, "[PID] 跳过: running=%d base_speed=%d", (int)g_motor_running, g_motor_base_speed);
+            //ESP_LOGW(TAG, "[PID] 跳过: running=%d base_speed=%d", (int)g_motor_running, g_motor_base_speed);
         }
         
         int64_t t_pid = esp_timer_get_time();  // PID结束
 
         // ========== TCP发送完整帧 ==========
-        // [帧号2B][电压1B][左PWM 1B][右PWM 1B][G1 1B][G2 1B][图像数据19200B] = 19207字节
+        // [帧号2B][电压1B][左PWM 1B][右PWM 1B][G1 1B][G2 1B][左跳变率1][右跳变率1][图像数据19200B] = 19209字节
         uint8_t *send_buf = (uint8_t *)malloc(frame_packet_size);
         int sent_ok = 0;
 
@@ -792,6 +895,8 @@ static void experiment_stream(int cmd_sock, int img_sock)
             send_buf[4] = g_motor_r_pwm;
             send_buf[5] = (uint8_t)g1;   // G1: 顶部质心x
             send_buf[6] = (uint8_t)g2;   // G2: 底部质心x
+            send_buf[7] = (uint8_t)(log_change_l > 255 ? 255 : log_change_l);  // 左轮change
+            send_buf[8] = (uint8_t)(log_change_r > 255 ? 255 : log_change_r);  // 右轮change
             memcpy(send_buf + header_size, overlay_data, overlay_size);
 
             int total_sent = send(img_sock, send_buf, frame_packet_size, 0);
