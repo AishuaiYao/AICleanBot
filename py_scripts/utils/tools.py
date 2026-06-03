@@ -506,8 +506,8 @@ def parse_and_plot_enc_log(log_path, output_dir=None):
         解析 [Enc] 格式的编码器日志，提取各字段数值并绑制2x2综合overview图
 
     日志格式示例:
-        [Enc] OK | cur L= 457 R= 404 | delta L= 81 R= 105 | change L= 35 R= 46 (thr=50) | running=1
-        [Enc] TRIGGER | cur L= 963 R= 786 | delta L= 81 R= 103 | change L= 47 R= 56 (thr=50) | running=0
+        [Enc] OK | cur L= 3535 R= 3587 | delta L= 53 R= 56 | ratio L= 59% R= 62% (thr=60%) | running=1
+        [Enc] TRIGGER | cur L= 4657 R= 4662 | delta L= 6 R= 4 | ratio L= 7% R= 5% (thr=60%) | running=0
 
     入参:
         log_path: str - 日志文件路径（如 esp32log.txt）
@@ -524,8 +524,8 @@ def parse_and_plot_enc_log(log_path, output_dir=None):
     pattern = re.compile(
         r'\[Enc\]\s+(\w+)\s*\|\s*cur\s+L=\s*(-?\d+)\s+R=\s*(-?\d+)'
         r'\s*\|\s*delta\s+L=\s*(-?\d+)\s+R=\s*(-?\d+)'
-        r'\s*\|\s*change\s+L=\s*(-?\d+)\s+R=\s*(-?\d+)'
-        r'\s*\(thr=(\d+)\)\s*\|\s*running=(\d+)'
+        r'\s*\|\s*ratio\s+L=\s*(-?\d+)%\s+R=\s*(-?\d+)%'
+        r'\s*\(thr=(\d+)%\)\s*\|\s*running=(\d+)'
     )
 
     records = []
@@ -539,8 +539,8 @@ def parse_and_plot_enc_log(log_path, output_dir=None):
             'cur_R':    int(m.group(3)),
             'delta_L':  int(m.group(4)),
             'delta_R':  int(m.group(5)),
-            'change_L': int(m.group(6)),
-            'change_R': int(m.group(7)),
+            'ratio_L':  int(m.group(6)),
+            'ratio_R':  int(m.group(7)),
             'thr':      int(m.group(8)),
             'running':  int(m.group(9)),
         })
@@ -559,8 +559,8 @@ def parse_and_plot_enc_log(log_path, output_dir=None):
     cur_R    = np.array([r['cur_R']    for r in records], dtype=np.int64)
     delta_L  = np.array([r['delta_L']  for r in records], dtype=np.int64)
     delta_R  = np.array([r['delta_R']  for r in records], dtype=np.int64)
-    change_L = np.array([r['change_L'] for r in records], dtype=np.int64)
-    change_R = np.array([r['change_R'] for r in records], dtype=np.int64)
+    ratio_L  = np.array([r['ratio_L']  for r in records], dtype=np.int64)
+    ratio_R  = np.array([r['ratio_R']  for r in records], dtype=np.int64)
     thr      = np.array([r['thr']      for r in records], dtype=np.int32)
     running  = np.array([r['running']  for r in records], dtype=np.int32)
 
@@ -587,12 +587,12 @@ def parse_and_plot_enc_log(log_path, output_dir=None):
     axes[0,1].set_title('Delta (1st-diff)', fontsize=12, fontweight='bold')
     axes[0,1].legend(fontsize=9); axes[0,1].grid(alpha=0.3)
 
-    axes[1,0].plot(idx, change_L, label='change_L', color='#CC88FF', linewidth=1.2)
-    axes[1,0].plot(idx, change_R, label='change_R', color='#FFCC00', linewidth=1.2)
-    axes[1,0].axhline(y=thr[0], color='#FF4444', linestyle='-', label=f'thr={thr[0]}', alpha=0.7, linewidth=1.5)
+    axes[1,0].plot(idx, ratio_L, label='ratio_L', color='#CC88FF', linewidth=1.2)
+    axes[1,0].plot(idx, ratio_R, label='ratio_R', color='#FFCC00', linewidth=1.2)
+    axes[1,0].axhline(y=thr[0], color='#FF4444', linestyle='-', label=f'thr={thr[0]}%', alpha=0.7, linewidth=1.5)
     for ti in trigger_idx:
         axes[1,0].axvline(x=ti, color='red', linestyle='--', alpha=0.6, linewidth=1)
-    axes[1,0].set_title('Change (2nd-diff)', fontsize=12, fontweight='bold')
+    axes[1,0].set_title('Ratio (% of MA)', fontsize=12, fontweight='bold')
     axes[1,0].legend(fontsize=9); axes[1,0].grid(alpha=0.3)
 
     axes[1,1].fill_between(idx, running, step='mid', color='#00FF88', alpha=0.4)
@@ -614,7 +614,7 @@ def parse_and_plot_enc_log(log_path, output_dir=None):
         'n': n, 'status': status,
         'cur_L': cur_L, 'cur_R': cur_R,
         'delta_L': delta_L, 'delta_R': delta_R,
-        'change_L': change_L, 'change_R': change_R,
+        'ratio_L': ratio_L, 'ratio_R': ratio_R,
         'thr': thr, 'running': running,
         'trigger_idx': trigger_idx,
     }
@@ -650,7 +650,7 @@ if __name__ == "__main__":
     
 
 
-    my_log_path = r"E:\AICleanBot\logs\encoder\2.txt"
+    my_log_path = r"E:\AICleanBot\logs\encoder\1.txt"
     parse_and_plot_enc_log(my_log_path)
 
 

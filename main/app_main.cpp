@@ -676,20 +676,16 @@ static void experiment_stream(int cmd_sock, int img_sock)
     float g_last_valid_g1 = OUTPUT_WIDTH / 2;
     float g_last_valid_g2 = OUTPUT_WIDTH / 2;
 
-    // 编码器跳变检测（碰撞检测）
+    // 编码器碰撞检测：移动平均比值法
     static int prev_enc_l = 0, prev_enc_r = 0;       // 上一帧累计脉冲值
-    static int prev_delta_l = 0, prev_delta_r = 0;    // 上一帧的增量(用于二阶差分)
     static bool enc_init_done = false;
     
-    // 碰撞检测参数：相邻帧间"增量的变化量"超过此阈值视为突变
-    static const int DELTA_CHANGE_THRESHOLD = 50;       // 脉冲数
-    // 需要至少累计这么多脉冲才认为增量有效(过滤启动阶段噪声)
-    static const int ENC_MIN_DELTA = 5;
-    // 需要连续多少帧有效增量后才启用检测(需要至少2帧才能算二阶差分)
-    static const int ENC_WARMUP_FRAMES = 3;
-    // 正式检测前，prev_delta必须达到此值才允许TRIGGER(防止加速阶段误触)
-    static const int BASELINE_MIN_DELTA = 10;
-    static int warmup_count = 0;
+    // 移动平均窗口参数
+    static const int MA_WINDOW = 10;                   // 滑动窗口大小（帧）
+    static int delta_hist_l[10] = {0}, delta_hist_r[10] = {0};
+    static int ma_idx = 0;                             // 环形写入位置
+    static int ma_count = 0;                           // 已填充帧数
+    static const float MA_DROP_RATIO = 0.80f;          // 当前delta低于均值80%即可触发
     
     while (1) {
         int64_t t0 = esp_timer_get_time();  // 总开始
@@ -743,65 +739,56 @@ static void experiment_stream(int cmd_sock, int img_sock)
         
         esp_camera_fb_return(fb);
 
-        // ========== 编码器跳变检测（碰撞检测）：二阶差分 = 增量的突变 ==========
-        int log_change_l = 0, log_change_r = 0;  // 供外层send_buf使用
+        // ========== 编码器碰撞检测：移动平均比值法 ==========
+        int log_ratio_l = 0, log_ratio_r = 0;  // 供外层send_buf使用
         {
             int enc_l = 0, enc_r = 0;
             encoder_read(&enc_l, &enc_r);
 
             const char *enc_state = "OK";
-            
 
             if (!enc_init_done) {
                 enc_init_done = true;
-                warmup_count = 0;
-                prev_delta_l = 0;
-                prev_delta_r = 0;
                 enc_state = "INIT";
             } else {
                 // 计算本帧增量
                 int cur_delta_l = enc_l - prev_enc_l;
                 int cur_delta_r = enc_r - prev_enc_r;
 
-                // 溢出检测：ESP32编码器每32768清零
+                // 溢出检测：ESP32编码器每32768清零，重置历史窗口
                 bool overflow_l = (enc_l < 100 && prev_enc_l > 30000);
                 bool overflow_r = (enc_r < 100 && prev_enc_r > 30000);
-                
+
                 if (overflow_l || overflow_r) {
                     enc_state = "OVERFLOW";
-                    // 重置warmup，重新积累
-                    warmup_count = 0;
-                    prev_delta_l = 0;
-                    prev_delta_r = 0;
-                    log_change_l = 0;
-                    log_change_r = 0;
-                } else if (warmup_count < ENC_WARMUP_FRAMES) {
-                    // ===== 预热阶段：还没凑够2帧有效历史 =====
-                    if (abs(cur_delta_l) >= ENC_MIN_DELTA && abs(cur_delta_r) >= ENC_MIN_DELTA) {
-                        // 增量够大，记入历史
-                        warmup_count++;
-                        prev_delta_l = cur_delta_l;
-                        prev_delta_r = cur_delta_r;
-                    }
-                    // 增量太小就不计数，但也不重置（等车动起来就行）
-                    enc_state = "WARMUP";
-                    log_change_l = abs(cur_delta_l - prev_delta_l);
-                    log_change_r = abs(cur_delta_r - prev_delta_r);
+                    ma_idx = 0;
+                    ma_count = 0;
                 } else {
-                    // ===== 正式检测阶段：已过warmup，永远不再回退(除非overflow) =====
-                    // 核心逻辑：比较"本帧增量"与"上帧增量"的变化幅度
-                    // 注意：碰撞时delta会骤降(如24→3)，这恰恰是我们要检测的！
-                    int change_l = abs(cur_delta_l - prev_delta_l);
-                    int change_r = abs(cur_delta_r - prev_delta_r);
-                    log_change_l = change_l;
-                    log_change_r = change_r;
+                    // 写入滑动窗口
+                    delta_hist_l[ma_idx] = cur_delta_l;
+                    delta_hist_r[ma_idx] = cur_delta_r;
+                    ma_idx = (ma_idx + 1) % MA_WINDOW;
+                    if (ma_count < MA_WINDOW) ma_count++;
 
-                    // 触发条件：
-                    //   1. 任一轮change超过阈值（OR逻辑：单轮卡住也算碰撞）
-                    //   2. 上帧prev_delta必须够大（说明已有正常行驶基线，不是刚启动）
-                    bool baseline_ok = (abs(prev_delta_l) >= BASELINE_MIN_DELTA && abs(prev_delta_r) >= BASELINE_MIN_DELTA);
-                    if ((change_l > DELTA_CHANGE_THRESHOLD || change_r > DELTA_CHANGE_THRESHOLD) && baseline_ok) {
-                        // 出现增量突变 → 碰撞！
+                    // 计算移动平均
+                    int sum_l = 0, sum_r = 0;
+                    for (int i = 0; i < MA_WINDOW; i++) {
+                        sum_l += delta_hist_l[i];
+                        sum_r += delta_hist_r[i];
+                    }
+                    float avg_l = (float)sum_l / MA_WINDOW;
+                    float avg_r = (float)sum_r / MA_WINDOW;
+
+                    // 本帧delta占均值的百分比
+                    int ratio_l = (avg_l > 0) ? (int)(cur_delta_l / avg_l * 100) : 100;
+                    int ratio_r = (avg_r > 0) ? (int)(cur_delta_r / avg_r * 100) : 100;
+                    log_ratio_l = ratio_l;
+                    log_ratio_r = ratio_r;
+
+                    // 触发条件：窗口已满 + 累积脉冲>2000 + 任一轮delta低于均值60%
+                    bool enc_moving = (abs(enc_l) > 2000 && abs(enc_r) > 2000);
+                    int thr_percent = (int)(MA_DROP_RATIO * 100);
+                    if (ma_count >= MA_WINDOW && enc_moving && (ratio_l < thr_percent || ratio_r < thr_percent)) {
                         motor_stop();
                         g_motor_base_speed = 0;
                         g_motor_running = false;
@@ -809,24 +796,20 @@ static void experiment_stream(int cmd_sock, int img_sock)
                     } else {
                         enc_state = "OK";
                     }
-
-                    // 滚动更新：本轮delta成为下一轮的prev_delta（即使很小也更新）
-                    prev_delta_l = cur_delta_l;
-                    prev_delta_r = cur_delta_r;
                 }
             }
 
             // 每帧统一打印编码器状态
             char enc_log_buf[160];
             int enc_log_len = snprintf(enc_log_buf, sizeof(enc_log_buf),
-                "[Enc] %-7s | cur L=%5d R=%5d | delta L=%5d R=%5d | change L=%3d R=%3d (thr=%2d) | running=%d",
+                "[Enc] %-7s | cur L=%5d R=%5d | delta L=%5d R=%5d | ratio L=%3d%% R=%3d%% (thr=%d%%) | running=%d",
                 enc_state, enc_l, enc_r,
                 enc_l - prev_enc_l, enc_r - prev_enc_r,
-                log_change_l, log_change_r,
-                DELTA_CHANGE_THRESHOLD, (int)g_motor_running);
-            ESP_LOGI(TAG, "%s", enc_log_buf);  // 串口
+                log_ratio_l, log_ratio_r,
+                (int)(MA_DROP_RATIO * 100), (int)g_motor_running);
+            ESP_LOGI(TAG, "%s", enc_log_buf);
             strcat(enc_log_buf, "\n");
-            send(cmd_sock, enc_log_buf, enc_log_len + 1, 0);  // TCP给小程序
+            send(cmd_sock, enc_log_buf, enc_log_len + 1, 0);
 
             // 更新上一帧累计值
             prev_enc_l = enc_l;
@@ -895,8 +878,8 @@ static void experiment_stream(int cmd_sock, int img_sock)
             send_buf[4] = g_motor_r_pwm;
             send_buf[5] = (uint8_t)g1;   // G1: 顶部质心x
             send_buf[6] = (uint8_t)g2;   // G2: 底部质心x
-            send_buf[7] = (uint8_t)(log_change_l > 255 ? 255 : log_change_l);  // 左轮change
-            send_buf[8] = (uint8_t)(log_change_r > 255 ? 255 : log_change_r);  // 右轮change
+            send_buf[7] = (uint8_t)(log_ratio_l > 255 ? 255 : log_ratio_l);  // 左轮delta占比(%)
+            send_buf[8] = (uint8_t)(log_ratio_r > 255 ? 255 : log_ratio_r);  // 右轮delta占比(%)
             memcpy(send_buf + header_size, overlay_data, overlay_size);
 
             int total_sent = send(img_sock, send_buf, frame_packet_size, 0);
