@@ -649,8 +649,8 @@ static void experiment_stream(int cmd_sock, int img_sock)
 
     // 叠加图尺寸：160x120 = 19200字节
     const uint32_t overlay_size = OUTPUT_WIDTH * OUTPUT_HEIGHT;  // 19200
-    const int header_size = 9;  // 帧号2 + 电压1 + 左PWM1 + 右PWM1 + G1(顶部质心)1 + G2(底部质心)1 + 左跳变率1 + 右跳变率1
-    const int frame_packet_size = header_size + overlay_size;   // 19209 字节
+    const int header_size = 10; // 帧号2 + 电压1 + 左PWM1 + 右PWM1 + G11 + G21 + 左跳变率1 + 右跳变率1 + 电机运行态1
+    const int frame_packet_size = header_size + overlay_size;   // 19210 字节
     
     // 分配临时缓冲区
     uint8_t *pred_data = (uint8_t *)malloc(INPUT_WIDTH * INPUT_HEIGHT);
@@ -785,10 +785,10 @@ static void experiment_stream(int cmd_sock, int img_sock)
                     log_ratio_l = ratio_l;
                     log_ratio_r = ratio_r;
 
-                    // 触发条件：窗口已满 + 累积脉冲>2000 + 任一轮delta低于均值60%
+                    // 触发条件：窗口已满 + 累积脉冲>2000 + 左右轮delta同时低于阈值
                     bool enc_moving = (abs(enc_l) > 2000 && abs(enc_r) > 2000);
                     int thr_percent = (int)(MA_DROP_RATIO * 100);
-                    if (ma_count >= MA_WINDOW && enc_moving && (ratio_l < thr_percent || ratio_r < thr_percent)) {
+                    if (ma_count >= MA_WINDOW && enc_moving && (ratio_l < thr_percent && ratio_r < thr_percent)) {
                         motor_stop();
                         g_motor_base_speed = 0;
                         g_motor_running = false;
@@ -866,7 +866,7 @@ static void experiment_stream(int cmd_sock, int img_sock)
         int64_t t_pid = esp_timer_get_time();  // PID结束
 
         // ========== TCP发送完整帧 ==========
-        // [帧号2B][电压1B][左PWM 1B][右PWM 1B][G1 1B][G2 1B][左跳变率1][右跳变率1][图像数据19200B] = 19209字节
+        // [帧号2B][电压1B][左PWM 1B][右PWM 1B][G1 1B][G2 1B][左跳变率1][右跳变率1][电机运行1B][图像数据19200B] = 19210字节
         uint8_t *send_buf = (uint8_t *)malloc(frame_packet_size);
         int sent_ok = 0;
 
@@ -880,6 +880,7 @@ static void experiment_stream(int cmd_sock, int img_sock)
             send_buf[6] = (uint8_t)g2;   // G2: 底部质心x
             send_buf[7] = (uint8_t)(log_ratio_l > 255 ? 255 : log_ratio_l);  // 左轮delta占比(%)
             send_buf[8] = (uint8_t)(log_ratio_r > 255 ? 255 : log_ratio_r);  // 右轮delta占比(%)
+            send_buf[9] = (uint8_t)g_motor_running;                          // 电机实际运行状态
             memcpy(send_buf + header_size, overlay_data, overlay_size);
 
             int total_sent = send(img_sock, send_buf, frame_packet_size, 0);
