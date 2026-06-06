@@ -15,6 +15,7 @@
 #include "driver/gpio.h"
 #include "driver/pulse_cnt.h"
 #include "esp_adc/adc_oneshot.h"
+#include "esp_ota_ops.h"
 #include "dl_model_base.hpp"
 #include "dl_tool.hpp"
 
@@ -802,7 +803,7 @@ static void experiment_stream(int cmd_sock, int img_sock)
             // 每帧统一打印编码器状态
             char enc_log_buf[160];
             int enc_log_len = snprintf(enc_log_buf, sizeof(enc_log_buf),
-                "[Enc] %-7s | cur L=%5d R=%5d | delta L=%5d R=%5d | ratio L=%3d%% R=%3d%% (thr=%d%%) | running=%d",
+                "[Enc-OTA实验] %-7s | cur L=%5d R=%5d | delta L=%5d R=%5d | ratio L=%3d%% R=%3d%% (thr=%d%%) | running=%d",
                 enc_state, enc_l, enc_r,
                 enc_l - prev_enc_l, enc_r - prev_enc_r,
                 log_ratio_l, log_ratio_r,
@@ -972,6 +973,92 @@ static void experiment_stream(int cmd_sock, int img_sock)
     }
 }
 
+// ===========================
+// OTA 固件升级处理
+// ===========================
+static void ota_handle(int sock, int fw_size)
+{
+    const esp_partition_t *partition = esp_ota_get_next_update_partition(NULL);
+    if (!partition) {
+        ESP_LOGE(TAG, "[OTA] 无可用OTA分区");
+        send(sock, "OTA_FAIL:no_ota_partition\n", 26, 0);
+        return;
+    }
+
+    esp_ota_handle_t ota_handle;
+    esp_err_t err = esp_ota_begin(partition, fw_size, &ota_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "[OTA] esp_ota_begin失败: %d", err);
+        char msg[64];
+        int len = snprintf(msg, sizeof(msg), "OTA_FAIL:begin_err_%d\n", err);
+        send(sock, msg, len, 0);
+        return;
+    }
+
+    ESP_LOGI(TAG, "[OTA] 准备就绪, 分区=%s, 固件大小=%d", partition->label, fw_size);
+    send(sock, "OTA_READY\n", 10, 0);
+
+    uint8_t *buf = (uint8_t *)malloc(4096);
+    int total = 0;
+    int last_pct = -1;
+
+    while (total < fw_size) {
+        int to_read = fw_size - total;
+        if (to_read > 4096) to_read = 4096;
+
+        int len = recv(sock, buf, to_read, 0);
+        if (len <= 0) {
+            ESP_LOGE(TAG, "[OTA] 接收失败 已收=%d/%d", total, fw_size);
+            free(buf);
+            esp_ota_end(ota_handle);
+            send(sock, "OTA_FAIL:recv_error\n", 20, 0);
+            return;
+        }
+
+        err = esp_ota_write(ota_handle, buf, len);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "[OTA] 写入失败: %d", err);
+            free(buf);
+            esp_ota_end(ota_handle);
+            send(sock, "OTA_FAIL:write_error\n", 21, 0);
+            return;
+        }
+
+        total += len;
+        int pct = total * 100 / fw_size;
+        int report_pct = (pct / 10) * 10;
+        if (report_pct != last_pct) {
+            last_pct = report_pct;
+            char pct_msg[32];
+            int pct_len = snprintf(pct_msg, sizeof(pct_msg), "OTA_PROGRESS:%d\n", report_pct);
+            send(sock, pct_msg, pct_len, 0);
+            ESP_LOGI(TAG, "[OTA] 进度: %d%%", report_pct);
+        }
+    }
+
+    free(buf);
+
+    err = esp_ota_end(ota_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "[OTA] esp_ota_end失败: %d", err);
+        send(sock, "OTA_FAIL:end_error\n", 19, 0);
+        return;
+    }
+
+    err = esp_ota_set_boot_partition(partition);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "[OTA] 设置启动分区失败: %d", err);
+        send(sock, "OTA_FAIL:boot_set_error\n", 24, 0);
+        return;
+    }
+
+    ESP_LOGI(TAG, "[OTA] 完成! 总计=%d字节, 准备重启", total);
+    send(sock, "OTA_OK\n", 7, 0);
+
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    esp_restart();
+}
+
 static void handle_client(int client_sock, int server_sock)
 {
     ESP_LOGI(TAG, "[TCP] 客户端已连接");
@@ -997,17 +1084,21 @@ static void handle_client(int client_sock, int server_sock)
     char buf[64];
 
     while (1) {
-        char cmd[32] = {};
+        char cmd[128] = {};
         int ci = 0;
         while (ci < (int)sizeof(cmd) - 1) {
             int r = recv(client_sock, cmd + ci, 1, 0);
-            if (r <= 0) break;
+            if (r <= 0) {
+                if (ci == 0) {
+                    ESP_LOGI(TAG, "[TCP] 客户端断开");
+                    goto client_disconnected;
+                }
+                // 收到部分数据但recv失败, 等待50ms重试
+                vTaskDelay(pdMS_TO_TICKS(50));
+                continue;
+            }
             if (cmd[ci] == '\n') break;
             ci++;
-        }
-        if (ci <= 0) {
-            ESP_LOGI(TAG, "[TCP] 客户端断开");
-            break;
         }
         cmd[ci] = '\0';
 
@@ -1434,8 +1525,18 @@ static void handle_client(int client_sock, int server_sock)
                 send(client_sock, "IMG_CONN_FAILED\n", 17, 0);
             }
         }
+        else if (strncmp(cmd, "OTA:START:", 10) == 0) {
+            char *filename = cmd + 10;
+            char *size_str = strchr(filename, ':');
+            if (!size_str) continue;
+            *size_str = '\0';
+            int fw_size = atoi(size_str + 1);
+            ESP_LOGI(TAG, "[OTA] 收到OTA:START 文件=%s 大小=%d", filename, fw_size);
+            ota_handle(client_sock, fw_size);
+        }
     }
 
+client_disconnected:
     close(client_sock);
 }
 

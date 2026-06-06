@@ -1,4 +1,6 @@
 # Name,   Type, SubType, Offset,  Size, Flags
 
 nvs,      data, nvs,     0x010000,  0x6000,
-factory,  app,  factory,  0x020000,  7800K,
+otadata,  data, ota,     ,          8K,
+ota_0,    app,  ota_0,   0x020000,  3900K,
+ota_1,    app,  ota_1,   ,          3900K,

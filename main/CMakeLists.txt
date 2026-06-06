@@ -11,6 +11,7 @@ set(requires
     esp_event
     esp32-camera
     esp_adc
+    app_update
 )
 
 idf_build_get_property(component_targets __COMPONENT_TARGETS)
