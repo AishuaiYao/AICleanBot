@@ -803,7 +803,7 @@ static void experiment_stream(int cmd_sock, int img_sock)
             // 每帧统一打印编码器状态
             char enc_log_buf[160];
             int enc_log_len = snprintf(enc_log_buf, sizeof(enc_log_buf),
-                "[Enc-OTA实验] %-7s | cur L=%5d R=%5d | delta L=%5d R=%5d | ratio L=%3d%% R=%3d%% (thr=%d%%) | running=%d",
+                "[Enc-OTA实验2] %-7s | cur L=%5d R=%5d | delta L=%5d R=%5d | ratio L=%3d%% R=%3d%% (thr=%d%%) | running=%d",
                 enc_state, enc_l, enc_r,
                 enc_l - prev_enc_l, enc_r - prev_enc_r,
                 log_ratio_l, log_ratio_r,
