@@ -94,8 +94,8 @@ static dl::Model *g_model = nullptr;
 // ===========================
 // WiFi AP 配置
 // ===========================
-#define AP_SSID      "ESP32-CAM"
-#define AP_PASSWORD  "12345678"
+#define AP_SSID      "LinePatrol V1"
+#define AP_PASSWORD  "*HUAHUAshi1zhimao"
 #define AP_CHANNEL   1
 #define AP_MAX_CONN  1
 
