@@ -63,7 +63,7 @@ static dl::Model *g_model = nullptr;
 // 3号电机
 #define MOTOR3_PWM        GPIO_NUM_45    // 3号电机PWM
 #define MOTOR3_CHANNEL    LEDC_CHANNEL_4 // 通道4，共享Timer1
-#define MOTOR3_INIT_DUTY  25             // 初始占空比10% (8位: 255*10%≈25)
+#define MOTOR3_INIT_DUTY  128             // 初始占空比50% (8位: 255*50%≈128)
 
 // ===========================
 // 编码器引脚定义
@@ -1130,7 +1130,9 @@ static void handle_client(int client_sock, int server_sock)
                 g_motor_base_speed = speed * 255 / 100;
                 motor_l_forward(g_motor_base_speed);
                 motor_r_forward(g_motor_base_speed);
-                ESP_LOGI(TAG, "[Motor] 启动速度%d%%, PWM=%d", speed, g_motor_base_speed);
+                ledc_set_duty(MOTOR_LEDC_MODE, MOTOR3_CHANNEL, MOTOR3_INIT_DUTY);
+                ledc_update_duty(MOTOR_LEDC_MODE, MOTOR3_CHANNEL);
+                ESP_LOGI(TAG, "[Motor] 启动速度%d%%, PWM=%d, Motor3=%d", speed, g_motor_base_speed, MOTOR3_INIT_DUTY);
             }
         }
         else if (strncmp(cmd, "SPEED:", 6) == 0) {
@@ -1660,24 +1662,5 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "呼吸灯: GPIO%d", BREATH_LED_GPIO);
     ESP_LOGI(TAG, "========================================");
 
-    // ========== 3号电机测试 ==========
-    ESP_LOGI(TAG, "[Motor3_Test] ========== 开始测试3号电机 (0→100%% 周期性递增) ==========");
-    ESP_LOGI(TAG, "[Motor3_Test] PWM: GPIO%d, 步进: 每秒+10%% (~25/255)",
-             MOTOR3_PWM);
-    ESP_LOGI(TAG, "[Motor3_Test] PWM通道: %d, Timer: %d",
-             MOTOR3_CHANNEL, MOTOR_LEDC_TIMER);
 
-    // 从0→100%周期性递增，每秒+10% (10% = 255*0.1 ≈ 25)
-    for (int cycle = 0; ; cycle++) {
-        for (int step = 0; step <= 10; step++) {
-            int duty = step * 255 / 10;  // 0%, 10%, 20%, ..., 100%
-            ledc_set_duty(MOTOR_LEDC_MODE, MOTOR3_CHANNEL, duty);
-            ledc_update_duty(MOTOR_LEDC_MODE, MOTOR3_CHANNEL);
-
-            int percent = step * 10;
-            ESP_LOGI(TAG, "[Motor3_Test] 周期%d - 占空比: %d%% (duty=%d/255)",
-                     cycle + 1, percent, duty);
-            vTaskDelay(pdMS_TO_TICKS(1000));
-        }
-    }
 }
