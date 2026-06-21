@@ -52,14 +52,18 @@ static dl::Model *g_model = nullptr;
 // ===========================
 // 电机引脚定义 (TB6612FNG)
 // ===========================
-// 左轮
+// 左轮（IN1/IN2已与右轮并联，共享GPIO）
 #define MOTOR_L_PWM   GPIO_NUM_39    // 左轮PWMB（速度控制）
-#define MOTOR_L_IN1   GPIO_NUM_45    // 左轮BIN1（方向控制）
-#define MOTOR_L_IN2   GPIO_NUM_48    // 左轮BIN2（方向控制）
+#define MOTOR_L_IN1   GPIO_NUM_2     // 左轮BIN1（与右轮共享GPIO2）
+#define MOTOR_L_IN2   GPIO_NUM_42    // 左轮BIN2（与右轮共享GPIO42）
 // 右轮
 #define MOTOR_R_PWM   GPIO_NUM_14   // 右轮PWMA（速度控制）
 #define MOTOR_R_IN1   GPIO_NUM_2     // 右轮AIN1（方向控制）
 #define MOTOR_R_IN2   GPIO_NUM_42    // 右轮AIN2（方向控制）
+// 3号电机
+#define MOTOR3_PWM        GPIO_NUM_45    // 3号电机PWM
+#define MOTOR3_CHANNEL    LEDC_CHANNEL_4 // 通道4，共享Timer1
+#define MOTOR3_INIT_DUTY  25             // 初始占空比10% (8位: 255*10%≈25)
 
 // ===========================
 // 编码器引脚定义
@@ -315,6 +319,17 @@ static void motor_init(void)
     motor_r_conf.hpoint = 0;
     ledc_channel_config(&motor_r_conf);
 
+    // 配置3号电机PWM通道
+    ledc_channel_config_t motor3_conf = {};
+    motor3_conf.gpio_num = MOTOR3_PWM;
+    motor3_conf.speed_mode = MOTOR_LEDC_MODE;
+    motor3_conf.channel = MOTOR3_CHANNEL;
+    motor3_conf.intr_type = LEDC_INTR_DISABLE;
+    motor3_conf.timer_sel = MOTOR_LEDC_TIMER;
+    motor3_conf.duty = 0;  // 初始停止，收到START命令后才启动
+    motor3_conf.hpoint = 0;
+    ledc_channel_config(&motor3_conf);
+
     // 配置方向控制GPIO
     gpio_config_t io_conf = {};
     io_conf.pin_bit_mask = (1ULL << MOTOR_L_IN1) | (1ULL << MOTOR_L_IN2) |
@@ -532,8 +547,10 @@ static void motor_stop(void)
     gpio_set_level(MOTOR_R_IN2, 0);
     ledc_set_duty(MOTOR_LEDC_MODE, MOTOR_L_CHANNEL, 0);
     ledc_set_duty(MOTOR_LEDC_MODE, MOTOR_R_CHANNEL, 0);
+    ledc_set_duty(MOTOR_LEDC_MODE, MOTOR3_CHANNEL, 0);
     ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_L_CHANNEL);
     ledc_update_duty(MOTOR_LEDC_MODE, MOTOR_R_CHANNEL);
+    ledc_update_duty(MOTOR_LEDC_MODE, MOTOR3_CHANNEL);
     g_motor_l_pwm = 0;
     g_motor_r_pwm = 0;
 }
@@ -942,7 +959,9 @@ static void experiment_stream(int cmd_sock, int img_sock)
                     g_motor_base_speed = speed * 255 / 100;
                     motor_l_forward(g_motor_base_speed);
                     motor_r_forward(g_motor_base_speed);
-                    ESP_LOGI(TAG, "[Exp] 启动速度%d%%, PWM=%d", speed, g_motor_base_speed);
+                    ledc_set_duty(MOTOR_LEDC_MODE, MOTOR3_CHANNEL, MOTOR3_INIT_DUTY);
+                    ledc_update_duty(MOTOR_LEDC_MODE, MOTOR3_CHANNEL);
+                    ESP_LOGI(TAG, "[Exp] 启动速度%d%%, PWM=%d, Motor3=%d", speed, g_motor_base_speed, MOTOR3_INIT_DUTY);
                 }
             }
             else if (strncmp(cmd_buf, "STOP", 4) == 0) {
@@ -1443,7 +1462,9 @@ static void handle_client(int client_sock, int server_sock)
                             g_motor_base_speed = speed * 255 / 100;
                             motor_l_forward(g_motor_base_speed);
                             motor_r_forward(g_motor_base_speed);
-                            ESP_LOGI(TAG, "[Motor] 启动速度%d%%, PWM=%d", speed, g_motor_base_speed);
+                            ledc_set_duty(MOTOR_LEDC_MODE, MOTOR3_CHANNEL, MOTOR3_INIT_DUTY);
+                            ledc_update_duty(MOTOR_LEDC_MODE, MOTOR3_CHANNEL);
+                            ESP_LOGI(TAG, "[Motor] 启动速度%d%%, PWM=%d, Motor3=%d", speed, g_motor_base_speed, MOTOR3_INIT_DUTY);
                         }
                     }
                     else if (strncmp(buf, "STOP_STREAM", 11) == 0) {
@@ -1638,4 +1659,25 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "TCP端口: %d  UDP端口: %d", TCP_PORT, UDP_PORT);
     ESP_LOGI(TAG, "呼吸灯: GPIO%d", BREATH_LED_GPIO);
     ESP_LOGI(TAG, "========================================");
+
+    // ========== 3号电机测试 ==========
+    ESP_LOGI(TAG, "[Motor3_Test] ========== 开始测试3号电机 (0→100%% 周期性递增) ==========");
+    ESP_LOGI(TAG, "[Motor3_Test] PWM: GPIO%d, 步进: 每秒+10%% (~25/255)",
+             MOTOR3_PWM);
+    ESP_LOGI(TAG, "[Motor3_Test] PWM通道: %d, Timer: %d",
+             MOTOR3_CHANNEL, MOTOR_LEDC_TIMER);
+
+    // 从0→100%周期性递增，每秒+10% (10% = 255*0.1 ≈ 25)
+    for (int cycle = 0; ; cycle++) {
+        for (int step = 0; step <= 10; step++) {
+            int duty = step * 255 / 10;  // 0%, 10%, 20%, ..., 100%
+            ledc_set_duty(MOTOR_LEDC_MODE, MOTOR3_CHANNEL, duty);
+            ledc_update_duty(MOTOR_LEDC_MODE, MOTOR3_CHANNEL);
+
+            int percent = step * 10;
+            ESP_LOGI(TAG, "[Motor3_Test] 周期%d - 占空比: %d%% (duty=%d/255)",
+                     cycle + 1, percent, duty);
+            vTaskDelay(pdMS_TO_TICKS(1000));
+        }
+    }
 }

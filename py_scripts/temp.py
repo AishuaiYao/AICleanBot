@@ -1,51 +1,77 @@
-import matplotlib.pyplot as plt
-import numpy as np
+import os
+import re
+import shutil
+from pathlib import Path
 
-# 原始数据
-cur_L = [6303, 6383, 6463, 6544, 6592, 6642, 6706, 6808, 6917, 7021, 7124, 7224, 7322, 7417, 7529, 7618, 7676, 7731]
-cur_R = [6478, 6561, 6660, 6764, 6893, 7037, 7156, 7235, 7308, 7384, 7462, 7541, 7624, 7710, 7811, 7898, 7977, 8053]
-delta_L = [0, 80, 80, 81, 48, 50, 64, 102, 109, 104, 103, 100, 98, 95, 112, 89, 58, 55]
-delta_R = [0, 83, 99, 104, 129, 144, 119, 79, 73, 76, 78, 79, 83, 86, 101, 87, 79, 76]
-change_L = [0, 80, 0, 1, 33, 2, 14, 38, 7, 5, 1, 3, 2, 3, 17, 23, 31, 3]
-change_R = [0, 83, 16, 5, 25, 15, 25, 40, 6, 3, 2, 1, 4, 3, 15, 14, 8, 3]
-running = [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+# ========== 配置 ==========
+SOURCE_DIR  = r"E:\9-照片备份"
+MERGE_DIR   = os.path.join(SOURCE_DIR, "merge")
+# ==========================
 
-idx = np.arange(len(cur_L))
+def is_date_prefix_folder(name: str) -> bool:
+    """判断文件夹名是否以日期格式开头, 例如:
+       2024-01-01xxx, 20240101xxx, 2024_01_01xxx,
+       2024年01月01日xxx, 2024.01.01xxx,
+       202106__  (年月+后缀), 202308_a"""
+    patterns = [
+        r'^\d{6}_',                  # 202106__, 202308_a 等 (年月+下划线后缀)
+        r'^\d{4}-\d{2}-\d{2}',      # 2024-01-01
+        r'^\d{8}',                   # 20240101
+        r'^\d{4}_\d{2}_\d{2}',      # 2024_01_01
+        r'^\d{4}\.\d{2}\.\d{2}',    # 2024.01.01
+        r'^\d{4}年\d{2}月\d{2}日',   # 2024年01月01日
+        r'^\d{4}/\d{2}/\d{2}',       # 2024/01/01
+    ]
+    return any(re.match(p, name) for p in patterns)
 
-# 创建4张子图
-fig, axes = plt.subplots(4, 1, figsize=(14, 12), sharex=True)
-plt.rcParams['font.sans-serif'] = ['SimHei']
-plt.rcParams['axes.unicode_minus'] = False
 
-# 1. cur 累计脉冲
-axes[0].plot(idx, cur_L, 'b-o', label='左轮cur', markersize=4)
-axes[0].plot(idx, cur_R, 'r-s', label='右轮cur', markersize=4)
-axes[0].set_title('左右轮当前总脉冲 cur L/R')
-axes[0].legend()
-axes[0].grid(True, alpha=0.3)
+def main():
+    if not os.path.isdir(SOURCE_DIR):
+        print(f"错误: 源目录不存在 -> {SOURCE_DIR}")
+        return
 
-# 2. delta 单帧增量
-axes[1].plot(idx, delta_L, 'b-o', label='delta L', markersize=4)
-axes[1].plot(idx, delta_R, 'r-s', label='delta R', markersize=4)
-axes[1].axhline(y=50, c='k', ls='--', label='阈值thr=50')
-axes[1].set_title('单帧脉冲增量 delta L/R')
-axes[1].legend()
-axes[1].grid(True, alpha=0.3)
+    os.makedirs(MERGE_DIR, exist_ok=True)
 
-# 3. change有效变化量
-axes[2].plot(idx, change_L, 'b-o', label='change L', markersize=4)
-axes[2].plot(idx, change_R, 'r-s', label='change R', markersize=4)
-axes[2].set_title('有效变化量 change L/R')
-axes[2].legend()
-axes[2].grid(True, alpha=0.3)
+    date_folders = []
+    for entry in os.listdir(SOURCE_DIR):
+        full = os.path.join(SOURCE_DIR, entry)
+        if os.path.isdir(full) and entry != "merge" and is_date_prefix_folder(entry):
+            date_folders.append(entry)
 
-# 4. running运行状态
-axes[3].step(idx, running, 'g-', where='mid', linewidth=2, label='running(0静止/1运动)')
-axes[3].set_title('运行状态 running')
-axes[3].set_xlabel('采样序号')
-axes[3].set_yticks([0,1])
-axes[3].legend()
-axes[3].grid(True, alpha=0.3)
+    if not date_folders:
+        print("未找到任何日期开头的子文件夹。")
+        return
 
-plt.tight_layout()
-plt.show()
+    print(f"找到 {len(date_folders)} 个日期开头的文件夹:")
+    for f in date_folders:
+        print(f"  - {f}")
+
+    total_copied = 0
+    total_skipped = 0
+
+    for folder_name in date_folders:
+        folder_path = os.path.join(SOURCE_DIR, folder_name)
+        for root, _, files in os.walk(folder_path):
+            for filename in files:
+                src = os.path.join(root, filename)
+                dst = os.path.join(MERGE_DIR, filename)
+
+                # 处理重名: 若目标已存在, 加序号
+                if os.path.exists(dst):
+                    name, ext = os.path.splitext(filename)
+                    counter = 1
+                    while True:
+                        new_name = f"{name}_{counter}{ext}"
+                        dst = os.path.join(MERGE_DIR, new_name)
+                        if not os.path.exists(dst):
+                            break
+                        counter += 1
+                    print(f"  重名处理: {filename} -> {new_name}")
+
+                shutil.copy2(src, dst)   # copy2 保留元数据(时间戳等)
+                total_copied += 1
+
+    print(f"\n完成! 共复制 {total_copied} 个文件到 {MERGE_DIR}")
+
+if __name__ == "__main__":
+    main()
