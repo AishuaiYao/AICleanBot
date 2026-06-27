@@ -650,7 +650,7 @@ if __name__ == "__main__":
     
 
 
-    my_log_path = r"E:\AICleanBot\logs\encoder\3.txt"
+    my_log_path = r"E:\AICleanBot\logs\encoder\4.txt"
     parse_and_plot_enc_log(my_log_path)
 
 

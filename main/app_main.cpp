@@ -63,7 +63,7 @@ static dl::Model *g_model = nullptr;
 // 3号电机
 #define MOTOR3_PWM        GPIO_NUM_45    // 3号电机PWM
 #define MOTOR3_CHANNEL    LEDC_CHANNEL_4 // 通道4，共享Timer1
-#define MOTOR3_INIT_DUTY  128             // 初始占空比50% (8位: 255*50%≈128)
+#define MOTOR3_INIT_DUTY  51              // 初始占空比20% (8位: 255*20%≈51)
 
 // ===========================
 // 编码器引脚定义
@@ -703,7 +703,7 @@ static void experiment_stream(int cmd_sock, int img_sock)
     static int delta_hist_l[10] = {0}, delta_hist_r[10] = {0};
     static int ma_idx = 0;                             // 环形写入位置
     static int ma_count = 0;                           // 已填充帧数
-    static const float MA_DROP_RATIO = 0.80f;          // 当前delta低于均值80%即可触发
+    static const float MA_DROP_RATIO = 0.85f;          // 当前delta低于均值85%即可触发
     
     while (1) {
         int64_t t0 = esp_timer_get_time();  // 总开始
@@ -820,7 +820,7 @@ static void experiment_stream(int cmd_sock, int img_sock)
             // 每帧统一打印编码器状态
             char enc_log_buf[160];
             int enc_log_len = snprintf(enc_log_buf, sizeof(enc_log_buf),
-                "[Enc-OTA实验2] %-7s | cur L=%5d R=%5d | delta L=%5d R=%5d | ratio L=%3d%% R=%3d%% (thr=%d%%) | running=%d",
+                "[Enc] %-7s | cur L=%5d R=%5d | delta L=%5d R=%5d | ratio L=%3d%% R=%3d%% (thr=%d%%) | running=%d",
                 enc_state, enc_l, enc_r,
                 enc_l - prev_enc_l, enc_r - prev_enc_r,
                 log_ratio_l, log_ratio_r,
@@ -984,6 +984,14 @@ static void experiment_stream(int cmd_sock, int img_sock)
                 if (kp >= 0.0f && kp <= 5.0f) {
                     g_pid_kp = kp;
                     ESP_LOGI(TAG, "[Exp] PID比例系数Kp=%.2f", g_pid_kp);
+                }
+            }
+            else if (strncmp(cmd_buf, "MOTOR3:", 7) == 0) {
+                int duty = atoi(cmd_buf + 7);
+                if (duty >= 0 && duty <= 255) {
+                    ledc_set_duty(MOTOR_LEDC_MODE, MOTOR3_CHANNEL, duty);
+                    ledc_update_duty(MOTOR_LEDC_MODE, MOTOR3_CHANNEL);
+                    ESP_LOGI(TAG, "[Exp] 3号电机 PWM=%d (%.0f%%)", duty, duty * 100.0f / 255);
                 }
             }
         }
