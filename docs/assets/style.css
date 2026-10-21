@@ -279,6 +279,10 @@ h3 { font-size: 19px; font-weight: 650; }
 }
 
 .hero-visual img {
+  width: 100%;
+  height: auto;          /* 配合 max-width:100%，否则会按 HTML 里的 height 硬撑导致纵向拉伸 */
+  aspect-ratio: 1400 / 925;
+  object-fit: cover;
   border-radius: 20px;
   border: 1px solid var(--border);
   box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.9);
