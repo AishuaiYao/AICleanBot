@@ -17,7 +17,8 @@ from machine import Pin
 # WiFi AP 配置 (ESP32作为热点)
 # ===========================
 AP_SSID = "CAM-AP"
-AP_PASSWORD = "*HA39&q2Iah"
+# 改成你自己的热点密码（WPA2 要求至少 8 位，下面为占位符）
+AP_PASSWORD = "********"
 
 # ===========================
 # 引脚定义 (使用你已验证的配置)

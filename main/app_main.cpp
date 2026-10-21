@@ -99,7 +99,10 @@ static dl::Model *g_model = nullptr;
 // WiFi AP 配置
 // ===========================
 #define AP_SSID      "LinePatrol V1"
-#define AP_PASSWORD  "*HUAHUAshi1zhimao"
+// 改成你自己的热点密码。
+// 注意：WPA2 要求密码至少 8 位，下面 8 个星号只是占位符，
+// 若保持原样 esp_wifi_start() 也能通过，但任何人都能连上你的设备。
+#define AP_PASSWORD  "********"
 #define AP_CHANNEL   1
 #define AP_MAX_CONN  1
 

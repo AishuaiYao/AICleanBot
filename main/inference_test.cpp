@@ -33,7 +33,8 @@ static dl::Model *g_model = nullptr;
 
 // WiFi AP 配置
 #define AP_SSID      "ESP32-TEST"
-#define AP_PASSWORD  "12345678"
+// 改成你自己的热点密码（WPA2 要求至少 8 位，下面为占位符）
+#define AP_PASSWORD  "********"
 #define AP_CHANNEL   1
 #define AP_MAX_CONN  1
 

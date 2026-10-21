@@ -296,14 +296,19 @@ idf.py -p COM3 flash monitor
 | 项目 | 值 |
 |------|-----|
 | SSID | `LinePatrol V1` |
-| 密码 | `*HUAHUAshi1zhimao` |
+| 密码 | `********`（占位符，需自己设） |
 | 设备 IP | `192.168.4.1` |
 | TCP 命令端口 | `5000` |
 | UDP 视频端口 | `5001` |
 
 手机或电脑连上这个热点。
 
-> 想要改 SSID / 密码：编辑 `main/app_main.cpp` 顶部的 `#define AP_SSID` / `AP_PASSWORD`，重新编译。
+> **烧录前必须做的一步**：仓库里所有密码都已被占位符 `********` 替换（避免泄露个人凭据）。
+> 请编辑 `main/app_main.cpp` 顶部的 `#define AP_PASSWORD`，改成你自己的密码（WPA2 要求至少 8 位），然后重新编译烧录。
+> SSID 同理，改 `#define AP_SSID` 即可（`LinePatrol V1` 可直接沿用）。
+>
+> 用 8 位星号而不是 2 位，是因为 `esp_wifi_start()` 对短于 8 位的密码会直接返回
+> `ESP_ERR_WIFI_PASSWORD`，AP 起不来就会让人误以为固件有问题。
 
 ### 步骤 4：用一条命令验证它活着
 

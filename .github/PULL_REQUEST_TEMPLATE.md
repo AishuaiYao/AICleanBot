@@ -29,6 +29,7 @@
 - [ ] Python 改动通过 `python -m py_compile`
 - [ ] 新增依赖已同步到 `requirements.txt`
 - [ ] 没有引入硬编码的绝对路径（`E:\...`、`C:\Users\...`）
+- [ ] 没有引入密码、密钥、AppID、云环境 ID 等凭据明文（统一用占位符，并在文档说明如何替换）
 - [ ] 改了引脚/协议的话，README 或 `hardware/README.md` 已同步
 - [ ] 没有提交模型权重、数据集、构建产物
 
