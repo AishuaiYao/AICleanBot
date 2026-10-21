@@ -26,7 +26,9 @@ FRAME_XGA	1024x768
 FRAME_SXGA	1280x1024
 """
 script_dir = os.path.dirname(os.path.abspath(__file__))
-save_path = os.path.join(script_dir, "FRAME_QQVGA")
+# 统一存放到 <仓库>/py_scripts/dataset/FRAME_QQVGA，
+# 与 label_tool.py / tools.py / export_espdl.py 的约定输入目录保持一致
+save_path = os.path.join(os.path.dirname(script_dir), "dataset", "FRAME_QQVGA")
 h, w = 160, 120  #
 
 

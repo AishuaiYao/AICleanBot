@@ -4,4 +4,6 @@ dependencies:
     version: "^2.0.4"
   espressif/esp-dl:
     version: "^3.1.0"
-    override_path: "E:/aishuai/esp-dl/esp-dl"
+    # 若需使用本地 ESP-DL 源码调试，取消下面一行注释并改成你自己的路径。
+    # 开源仓库请勿提交包含个人目录的 override_path。
+    # override_path: "<your-local-esp-dl-path>"

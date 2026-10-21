@@ -8,6 +8,11 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
+from pathlib import Path
+
+# ==================== 路径 ====================
+PROJECT_ROOT = Path(__file__).resolve().parents[2]      # .../AICleanBot
+PY_DIR = PROJECT_ROOT / 'py_scripts'
 
 
 def detect_edge_endpoints(image_path, edge_width=5, min_pixels=3):
@@ -239,8 +244,9 @@ def analyze_all_images():
     """
     Analyze all three images using edge endpoint detection
     """
+    # 换成你自己标注出来的任意一张标签图即可
     images = [
-        'E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA_label\frame_000002_20260213_131845.png',
+        str(PY_DIR / 'dataset' / 'FRAME_QQVGA_label' / '00001.png'),
     ]
     
     print("=" * 70)

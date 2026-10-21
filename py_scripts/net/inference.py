@@ -7,6 +7,12 @@ import cv2
 import torch
 from tqdm import tqdm
 import segmentation_models_pytorch as smp
+from pathlib import Path
+
+# ==================== 路径 ====================
+# 所有路径基于本文件位置推导，仓库被 clone 到任何目录都能直接运行
+PROJECT_ROOT = Path(__file__).resolve().parents[2]      # .../AICleanBot
+PY_DIR = PROJECT_ROOT / 'py_scripts'
 
 # 将 train_student.py 所在目录加入路径，复用模型定义
 sys.path.insert(0, os.path.dirname(__file__))
@@ -150,13 +156,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='UNet 推理脚本（支持 Student 和 Teacher 模型）')
     parser.add_argument(
         '--model',
-        default=r'E:\AICleanBot\py_scripts\models\20260412_180030_UNetMiniExp5\best_model.pth',
+        default=str(PY_DIR / 'models' / '20260412_180030_UNetMiniExp5' / 'best_model.pth'),
         type=str,
         help='模型权重路径（.pth），目录名需包含模型类型，如 UNetMiniExp5 或 UNet_ResNet18'
     )
     parser.add_argument(
         '--input',
-        default=r'E:\AICleanBot\py_scripts\dataset\val\images',
+        default=str(PY_DIR / 'dataset' / 'val' / 'images'),
         type=str,
         help='输入图像目录'
     )

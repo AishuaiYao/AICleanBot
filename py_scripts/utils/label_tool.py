@@ -2,12 +2,19 @@ import cv2
 import os
 import glob
 import numpy as np
+from pathlib import Path
+
+# ==================== 路径 ====================
+# 所有路径基于本文件位置推导，仓库被 clone 到任何目录都能直接运行
+PROJECT_ROOT = Path(__file__).resolve().parents[2]      # .../AICleanBot
+PY_DIR = PROJECT_ROOT / 'py_scripts'
 
 # 可配置参数
 scale_size = 700  # 展示用的缩放宽度（不影响最终保存）
 line_expand = 4  # 线段扩展像素（核心可调节，建议2-5，数字越大线段越粗）
-img_dir = r'E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA'  # 原始图片目录（完全保留，不修改）
-gray_save_dir = r'E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA'  # 灰度图保存目录（160×120）
+_dataset_dir = str(PY_DIR / 'dataset')
+img_dir = os.path.join(_dataset_dir, 'FRAME_QQVGA')           # 原始图片目录（完全保留，不修改）
+gray_save_dir = os.path.join(_dataset_dir, 'FRAME_QQVGA')     # 灰度图保存目录（160×120）
 label_save_dir = gray_save_dir + '_label'  # 绘制线段后的真值图保存目录（160×120）
 
 # 全局变量

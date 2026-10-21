@@ -14,6 +14,13 @@ import random
 import matplotlib.pyplot as plt
 import time
 import sys
+from pathlib import Path
+
+# ==================== 路径 ====================
+# 所有路径基于本文件位置推导，仓库被 clone 到任何目录都能直接运行
+PROJECT_ROOT = Path(__file__).resolve().parents[2]      # .../AICleanBot
+PY_DIR = PROJECT_ROOT / 'py_scripts'
+LOG_ROOT = PROJECT_ROOT / 'logs'
 
 
 # ==================== Focal Loss ====================
@@ -65,11 +72,11 @@ class CombinedLoss(nn.Module):
 
 
 # ==================== 配置 ====================
-DATA_DIR = r'E:\AICleanBot\py_scripts\dataset'
+DATA_DIR = str(PY_DIR / 'dataset')
 TRAIN_DIR = os.path.join(DATA_DIR, 'train')
 VAL_DIR = os.path.join(DATA_DIR, 'val')
 PRED_DIR = os.path.join(DATA_DIR, 'pred')
-MODEL_DIR = os.path.join(os.path.dirname(__file__), '..', 'models')
+MODEL_DIR = str(PY_DIR / 'models')
 
 BATCH_SIZE = 8
 LEARNING_RATE = 1e-3  # 提高初始学习率
@@ -327,7 +334,7 @@ def train():
     model_path = os.path.join(save_dir, 'best_model.pth')
     
     # 创建日志文件
-    log_dir = r'E:\AICleanBot\logs\train'
+    log_dir = str(LOG_ROOT / 'train')
     os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(log_dir, f'{timestamp}_{model_name}.txt')
     tee = Tee(log_path)

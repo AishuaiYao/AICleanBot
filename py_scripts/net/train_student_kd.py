@@ -14,6 +14,13 @@ import random
 import matplotlib.pyplot as plt
 import time
 import sys
+from pathlib import Path
+
+# ==================== 路径 ====================
+# 所有路径基于本文件位置推导，仓库被 clone 到任何目录都能直接运行
+PROJECT_ROOT = Path(__file__).resolve().parents[2]      # .../AICleanBot
+PY_DIR = PROJECT_ROOT / 'py_scripts'
+LOG_ROOT = PROJECT_ROOT / 'logs'
 
 # 导入student模型定义
 from train_student import (
@@ -85,14 +92,20 @@ class DistillationLoss(nn.Module):
 
 
 # ==================== 配置 ====================
-DATA_DIR = r'E:\AICleanBot\py_scripts\dataset'
+DATA_DIR = str(PY_DIR / 'dataset')
 TRAIN_DIR = os.path.join(DATA_DIR, 'train')
 VAL_DIR = os.path.join(DATA_DIR, 'val')
 PRED_DIR = os.path.join(DATA_DIR, 'pred')
-MODEL_DIR = os.path.join(os.path.dirname(__file__), '..', 'models')
+MODEL_DIR = str(PY_DIR / 'models')
 
 # Teacher配置
-TEACHER_MODEL_PATH = r'e:\AICleanBot\py_scripts\models\20260416_213640_UNet_ResNet18\best_model.pth'
+# 先运行 python py_scripts/net/train_teacher.py 得到教师权重，
+# 然后把下面的目录名改成你实际生成的目录；也可直接设置环境变量覆盖：
+#   set TEACHER_MODEL_PATH=<你的 best_model.pth 路径>
+TEACHER_MODEL_PATH = os.environ.get(
+    'TEACHER_MODEL_PATH',
+    str(PY_DIR / 'models' / '20260416_213640_UNet_ResNet18' / 'best_model.pth'),
+)
 
 # 训练配置
 BATCH_SIZE = 8
@@ -132,7 +145,7 @@ def train():
     model_path = os.path.join(save_dir, 'best_model.pth')
     
     # 创建日志文件
-    log_dir = r'E:\AICleanBot\logs\train'
+    log_dir = str(LOG_ROOT / 'train')
     os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(log_dir, f'{timestamp}_{model_name}.txt')
     tee = Tee(log_path)

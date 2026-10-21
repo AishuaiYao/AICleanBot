@@ -8,6 +8,13 @@ from datetime import datetime
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 from esp_ppq.api import espdl_quantize_onnx
+from pathlib import Path
+
+# ==================== 路径 ====================
+# 所有路径基于本文件位置推导，仓库被 clone 到任何目录都能直接运行
+PROJECT_ROOT = Path(__file__).resolve().parents[2]      # .../AICleanBot
+PY_DIR = PROJECT_ROOT / 'py_scripts'
+LOG_ROOT = PROJECT_ROOT / 'logs'
 
 # 固定随机种子，确保可复现
 SEED = 42
@@ -40,17 +47,19 @@ def collate_fn(batch):
 
 if __name__ == "__main__":
     
-    ONNX_MODEL_PATH = r"E:\AICleanBot\py_scripts\models\20260416_225153_UNetMiniExp5_KD\model.onnx"
-    ESPDL_MODEL_PATH = r"E:\AICleanBot\py_scripts\models\20260416_225153_UNetMiniExp5_KD\model.espdl"
+    # 待量化的训练结果目录（内含 model.onnx），换成你自己跑出来的目录名即可
+    MODEL_RUN_DIR = PY_DIR / 'models' / '20260416_225153_UNetMiniExp5_KD'
+    ONNX_MODEL_PATH = str(MODEL_RUN_DIR / 'model.onnx')
+    ESPDL_MODEL_PATH = str(MODEL_RUN_DIR / 'model.espdl')
     INPUT_SHAPE = [1, 1, 120, 160]  # 1 个输入, 1通道, 120x160 (HxW)
     TARGET = "esp32s3"  # 量化目标类型，可选 'c', 'esp32s3' or 'esp32p4'
     NUM_OF_BITS = 8  # 量化位数
     DEVICE = "cpu"  # 'cuda' or 'cpu', if you use cuda, please make sure that cuda is available
     NUM_CALIB_SAMPLES = 128  # 校准样本数量
-    IMAGE_DIR = r"E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA"  # 校准图像目录
+    IMAGE_DIR = str(PY_DIR / 'dataset' / 'FRAME_QQVGA')  # 校准图像目录
     
     # 设置日志保存
-    LOG_DIR = r"E:\AICleanBot\logs\quantize"
+    LOG_DIR = str(LOG_ROOT / 'quantize')
     os.makedirs(LOG_DIR, exist_ok=True)
     model_name = os.path.basename(os.path.dirname(ONNX_MODEL_PATH))  # 提取 20260412_180030_UNetMiniExp5
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

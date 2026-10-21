@@ -1,35 +1,37 @@
+# ============ 编辑器 / IDE ============
 .vscode/
 .idea/
-.venv/
+.DS_Store
+Thumbs.db
 
-FRAME_QQVGA
-FRAME_QQVGA_label
-FRAME_QQVGA2
-FRAME_QQVGA_label2
-models/
+# ============ Python ============
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# ============ ESP-IDF 构建产物 ============
 build/
 managed_components/
+sdkconfig.old
+# 依赖锁文件含本地绝对路径，交由本机 idf.py 自动生成
+dependencies.lock.*
 
+# ============ 训练产物（体积大，见 README「模型权重」一节）============
+py_scripts/models/
+py_scripts/dataset/pred*/
+py_scripts/utils/test_results/
 
+# ============ 原始采集帧（体积大，见 README「数据集」一节）============
+FRAME_QQVGA*/
+
+# ============ 归档文件 ============
 *.zip
 *.rar
 *.7z
 *.tar.gz
-*.pyc
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# 注意：main/models/model.espdl **必须入库**，
+# 它由 main/CMakeLists.txt 通过 target_add_aligned_binary_data 嵌入固件，
+# 缺失会导致编译直接失败。请勿忽略该路径。

@@ -1,0 +1,42 @@
+AICleanBot / LinePatrol V1
+Copyright 2026 AishuaiYao
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+-------------------------------------------------------------------------
+第三方组件
+-------------------------------------------------------------------------
+
+本项目依赖以下第三方组件，其版权归各自作者所有：
+
+- ESP-IDF (Apache-2.0)
+  https://github.com/espressif/esp-idf
+- ESP-DL (Apache-2.0，由 espressif/esp-dl 组件提供)
+  https://github.com/espressif/esp-dl
+- esp32-camera (Apache-2.0)
+  https://github.com/espressif/esp32-camera
+- esp-ppq (Apache-2.0) —— 模型量化导出 .espdl 时使用
+  https://github.com/espressif/esp-ppq
+- PyTorch / torchvision (BSD-3-Clause)
+  https://github.com/pytorch/pytorch
+- segmentation_models.pytorch (MIT)
+  https://github.com/qubvel/segmentation_models.pytorch
+- MicroPython (MIT) —— 仅供 py_scripts/utils/capture_img_serve.py 使用
+  https://github.com/micropython/micropython
+
+-------------------------------------------------------------------------
+子模块
+-------------------------------------------------------------------------
+
+smartcat（微信小程序上位机）为独立仓库，独立维护：
+https://github.com/AishuaiYao/smartcat

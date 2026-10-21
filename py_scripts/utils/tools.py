@@ -16,6 +16,13 @@ import onnx
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from pathlib import Path
+
+# ==================== 路径 ====================
+# 所有路径基于本文件位置推导，仓库被 clone 到任何目录都能直接运行
+PROJECT_ROOT = Path(__file__).resolve().parents[2]      # .../AICleanBot
+PY_DIR = PROJECT_ROOT / 'py_scripts'
+LOG_ROOT = PROJECT_ROOT / 'logs'
 
 
 def export_onnx(model, save_dir, input_shape=(1, 1, 120, 160), model_name='model.onnx'):
@@ -107,7 +114,6 @@ def batch_rename_files(directory, start_num=1, digits=5):
     sorted_files = sorted(file_names, key=natural_sort)
     
     # 2. 批量重命名
-    start_num = 540
     for idx, old_name in enumerate(sorted_files):
         new_name = f"{start_num + idx:0{digits}d}.png"  # 生成新名字
         old_path = os.path.join(directory, old_name)
@@ -443,8 +449,8 @@ def split_dataset(image_dir, label_dir, train_dir, val_dir, train_ratio=0.8, see
         Copying validation set...
         
         Done!
-        Train set saved to: E:\AICleanBot\py_scripts\dataset\train
-        Val set saved to:   E:\AICleanBot\py_scripts\dataset\val
+        Train set saved to: <仓库>/py_scripts/dataset/train
+        Val set saved to:   <仓库>/py_scripts/dataset/val
     """
     # 固定随机种子
     random.seed(seed)
@@ -511,13 +517,13 @@ def parse_and_plot_enc_log(log_path, output_dir=None):
 
     入参:
         log_path: str - 日志文件路径（如 esp32log.txt）
-        output_dir: str - 图片保存目录，默认为 E:\\AICleanBot\\py_scripts\\figure
+        output_dir: str - 图片保存目录，默认为 <仓库>/py_scripts/figure
 
     出参:
         dict - 解析后的数据字典，包含所有字段列表
     """
     if output_dir is None:
-        output_dir = r'E:\AICleanBot\py_scripts\figure'
+        output_dir = str(PY_DIR / 'figure')
     os.makedirs(output_dir, exist_ok=True)
 
     # ---- 1. 解析日志 ----
@@ -621,13 +627,13 @@ def parse_and_plot_enc_log(log_path, output_dir=None):
 
 
 if __name__ == "__main__":
-    # # 默认：批量重命名
-    # target_directory = r"E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA"
+    # 默认：批量重命名
+    # target_directory = str(PY_DIR / 'dataset' / 'FRAME_QQVGA')
     # batch_rename_files(target_directory, start_num=1, digits=5)
 
     # 可视化标签
-    # images = r'E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA'
-    # labels = r'E:\AICleanBot\py_scripts\dataset\FRAME_QQVGA_label'
+    # images = str(PY_DIR / 'dataset' / 'FRAME_QQVGA')
+    # labels = str(PY_DIR / 'dataset' / 'FRAME_QQVGA_label')
     # visualize_labels(images, labels)
 
     # 测试gpu
@@ -636,21 +642,22 @@ if __name__ == "__main__":
     # # 分析ONNX模型
     # # 从.pth导出ONNX示例
     # import sys
-    # sys.path.append(r'E:\AICleanBot\py_scripts\net')
+    # sys.path.append(str(PY_DIR / 'net'))
     # from train_student import UNetMiniExp5
+    # model_run = PY_DIR / 'models' / '20260416_225153_UNetMiniExp5_KD'
     # export_pth_to_onnx(
     #     UNetMiniExp5,
-    #     r"E:\AICleanBot\py_scripts\models\20260416_225153_UNetMiniExp5_KD\best_model.pth",
-    #     r"E:\AICleanBot\py_scripts\models\20260416_225153_UNetMiniExp5_KD",
+    #     str(model_run / 'best_model.pth'),
+    #     str(model_run),
     #     input_shape=(1, 1, 120, 160)
     # )
 
     # # 分析ONNX模型示例
-    # analyze_onnx_model(r"E:\AICleanBot\py_scripts\models\20260416_225153_UNetMiniExp5_KD\model.onnx")
+    # analyze_onnx_model(str(PY_DIR / 'models' / '20260416_225153_UNetMiniExp5_KD' / 'model.onnx'))
     
 
-
-    my_log_path = r"E:\AICleanBot\logs\encoder\4.txt"
+    # 解析 ESP32 串口输出的 [Enc] 日志并绘图
+    my_log_path = str(LOG_ROOT / 'encoder' / '4.txt')
     parse_and_plot_enc_log(my_log_path)
 
 
