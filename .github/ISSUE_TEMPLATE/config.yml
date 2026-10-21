@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 先读文档
+    url: https://aishuaiyao.github.io/AICleanBot/
+    about: 项目官网，含演示视频、架构图、硬件资料与完整复现步骤
+  - name: 💬 讨论区
+    url: https://github.com/AishuaiYao/AICleanBot/discussions
+    about: 想法、经验交流、展示你的作品，用讨论区比 issue 更合适
+  - name: 🐛 固件编译/烧录问题
+    url: https://github.com/AishuaiYao/AICleanBot/issues/new?template=bug_report.yml
+    about: 请用 Bug 模板，附上 idf.py monitor 日志与 IDF 版本

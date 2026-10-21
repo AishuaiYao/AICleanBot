@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AICleanBot — An Open-Source AI Robot on ESP32-S3</title>
+<meta name="description" content="AICleanBot (LinePatrol V1)：在 ESP32-S3 上跑实时语义分割的开源巡线/清洁机器人。含固件、训练工具链、微信小程序与完整硬件资料。">
+<meta name="theme-color" content="#070b14">
+<meta property="og:title" content="AICleanBot — An Open-Source AI Robot">
+<meta property="og:description" content="Real-time vision, autonomous line following, and intelligent motion control on the edge.">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+
+<!-- ================= NAV ================= -->
+<header class="nav" id="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="8" width="18" height="12" rx="4"/>
+        <circle cx="9" cy="14" r="1.4" fill="currentColor" stroke="none"/>
+        <circle cx="15" cy="14" r="1.4" fill="currentColor" stroke="none"/>
+        <path d="M12 8V4"/><circle cx="12" cy="3" r="1.2"/>
+        <path d="M3 13v3M21 13v3"/>
+      </svg>
+      AICLEANBOT
+    </a>
+    <nav class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#demo">Demo</a>
+      <a href="#hardware">Hardware</a>
+      <a href="#start">Get Started</a>
+      <a href="#roadmap">Roadmap</a>
+      <a class="nav-gh" href="https://github.com/AishuaiYao/AICleanBot" target="_blank" rel="noopener" aria-label="GitHub">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.1.1 1.7 1.2 1.7 1.2 1 1.7 2.7 1.2 3.3.9.1-.7.4-1.2.7-1.5-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4 18.3 4.3 18.3 4.3c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+      </a>
+    </nav>
+  </div>
+</header>
+
+<!-- ================= HERO ================= -->
+<main id="top">
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="pill"><span class="dot"></span> ESP32-S3 · Embedded AI · Robotics</div>
+      <h1>An Open-Source<br>AI Robot<em>.</em></h1>
+      <p class="lead">
+        在一块 40 元的 MCU 上跑实时语义分割 —— 摄像头看路、PID 驱动轮子、
+        微信小程序遥控与采数据。从采集、标注、训练到边缘部署，全链路开源可复现。
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#start">
+          Explore Project
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/AishuaiYao/AICleanBot" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.1.1 1.7 1.2 1.7 1.2 1 1.7 2.7 1.2 3.3.9.1-.7.4-1.2.7-1.5-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4 18.3 4.3 18.3 4.3c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+          GitHub Repository
+        </a>
+      </div>
+    </div>
+    <div class="hero-visual reveal">
+      <img src="assets/img/render-perspective-1.jpg" alt="AICleanBot 三维渲染图" width="1400" height="1050">
+    </div>
+  </div>
+</section>
+
+<!-- ================= STATS ================= -->
+<section style="padding-top:0">
+  <div class="wrap reveal">
+    <div class="stats">
+      <div class="stat"><b>160×120</b><span>单通道灰度输入</span></div>
+      <div class="stat"><b>148 KB</b><span>INT8 板端模型</span></div>
+      <div class="stat"><b>240 MHz</b><span>ESP32-S3 双核</span></div>
+      <div class="stat"><b>~20 ms</b><span>单帧端到端周期</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FEATURES ================= -->
+<section id="features">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">What it does</span>
+      <h2>三个能力，一条链路</h2>
+      <p class="lead">边缘推理、运动控制、无线交互 —— 每层都能单独替换，组合起来是一台能自己走直线的车。</p>
+    </div>
+
+    <div class="features">
+      <article class="card reveal">
+        <div class="icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a4 4 0 0 0-4 4v1a4 4 0 0 0-4 4v2a4 4 0 0 0 4 4v1a4 4 0 0 0 8 0v-1a4 4 0 0 0 4-4v-2a4 4 0 0 0-4-4V6a4 4 0 0 0-4-4z"/>
+            <path d="M9 12h.01M15 12h.01"/>
+          </svg>
+        </div>
+        <h3>Edge AI</h3>
+        <p>ESP-DL 加载 INT8 量化模型，逐像素二分类找出引导线。</p>
+        <ul>
+          <li>U-Net 轻量变体，1 输入通道</li>
+          <li>Sigmoid 查表后处理，零浮点开销</li>
+          <li>知识蒸馏压缩教师模型 160 倍</li>
+        </ul>
+      </article>
+
+      <article class="card reveal">
+        <div class="icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>
+          </svg>
+        </div>
+        <h3>Motion</h3>
+        <p>质心偏差喂进 PID，双轮差速跟线；编码器兼做碰撞检测。</p>
+        <ul>
+          <li>G1 / G2 双质心，近远参考抗抖动</li>
+          <li>滑动窗口掉速检测，无额外传感器</li>
+          <li>连续丢线 5 帧自动刹车</li>
+        </ul>
+      </article>
+
+      <article class="card reveal">
+        <div class="icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="2" width="12" height="20" rx="2.5"/>
+            <path d="M11 18h2"/>
+          </svg>
+        </div>
+        <h3>Control</h3>
+        <p>微信小程序原生实现，局域网直连，不依赖任何云服务。</p>
+        <ul>
+          <li>TCP 命令通道 + UDP 视频流</li>
+          <li>实时分割叠加图回传</li>
+          <li>双分区 OTA 空中升级</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DEMO ================= -->
+<section id="demo">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Demo</span>
+      <h2>它跑起来是这样的</h2>
+      <p class="lead">实拍演示。视频已压缩到几百 KB，直接取自手机录制。</p>
+    </div>
+
+    <div class="media-grid">
+      <div class="media wide reveal">
+        <video src="assets/video/demo-run.mp4" poster="assets/img/robot-photo-1.jpg" controls preload="none" playsinline></video>
+        <span class="tag">自主循迹实跑 · 4K 原片压缩</span>
+      </div>
+      <div class="media reveal">
+        <video src="assets/video/demo-loop.mp4" poster="assets/img/robot-photo-2.jpg" controls preload="none" playsinline></video>
+        <span class="tag">整机工作循环</span>
+      </div>
+      <div class="media reveal">
+        <video src="assets/video/demo-3dprint.mp4" poster="assets/img/print-1.jpg" controls preload="none" playsinline></video>
+        <span class="tag">3D 打印件装配</span>
+      </div>
+      <div class="media wide reveal">
+        <img src="assets/img/robot-photo-3.jpg" alt="机器人实拍">
+        <span class="tag">V1 整机实拍</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ARCHITECTURE ================= -->
+<section id="architecture">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Architecture</span>
+      <h2>数据怎么流动</h2>
+      <p class="lead">一条从像素到轮速的最短路径，中间没有操作系统、没有云端。</p>
+    </div>
+
+    <div class="arch reveal">
+      <div class="arch-row">
+        <div class="arch-box"><b>OV2640</b><span>QQVGA 160×120 灰度 · 20MHz XCLK · PSRAM 帧缓冲</span></div>
+        <div class="arch-box"><b>预处理</b><span>旋转 180° → 归一化 /255 → 量化到 int8</span></div>
+        <div class="arch-box accent"><b>ESP-DL 推理</b><span>UNetMiniExp5 · INT8 · 148 KB 嵌入固件</span></div>
+      </div>
+      <div class="arch-arrow">↓</div>
+      <div class="arch-row">
+        <div class="arch-box"><b>Sigmoid 查表</b><span>256 项 LUT 把 int8 logits 映射为 0 / 255</span></div>
+        <div class="arch-box"><b>质心提取</b><span>G1 近处 + G2 远处 → 偏差 error</span></div>
+        <div class="arch-box accent"><b>PID</b><span>Kp × error → 左右轮 PWM 差速</span></div>
+      </div>
+      <div class="arch-arrow">↓</div>
+      <div class="arch-row">
+        <div class="arch-box"><b>TB6612FNG</b><span>双路 PWM 1kHz / 8bit + 3 号清洁电机</span></div>
+        <div class="arch-box"><b>编码器 PCNT</b><span>单通道一倍频 · 滑动窗口掉速检测</span></div>
+        <div class="arch-box accent"><b>TCP / UDP</b><span>命令 · 视频流 · 19210B 分割帧 · OTA</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= HARDWARE ================= -->
+<section id="hardware">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Hardware</span>
+      <h2>硬件全开源</h2>
+      <p class="lead">BOM、原理图、电机驱动手册、PCB 工程、三视图与可直接切片的 STL 全部在 <code>hardware/</code> 目录。</p>
+    </div>
+
+    <div class="gallery">
+      <div class="shot reveal"><img src="assets/img/robot-photo-1.jpg" alt="整机实拍"><span>整机</span></div>
+      <div class="shot reveal"><img src="assets/img/render-front.jpg" alt="正视图"><span>正视图</span></div>
+      <div class="shot reveal"><img src="assets/img/render-right.jpg" alt="右视图"><span>右视图</span></div>
+      <div class="shot reveal"><img src="assets/img/render-bottom.jpg" alt="底部视图"><span>底部·清洁机构</span></div>
+      <div class="shot reveal"><img src="assets/img/board-esp32s3cam.jpg" alt="主控板"><span>ESP32-S3-CAM</span></div>
+      <div class="shot reveal"><img src="assets/img/board-pinout.jpg" alt="引脚图"><span>引脚定义</span></div>
+      <div class="shot reveal"><img src="assets/img/board-wiring-1.jpg" alt="走线"><span>走线</span></div>
+      <div class="shot reveal"><img src="assets/img/print-3.jpg" alt="3D 打印件"><span>3D 打印件</span></div>
+      <div class="shot reveal"><img src="assets/img/concept-1.jpg" alt="概念图"><span>概念设计</span></div>
+      <div class="shot reveal"><img src="assets/img/concept-3.jpg" alt="概念图"><span>形态探索</span></div>
+      <div class="shot reveal"><img src="assets/img/print-5.jpg" alt="打印件"><span>结构件</span></div>
+      <div class="shot reveal"><img src="assets/img/sketch-1.jpg" alt="草图"><span>早期草图</span></div>
+    </div>
+
+    <div class="features" style="margin-top:32px">
+      <article class="card reveal">
+        <h3>核心选型</h3>
+        <ul>
+          <li>ESP32-S3-WROOM-1 N16R8（8MB Flash + 8MB PSRAM）</li>
+          <li>OV2640 8 位并口直连</li>
+          <li>TB6612FNG 双路驱动</li>
+          <li>JGA25-370 带 AB 相编码器</li>
+        </ul>
+      </article>
+      <article class="card reveal">
+        <h3>结构件</h3>
+        <ul>
+          <li>外壳 / 底盘 / 水箱，单位毫米</li>
+          <li>PLA 外壳、PETG 水箱</li>
+          <li>层高 0.2mm，3 圈壁厚</li>
+          <li>M3 螺丝 + 热熔铜螺母拼装</li>
+        </ul>
+      </article>
+      <article class="card reveal">
+        <h3>资料清单</h3>
+        <ul>
+          <li><a href="https://github.com/AishuaiYao/AICleanBot/blob/main/hardware/bom.csv">bom.csv</a> 物料清单</li>
+          <li><code>datasheets/</code> 原理图 + 驱动手册</li>
+          <li><code>cad/</code> STL 模型</li>
+          <li><code>pcb/</code> 嘉立创 EDA 工程</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= QUICK START ================= -->
+<section id="start">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Get Started</span>
+      <h2>30 分钟跑起来</h2>
+      <p class="lead">仓库自带训练好的 <code>model.espdl</code>，克隆下来编译烧录即可循迹。</p>
+    </div>
+
+    <div class="split">
+      <div class="reveal">
+        <div class="code">
+          <div class="code-head">
+            <span class="dots"><i></i><i></i><i></i></span>
+            PowerShell / Bash
+          </div>
+<pre><span class="c"># 1. 克隆（务必带子模块，否则小程序目录是空的）</span>
+git clone --recurse-submodules \
+  https://github.com/AishuaiYao/AICleanBot.git
+<span class="k">cd</span> AICleanBot
+
+<span class="c"># 2. 安装 ESP-IDF v5.4.x 后，设定目标芯片</span>
+idf.py set-target esp32s3
+
+<span class="c"># 3. 编译 + 烧录 + 串口监视（Windows 用 COM3 之类）</span>
+idf.py -p <span class="s">COM3</span> build flash monitor
+</pre>
+        </div>
+
+        <div class="code" style="margin-top:18px">
+          <div class="code-head">
+            <span class="dots"><i></i><i></i><i></i></span>
+            设备热点 · TCP 5000
+          </div>
+<pre>SSID      LinePatrol V1
+Password  *HUAHUAshi1zhimao
+IP        192.168.4.1
+
+<span class="c"># 每个连接都要先 HELLO 握手</span>
+<span class="k">HELLO</span>            → LinePatrol V1|😊|AA:BB:CC:DD:EE:FF
+<span class="k">START:60</span>         → 以 60% 速度启动
+<span class="k">EXPERIMENT</span>       → 自动循迹 + 分割图回传
+<span class="k">STOP</span>             → 停车
+</pre>
+        </div>
+      </div>
+
+      <div class="reveal">
+        <h3 style="margin-bottom:14px">烧录之前请确认</h3>
+        <ul class="checklist">
+          <li>模组带 PSRAM（`CONFIG_SPIRAM=y` 已开，无 PSRAM 会在 <code>esp_camera_init</code> 崩）</li>
+          <li>摄像头 D0–D7 顺序正确 —— 唯一没有报错提示的坑</li>
+          <li>TB6612 的 STBY 已拉高，否则电机完全不动</li>
+          <li>电池分压用 100k + 10k，ADC 不能直连 12V</li>
+          <li><code>main/models/model.espdl</code> 存在（编译期嵌入固件）</li>
+        </ul>
+
+        <div class="cta-row" style="margin-top:28px">
+          <a class="btn btn-primary" href="https://github.com/AishuaiYao/AICleanBot#readme" target="_blank" rel="noopener">
+            完整复现文档
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MINI APP ================= -->
+<section id="app">
+  <div class="wrap">
+    <div class="split rev">
+      <div class="reveal">
+        <div class="phone-frame">
+          <img src="assets/img/ui-1.jpg" alt="微信小程序界面">
+        </div>
+      </div>
+      <div class="reveal">
+        <span class="eyebrow">Mini Program</span>
+        <h2>手机就是遥控器</h2>
+        <p class="lead">
+          微信小程序原生实现，局域网直连设备热点，不经过云端。
+          采集的数据存在手机本地，也可以同步到微信云开发。
+        </p>
+        <ul class="checklist">
+          <li>设备发现与 TCP 握手</li>
+          <li>UDP 实时视频流（分片重组）</li>
+          <li>遥控 + 速度滑块 + 清洁电机开关</li>
+          <li>单帧拍照存本地 / 批量上传云端</li>
+          <li>编码器数据记录与柱状图导出</li>
+        </ul>
+        <div class="cta-row">
+          <a class="btn btn-ghost" href="https://github.com/AishuaiYao/smartcat" target="_blank" rel="noopener">smartcat 仓库</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ROADMAP ================= -->
+<section id="roadmap">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Roadmap</span>
+      <h2>这不是一个做完的项目</h2>
+      <p class="lead">因为硬件资金等原因暂停在 V1。路线已经想清楚了，欢迎接手任何一段。</p>
+    </div>
+
+    <div class="split">
+      <div class="timeline reveal">
+        <div class="tl-item done">
+          <h4>V1 · 视觉巡线 <small>已实现</small></h4>
+          <p>ESP-DL 边缘分割、PID 循迹、编码器碰撞检测、双通道通信、OTA。</p>
+        </div>
+        <div class="tl-item done">
+          <h4>V1.1 · 清洁机构 <small>已实现</small></h4>
+          <p>3 号电机驱动毛刷/吸水辊，水箱与结构件完成 3D 建模。</p>
+        </div>
+        <div class="tl-item">
+          <h4>V2 · 地图与导航 <small>进行中</small></h4>
+          <p>DFS 全覆盖遍历（原型在 <code>py_scripts/simulation/dfs.py</code>）移植到板端 C++，配合里程计构建栅格地图。</p>
+        </div>
+        <div class="tl-item">
+          <h4>V3 · 自主清扫 <small>计划</small></h4>
+          <p>覆盖路径规划 + 边界识别 + 回充对接，形成完整清洁闭环。</p>
+        </div>
+        <div class="tl-item">
+          <h4>V4 · 更强的 AI <small>构想</small></h4>
+          <p>多类别分割（地面材质、障碍物、充电桩），端侧多任务模型。</p>
+        </div>
+      </div>
+
+      <div class="reveal">
+        <div class="card">
+          <h3>正在寻找的协作</h3>
+          <ul>
+            <li><b>硬件</b>：PCB 打样与贴片支持，尤其是载板小型化</li>
+            <li><b>算法</b>：全覆盖路径规划、视觉里程计</li>
+            <li><b>工程</b>：CI（固件自动编译 + 训练冒烟测试）</li>
+            <li><b>文档</b>：英文翻译、拆解图解</li>
+          </ul>
+        </div>
+        <div class="card" style="margin-top:18px">
+          <h3>已知限制</h3>
+          <ul>
+            <li>模型只分背景 / 引导线两类</li>
+            <li>左右轮 IN1、IN2 共用 GPIO，无法原地自转</li>
+            <li>WiFi 密码与 PID 增益仍硬编码在源码里</li>
+            <li>无单元测试，靠手工流程验证</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div class="wrap foot-inner">
+    <div>
+      <div class="brand" style="font-size:16px;margin-bottom:8px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="8" width="18" height="12" rx="4"/>
+          <circle cx="9" cy="14" r="1.4" fill="currentColor" stroke="none"/>
+          <circle cx="15" cy="14" r="1.4" fill="currentColor" stroke="none"/>
+          <path d="M12 8V4"/><circle cx="12" cy="3" r="1.2"/>
+        </svg>
+        AICLEANBOT
+      </div>
+      <span>Apache-2.0 · 2026</span>
+    </div>
+    <div class="foot-links">
+      <a href="https://github.com/AishuaiYao/AICleanBot" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/AishuaiYao/AICleanBot/blob/main/README.md" target="_blank" rel="noopener">Docs</a>
+      <a href="https://github.com/AishuaiYao/AICleanBot/blob/main/hardware/README.md" target="_blank" rel="noopener">Hardware</a>
+      <a href="https://github.com/AishuaiYao/AICleanBot/blob/main/ROADMAP.md" target="_blank" rel="noopener">Roadmap</a>
+      <a href="https://github.com/AishuaiYao/AICleanBot/issues/new/choose" target="_blank" rel="noopener">Issues</a>
+    </div>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox"><img alt=""></div>
+
+<script>
+(function () {
+  // 导航滚动状态
+  var nav = document.getElementById('nav');
+  var onScroll = function () {
+    nav.classList.toggle('scrolled', window.scrollY > 12);
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // 滚动淡入
+  var items = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    items.forEach(function (el) { io.observe(el); });
+  } else {
+    items.forEach(function (el) { el.classList.add('in'); });
+  }
+
+  // 图片灯箱
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  document.querySelectorAll('.shot img').forEach(function (img) {
+    img.addEventListener('click', function () {
+      lbImg.src = img.src;
+      lbImg.alt = img.alt;
+      lb.classList.add('open');
+    });
+  });
+  lb.addEventListener('click', function () { lb.classList.remove('open'); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') lb.classList.remove('open');
+  });
+
+  // 同时只播一个视频
+  var videos = document.querySelectorAll('video');
+  videos.forEach(function (v) {
+    v.addEventListener('play', function () {
+      videos.forEach(function (o) { if (o !== v) o.pause(); });
+    });
+  });
+})();
+</script>
+</body>
+</html>

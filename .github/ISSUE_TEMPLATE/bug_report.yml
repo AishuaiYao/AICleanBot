@@ -1,0 +1,105 @@
+name: 🐛 Bug 报告
+description: 固件、训练脚本、小程序或硬件设计出问题时用这个模板
+title: "[Bug] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。这个项目横跨嵌入式、Python 训练、微信小程序三层，**请先选对你遇到问题的层**，信息越全定位越快。
+        提之前建议先搜一下已有 issue。
+
+  - type: dropdown
+    id: layer
+    attributes:
+      label: 出问题的模块
+      options:
+        - 固件 main/（编译、烧录、运行）
+        - 固件 main/（推理结果不对）
+        - 硬件（接线、电机、编码器、摄像头）
+        - Python 训练 py_scripts/net/
+        - Python 工具 py_scripts/utils/（标注、采集、量化）
+        - 微信小程序 smartcat/
+        - 文档 / README / 官网
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 现象描述
+      description: 你做了什么、期望是什么、实际发生了什么
+      placeholder: |
+        1. 执行 idf.py build flash monitor
+        2. 发送 START:60
+        3. 期望小车直行，实际电机不动，日志显示 START 成功
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志 / 报错输出
+      description: |
+        固件问题请贴 `idf.py monitor` 的输出（可截取关键部分）；
+        Python 问题请贴完整 traceback。
+      render: shell
+    validations:
+      required: false
+
+  - type: input
+    id: commit
+    attributes:
+      label: 仓库版本
+      description: 运行 `git log -1 --format='%h %s'` 的结果
+      placeholder: "6be8279 添加 smartcat 上位机端子模块"
+    validations:
+      required: true
+
+  - type: input
+    id: idf-version
+    attributes:
+      label: ESP-IDF 版本
+      description: 运行 `idf.py --version` 的结果；非固件问题可填 N/A
+      placeholder: "ESP-IDF v5.4.0"
+    validations:
+      required: false
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python 版本
+      description: 运行 `python --version` 的结果；非 Python 问题可填 N/A
+      placeholder: "Python 3.11.9"
+    validations:
+      required: false
+
+  - type: textarea
+    id: hardware
+    attributes:
+      label: 硬件信息
+      description: 主控型号、是否带 PSRAM、摄像头、电机驱动、电池电压
+      placeholder: |
+        - 主控：ESP32-S3-WROOM-1 N16R8
+        - PSRAM：有，8MB OCT
+        - 摄像头：OV2640
+        - 驱动：TB6612FNG
+        - 电池：3S 11.1V
+    validations:
+      required: false
+
+  - type: dropdown
+    id: self-check
+    attributes:
+      label: 已做过的排查
+      description: 对照 README 的「排障 FAQ」和 hardware/README 的接线检查清单
+      multiple: true
+      options:
+        - 已确认 main/models/model.espdl 存在
+        - 已确认摄像头 D0-D7 线序
+        - 已确认 TB6612 的 STBY 拉高
+        - 已确认每个 TCP 连接先发了 HELLO
+        - 已对照 README 排障 FAQ
+        - 以上都还没做
+    validations:
+      required: false
