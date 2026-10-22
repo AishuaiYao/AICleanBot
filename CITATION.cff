@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "AICleanBot: An Open-Source ESP32-S3 Robot with On-Device Semantic Segmentation"
+abstract: >-
+  An open-source line-following cleaning robot built on a single ESP32-S3.
+  A lightweight INT8-quantized U-Net runs on-device to segment the guide line
+  from a 160x120 grayscale camera frame, and a PID controller turns the
+  centroid error into differential wheel speeds. The repository ships the
+  firmware, the training and quantization pipeline, the dataset, the hardware
+  design files and a WeChat mini-program host, so the whole loop from data
+  capture to on-device inference can be reproduced without a cloud GPU.
+version: 1.0.0
+date-released: "2026-10-22"
+license: Apache-2.0
+repository-code: "https://github.com/AishuaiYao/AICleanBot"
+url: "https://aishuaiyao.github.io/AICleanBot/"
+authors:
+  - family-names: "Yao"
+    given-names: "Aishuai"
+keywords:
+  - esp32-s3
+  - esp-idf
+  - esp-dl
+  - semantic-segmentation
+  - u-net
+  - knowledge-distillation
+  - int8-quantization
+  - edge-ai
+  - line-following-robot
+  - pid-control
+  - robotics

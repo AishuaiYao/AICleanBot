@@ -21,6 +21,9 @@
 
 整个过程不需要任何云端 GPU，也不需要额外购买上位机。
 
+> 仓库已经自带 **262 张标注好的数据**（train 209 / val 53）和 **训练好的 INT8 模型**，
+> 所以上面这条链路上的任意一环都可以单独拆出来跑：没有硬件也能训练，没有数据也能烧固件。
+
 | 项目 | 指标 |
 |------|------|
 | 主控 | ESP32-S3，240MHz，8MB Flash + 8MB PSRAM |
@@ -29,11 +32,35 @@
 | 任务 | 逐像素二分类（背景 / 引导线） |
 | 控制 | 质心偏差 → PID → 双轮差速 |
 
+### 实测指标
+
+下面这组数字全部来自仓库 `logs/` 里保留的真实训练日志，同一份数据集（262 张、8:2 划分、`seed=42`）、同一套超参，用来判断你的复现是否到位：
+
+| 模型 | Best val IoU | 权重体积 | 能否上板 |
+|------|-------------|---------|---------|
+| U-Net + ResNet18（教师） | **0.9100** | 大 | ❌ 只在 PC 上跑，作蒸馏教师 |
+| `UNetMiniExp5`（直接训练） | 0.8169 → 0.8574 | ~334 KB | ✅ |
+| `UNetMiniExp5` + 知识蒸馏 | **0.8791** | ~334 KB | ✅ ← 仓库里自带的部署模型就是它 |
+
+对应日志：`logs/train/20260416_213640_UNet_ResNet18.txt`（教师）、`logs/train/20260416_225153_UNetMiniExp5_KD.txt`（蒸馏学生）。
+
+蒸馏把同一个小模型的 IoU 从 0.857 拉到 0.879，代价只是多跑一次教师训练；而教师本身也只有 0.910 —— 在这个 160×120 的单通道任务上，小模型已经接近天花板，再堆容量收益很小。
+
+**板端速度请自己实测**，这里不写死一个数字：不同摄像头模组、PSRAM 批次、WiFi 干扰下差异很大，写死反而会误导。进入实验模式后，串口**每 100 帧**会打印一次各阶段耗时：
+
+```
+[Exp] 帧0100 | 采<ms> 预<ms> 推<ms> 后<ms> 叠<ms> | 控<ms> 传<ms> | 总<ms> | G1=.. G2=.. | 线OK
+                             ↑ 这一项就是模型推理耗时
+```
+
+`idf.py -p COM3 monitor` 就能看到。
+
 ---
 
 ## 目录
 
 - [效果展示](#效果展示)
+- [实测指标](#实测指标)
 - [功能特性](#功能特性)
 - [两条上手路线](#两条上手路线)
 - [硬件准备](#硬件准备)
@@ -42,9 +69,12 @@
 - [路线 B：训练自己的模型](#路线-b训练自己的模型)
 - [通信协议](#通信协议)
 - [目录结构](#目录结构)
+- [代码导览（固件）](#代码导览固件)
 - [Python 工具速查](#python-工具速查)
 - [排障 FAQ](#排障-faq)
 - [Roadmap](#roadmap)
+- [致谢](#致谢)
+- [引用](#引用)
 - [许可证](#许可证)
 
 ---
@@ -562,7 +592,7 @@ python py_scripts/net/train_student_kd.py
 | Scheduler | CosineAnnealing (T_max=200) | CosineAnnealingWarmRestarts (T_0=10, T_mult=2) | 同学生 |
 | 随机种子 | 42 | 42 | 42 |
 
-训练过程会自动打印 mIoU / 像素精度，并在每个最佳 epoch 写验证集可视化到 `py_scripts/dataset/pred/`，训练曲线落在 `py_scripts/figure/<运行目录>/training_curves.png`。
+训练会逐 epoch 打印 Loss / IoU / 像素精度，结束时打印一行 `Training completed! Best val IoU: x.xxxx` —— 上文[实测指标](#实测指标)表里的数字就是这么来的。每个更优的 epoch 会把验证集可视化写到 `py_scripts/dataset/pred/`，训练曲线落在 `py_scripts/figure/<运行目录>/training_curves.png`。
 
 产物：`py_scripts/models/<时间戳>_<模型名>/best_model.pth`。
 
@@ -820,6 +850,21 @@ AICleanBot/
 
 ---
 
+### 代码导览（固件）
+
+想改固件的话，从这四个位置入手就够了：
+
+| 位置 | 职责 |
+|------|------|
+| `app_main()`（L1614） | 上电初始化：摄像头 → WiFi AP → LEDC/PWM → PCNT 编码器 → 加载 `.espdl` → 建任务 |
+| `tcp_server_task()`（L1580） | TCP 5000 服务器，accept 循环 |
+| `handle_client()`（L1092） | 命令解析与分发；**实验模式的推理主循环也在这里**（L711 起：采集 → 预处理 → 推理 → 后处理 → 叠加 → PID → 发送） |
+| `breath_led_task()`（L473） | 状态指示灯 |
+
+常见改法：加新命令 → 在 `handle_client` 里加一个 `strncmp` 分支；调循迹手感 → 改实验模式循环里的 PID 段（搜 `g_pid_kp`）；换模型 → 直接替换 `main/models/model.espdl`，不用改代码。
+
+---
+
 ## Python 工具速查
 
 | 脚本 | 部署位置 | 用途 | 命令行参数 |
@@ -934,6 +979,26 @@ pip install esp-ppq
 - [esp32-camera](https://github.com/espressif/esp32-camera)
 - [segmentation_models.pytorch](https://github.com/qubvel/segmentation_models.pytorch)
 - [esp-ppq](https://github.com/espressif/esp-ppq) —— INT8 量化工具链
+- [PyTorch](https://github.com/pytorch/pytorch) / [MicroPython](https://github.com/micropython/micropython)
+
+---
+
+## 引用
+
+如果你的作业、论文或项目用到了本仓库，欢迎引用：
+
+```bibtex
+@misc{aicleanbot2026,
+  author       = {Aishuai Yao},
+  title        = {AICleanBot: An Open-Source ESP32-S3 Robot with On-Device Semantic Segmentation},
+  year         = {2026},
+  publisher    = {GitHub},
+  journal      = {GitHub repository},
+  howpublished = {\url{https://github.com/AishuaiYao/AICleanBot}}
+}
+```
+
+仓库根目录的 [`CITATION.cff`](CITATION.cff) 也是同样内容，GitHub 会自动识别并在仓库页显示「Cite this repository」。
 
 ---
 
