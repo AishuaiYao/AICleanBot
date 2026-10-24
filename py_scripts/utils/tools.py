@@ -25,6 +25,29 @@ PY_DIR = PROJECT_ROOT / 'py_scripts'
 LOG_ROOT = PROJECT_ROOT / 'logs'
 
 
+def list_images(directory):
+    """
+    列出目录下的所有图片文件名
+
+    功能:
+        统一封装图片查找逻辑。此前 visualize_labels / split_dataset / label_tool
+        各自复制了一份 glob 模式，新增格式时要改三处，现在只需要改这里。
+
+    入参:
+        directory: str - 目录路径（不存在时返回空列表，不抛异常）
+
+    出参:
+        list[str] - 图片文件名列表（不含目录前缀，已按名称排序）
+    """
+    if not os.path.isdir(directory):
+        return []
+
+    names = []
+    for pattern in ('*.jpg', '*.jpeg', '*.png', '*.bmp'):
+        names.extend(os.path.basename(p) for p in glob.glob(os.path.join(directory, pattern)))
+    return sorted(names)
+
+
 def export_onnx(model, save_dir, input_shape=(1, 1, 120, 160), model_name='model.onnx'):
     """
     导出PyTorch模型为ONNX格式
@@ -384,12 +407,8 @@ def visualize_labels(image_dir, label_dir=None, output_dir=None):
     
     os.makedirs(output_dir, exist_ok=True)
     
-    img_paths = glob.glob(os.path.join(image_dir, '*.[jp][pn]g')) + glob.glob(os.path.join(image_dir, '*.bmp'))
-    img_names = [os.path.basename(p) for p in img_paths]
-    
-    label_paths = glob.glob(os.path.join(label_dir, '*.[jp][pn]g')) + glob.glob(os.path.join(label_dir, '*.bmp'))
-    label_names = [os.path.basename(p) for p in label_paths]
-    
+    img_names = list_images(image_dir)
+    label_names = list_images(label_dir)
     common_names = sorted(set(img_names) & set(label_names))
     total = len(common_names)
     
@@ -465,12 +484,9 @@ def split_dataset(image_dir, label_dir, train_dir, val_dir, train_ratio=0.8, see
         os.makedirs(dir_path, exist_ok=True)
     
     # 获取文件名（支持 jpg, jpeg, png, bmp）
-    img_files = set(glob.glob(os.path.join(image_dir, '*.[jp][pn]g')) + glob.glob(os.path.join(image_dir, '*.bmp')))
-    label_files = set(glob.glob(os.path.join(label_dir, '*.[jp][pn]g')) + glob.glob(os.path.join(label_dir, '*.bmp')))
-    
-    img_names = {os.path.basename(p) for p in img_files}
-    label_names = {os.path.basename(p) for p in label_files}
-    common_names = sorted(list(img_names & label_names))
+    img_names = set(list_images(image_dir))
+    label_names = set(list_images(label_dir))
+    common_names = sorted(img_names & label_names)
     
     print(f"Total samples: {len(common_names)}")
     

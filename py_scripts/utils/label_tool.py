@@ -1,8 +1,12 @@
 import cv2
 import os
-import glob
+import sys
 import numpy as np
 from pathlib import Path
+
+# 保证以任何方式运行（python 脚本 / python -m）都能找到同目录的 tools
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from tools import list_images
 
 # ==================== 路径 ====================
 # 所有路径基于本文件位置推导，仓库被 clone 到任何目录都能直接运行
@@ -13,11 +17,12 @@ PY_DIR = PROJECT_ROOT / 'py_scripts'
 scale_size = 700  # 展示用的缩放宽度（不影响最终保存）
 line_expand = 4  # 线段扩展像素（核心可调节，建议2-5，数字越大线段越粗）
 _dataset_dir = str(PY_DIR / 'dataset')
-img_dir = os.path.join(_dataset_dir, 'FRAME_QQVGA')           # 原始图片目录（完全保留，不修改）
-gray_save_dir = os.path.join(_dataset_dir, 'FRAME_QQVGA')     # 灰度图保存目录（160×120）
+img_dir = os.path.join(_dataset_dir, 'FRAME_QQVGA')           # 原始图片目录
+gray_save_dir = os.path.join(_dataset_dir, 'FRAME_QQVGA')     # 灰度图保存目录（原图本就是灰度时写这里）
 label_save_dir = gray_save_dir + '_label'  # 绘制线段后的真值图保存目录（160×120）
+gray_color_dir = img_dir + '_gray'         # 原图是彩色时，灰度版写这里，绝不覆盖彩色原图
 
-# 全局变量
+# 全局变量（mouse_click 回调需要，不能放进 main 的局部作用域）
 click_points = []
 img_concat_show = None
 label_show = None
@@ -28,7 +33,6 @@ current_img_path = None
 # 自动创建所需目录
 os.makedirs(gray_save_dir, exist_ok=True)
 os.makedirs(label_save_dir, exist_ok=True)
-
 
 
 # 核心函数2：只对当前新线段做膨胀，再叠加到label上，修复越画越粗的bug
@@ -84,105 +88,118 @@ def mouse_click(event, x, y, flags, param):
             cv2.imshow('img+label', img_concat_show)
 
 
-# 获取图片路径
-img_paths = glob.glob(os.path.join(img_dir, '*.[jp][pn]g')) + glob.glob(os.path.join(img_dir, '*.bmp'))
-if not img_paths:
-    print("警告：未找到图片")
-    exit()
+def main():
+    """交互式标注主流程：左键两点画一条线段 → 回车保存 / 空格跳过 / ESC 退出"""
+    global click_points, img_concat_show, label_show, label_original, img_original_gray, current_img_path
 
-total = len(img_paths)
-processed = 0
-skipped = 0
+    img_paths = [os.path.join(img_dir, name) for name in list_images(img_dir)]
+    if not img_paths:
+        print("警告：未找到图片")
+        return
 
-print(f"\n总图片数：{total}")
-print("-" * 50)
+    total = len(img_paths)
+    processed = 0
+    skipped = 0
 
-# 遍历处理
-for idx, img_path in enumerate(img_paths):
-    img_name = os.path.basename(img_path)
-    gray_path = os.path.join(gray_save_dir, img_name)
-    label_path = os.path.join(label_save_dir, img_name)
-    
-    # 检查是否已处理
-    if os.path.exists(gray_path) and os.path.exists(label_path):
-        skipped += 1
-        processed += 1
-        progress = (processed / total) * 100
-        print(f"[{processed}/{total} {progress:5.1f}%] 跳过已处理：{img_name} (剩余：{total - processed})")
-        continue
-    
-    current_img_path = img_path
-    click_points = []
-    img_concat_show = None
-    label_show = None
-    label_original = None
-    img_original_gray = None
+    print(f"\n总图片数：{total}")
+    print("-" * 50)
 
-    img = cv2.imread(img_path)
-    if img is None:
-        print(f"警告：无法读取 {img_path}，跳过")
-        continue
-    
-    # 判断并转换为灰度图
-    if len(img.shape) == 3 and img.shape[2] == 3:
-        img_original_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    else:
-        img_original_gray = img  # 已经是单通道
-    
-    orig_h, orig_w = img_original_gray.shape[:2]
-    label_original = np.zeros_like(img_original_gray, dtype=np.uint8)
+    for idx, img_path in enumerate(img_paths):
+        img_name = os.path.basename(img_path)
 
-    # 展示图缩放
-    scale_show = scale_size / orig_w
-    show_h = int(orig_h * scale_show)
-    img_resize = cv2.resize(img_original_gray, (scale_size, show_h), interpolation=cv2.INTER_LINEAR)
-    img_gray_show = img_resize
-    label_show = np.zeros_like(img_gray_show, dtype=np.uint8)
+        img = cv2.imread(img_path)
+        if img is None:
+            print(f"警告：无法读取 {img_path}，跳过")
+            continue
 
-    # 拼接展示图
-    img_gray_show_3c = cv2.cvtColor(img_gray_show, cv2.COLOR_GRAY2BGR)
-    label_show_3c = cv2.cvtColor(label_show, cv2.COLOR_GRAY2BGR)
-    img_concat_show = np.hstack((img_gray_show_3c, label_show_3c))
-    concat_h, concat_w = img_concat_show.shape[:2]
+        # 判断并转换为灰度图
+        is_color = (len(img.shape) == 3 and img.shape[2] == 3)
+        if is_color:
+            img_original_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        else:
+            img_original_gray = img  # 已经是单通道
 
-    # 窗口与鼠标
-    cv2.namedWindow('img+label', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('img+label', concat_w, concat_h)
-    cv2.setMouseCallback('img+label', mouse_click)
-    cv2.imshow('img+label', img_concat_show)
+        # 彩色原图一律输出到 gray_color_dir，不覆盖原图，避免彩色信息被静默丢弃；
+        # 原图本来就是灰度时写回原目录 —— 内容与读进来的一致，只是重新编码一次，无损。
+        gray_out_dir = gray_color_dir if is_color else gray_save_dir
+        os.makedirs(gray_out_dir, exist_ok=True)
+        gray_path = os.path.join(gray_out_dir, img_name)
+        label_path = os.path.join(label_save_dir, img_name)
 
-    progress = (processed / total) * 100
-    print(f"\n[{processed + 1}/{total} {progress:5.1f}% → ", end="")
-    print(f"{((processed + 1) / total) * 100:5.1f}%] 处理：{img_name} (剩余：{total - processed - 1})")
-    print("左键：起点→终点画线段，回车保存，空格跳过当前，ESC退出")
+        # 检查是否已处理
+        if os.path.exists(gray_path) and os.path.exists(label_path):
+            skipped += 1
+            processed += 1
+            progress = (processed / total) * 100
+            print(f"[{processed}/{total} {progress:5.1f}%] 跳过已处理：{img_name} (剩余：{total - processed})")
+            continue
 
-    while True:
-        key = cv2.waitKey(1) & 0xFF
-        if key == 13:  # 回车保存
-            # 检查label是否为空（全黑）
-            if np.max(label_original) == 0:
-                print(f"警告：标签为空（未画线段），已跳过保存 {img_name}")
+        current_img_path = img_path
+        click_points = []
+        img_concat_show = None
+        label_show = None
+        label_original = None
+
+        orig_h, orig_w = img_original_gray.shape[:2]
+        label_original = np.zeros_like(img_original_gray, dtype=np.uint8)
+
+        # 展示图缩放
+        scale_show = scale_size / orig_w
+        show_h = int(orig_h * scale_show)
+        img_resize = cv2.resize(img_original_gray, (scale_size, show_h), interpolation=cv2.INTER_LINEAR)
+        img_gray_show = img_resize
+        label_show = np.zeros_like(img_gray_show, dtype=np.uint8)
+
+        # 拼接展示图
+        img_gray_show_3c = cv2.cvtColor(img_gray_show, cv2.COLOR_GRAY2BGR)
+        label_show_3c = cv2.cvtColor(label_show, cv2.COLOR_GRAY2BGR)
+        img_concat_show = np.hstack((img_gray_show_3c, label_show_3c))
+        concat_h, concat_w = img_concat_show.shape[:2]
+
+        # 窗口与鼠标
+        cv2.namedWindow('img+label', cv2.WINDOW_NORMAL)
+        cv2.resizeWindow('img+label', concat_w, concat_h)
+        cv2.setMouseCallback('img+label', mouse_click)
+        cv2.imshow('img+label', img_concat_show)
+
+        print(f"\n[{processed + 1}/{total} {((processed + 1) / total) * 100:5.1f}%] 处理：{img_name} (剩余：{total - processed - 1})")
+        print("左键：起点→终点画线段，回车保存，空格跳过当前，ESC退出")
+        if is_color:
+            print(f"（原图为彩色，灰度版将保存到 {os.path.basename(gray_out_dir)}/，原图不会被修改）")
+
+        key = -1
+        while True:
+            key = cv2.waitKey(1) & 0xFF
+            if key == 13:  # 回车保存
+                # 检查label是否为空（全黑）
+                if np.max(label_original) == 0:
+                    print(f"警告：标签为空（未画线段），已跳过保存 {img_name}")
+                    processed += 1
+                    break
+
+                # 保存原图尺寸的灰度图和标签图
+                cv2.imwrite(gray_path, img_original_gray)
+                cv2.imwrite(label_path, label_original)
                 processed += 1
+                print(f"已保存：{img_name} (原图尺寸: {orig_w}x{orig_h})")
                 break
-            
-            # 保存原图尺寸的灰度图和标签图
-            cv2.imwrite(gray_path, img_original_gray)
-            cv2.imwrite(label_path, label_original)
-            processed += 1
-            print(f"已保存：{img_name} (原图尺寸: {orig_w}x{orig_h})")
+            elif key == 32:  # 空格跳过当前
+                processed += 1
+                print(f"空格：跳过当前图片 {img_name}")
+                break
+            elif key == 27:  # ESC退出
+                print("ESC：退出程序")
+                break
+
+        if key == 27:
+            print(f"\n提前退出 - 已处理：{processed}/{total} ({processed/total*100:.1f}%)，跳过：{skipped}")
             break
-        elif key == 32:  # 空格跳过当前
-            processed += 1
-            print(f"空格：跳过当前图片 {img_name}")
-            break
-        elif key == 27:  # ESC退出
-            print("ESC：退出程序")
-            break
-    if key == 27:
-        print(f"\n提前退出 - 已处理：{processed}/{total} ({processed/total*100:.1f}%)，跳过：{skipped}")
-        break
+
+        cv2.destroyAllWindows()
 
     cv2.destroyAllWindows()
+    print(f"\n全部完成 - 已处理：{processed}/{total} ({processed/total*100:.1f}%)，跳过：{skipped}")
 
-cv2.destroyAllWindows()
-print(f"\n全部完成 - 已处理：{processed}/{total} ({processed/total*100:.1f}%)，跳过：{skipped}")
+
+if __name__ == "__main__":
+    main()

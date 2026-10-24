@@ -510,11 +510,24 @@ python py_scripts/utils/label_tool.py
 
 参数在文件顶部：`line_expand = 4`（线宽，越大 mask 越粗），`scale_size = 700`（窗口宽度，不影响保存结果）。
 
-输出目录：`py_scripts/dataset/FRAME_QQVGA_label/`。
-
 已经标过的图会自动跳过，可以放心中断后重跑。
 
-> **注意**：该工具会把原图**原地覆盖**为灰度图。如果你还想留原图，请先备份。
+**产物落在哪**
+
+| 产物 | 目录 |
+|------|------|
+| 标签 mask | `py_scripts/dataset/FRAME_QQVGA_label/` |
+| 灰度图（原图本来就是灰度） | `py_scripts/dataset/FRAME_QQVGA/` —— 写回原目录，内容与读进来的一致，只是重新编码一次 |
+| 灰度图（原图是**彩色**） | `py_scripts/dataset/FRAME_QQVGA_gray/` —— **彩色原图不会被改动** |
+
+采集端 `capture_img_client.py` 存的就是 160×120 灰度 PNG，走的是第二行，流程与以前完全一样。
+只有当你把彩色图丢进去标注时才会多出 `FRAME_QQVGA_gray/` —— 这时后续 `split_dataset` 的 image 目录要相应换成它。
+
+脚本也可以被 import 复用（不会一 import 就弹窗）：
+
+```python
+from label_tool import draw_thick_line_on_single_channel   # 画线 + 膨胀，返回叠加后的 mask
+```
 
 ### ③ 划分训练集 / 验证集
 
@@ -873,8 +886,8 @@ AICleanBot/
 | `net/train_student.py` | PC | 学生模型定义 + 训练 | 无，改顶部常量 |
 | `net/train_student_kd.py` | PC | 知识蒸馏 | `TEACHER_MODEL_PATH` 环境变量 |
 | `net/inference.py` | PC | 推理可视化 | `--model` `--input` |
-| `utils/tools.py` | PC | ONNX 导出 / 数据集划分 / 日志绘图 | 函数库，用 Python 调用 |
-| `utils/label_tool.py` | PC | 交互式标注 | 无 |
+| `utils/tools.py` | PC | ONNX 导出 / 数据集划分 / 日志绘图 / 图片枚举 | 函数库，用 Python 调用 |
+| `utils/label_tool.py` | PC | 交互式标注 | 无（也可 `import` 复用画线函数） |
 | `utils/export_espdl.py` | PC | INT8 量化 → `.espdl` | 无，改 `__main__` 里的常量 |
 | `utils/capture_img_serve.py` | **ESP32 (MicroPython)** | 图像服务端 | 无 |
 | `utils/capture_img_client.py` | PC | 采集存图 | 无 |
@@ -939,9 +952,9 @@ pip install esp-ppq
 
 `train_student_kd.py`、`net/inference.py` 都 import 了 `train_student`，请在 `py_scripts/net` 目录下运行，或者确保该目录在 `sys.path` 里。
 
-**`label_tool.py` 把我的原图覆盖了**
+**`label_tool.py` 会覆盖我的原图吗？**
 
-工具设计如此（它会把原图原地写成灰度图）。原始素材请先备份。
+只有标注**彩色**图时才有这个风险，当前版本已经处理掉了：彩色原图的灰度版会写到 `FRAME_QQVGA_gray/`，原图不动。如果原图本身就是灰度图（采集端的默认产物），灰度版会写回原目录——内容与你读进来的一致，只是重新编码了一次，不会有信息丢失。
 
 **on Windows：`Microsoft Visual C++ 14.x is required`**
 
