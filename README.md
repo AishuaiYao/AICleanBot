@@ -1,5 +1,7 @@
 # AICleanBot
 
+**[English](README_EN.md) | 简体中文**
+
 **An Open-Source AI Robot on ESP32-S3** · 实时语义分割 · 自主循迹 · 边缘推理
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-22d3ee?style=flat-square)](LICENSE)
