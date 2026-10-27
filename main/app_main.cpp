@@ -1006,12 +1006,22 @@ static void experiment_stream(int cmd_sock, int img_sock)
 // ===========================
 // OTA 固件升级处理
 // ===========================
+#define OTA_BUF_SIZE        4096
+#define OTA_ACK_INTERVAL    16384   // 每收满16KB回一次ACK, 供发送端限流与判活
+
 static void ota_handle(int sock, int fw_size)
 {
     const esp_partition_t *partition = esp_ota_get_next_update_partition(NULL);
     if (!partition) {
         ESP_LOGE(TAG, "[OTA] 无可用OTA分区");
         send(sock, "OTA_FAIL:no_ota_partition\n", 26, 0);
+        return;
+    }
+
+    // 必须校验大小: 超限会写坏分区, 过小/为0说明命令解析异常
+    if (fw_size <= 0 || (size_t)fw_size > partition->size) {
+        ESP_LOGE(TAG, "[OTA] 固件大小非法: %d (分区容量=%u)", fw_size, (unsigned)partition->size);
+        send(sock, "OTA_FAIL:bad_size\n", 18, 0);
         return;
     }
 
@@ -1028,19 +1038,26 @@ static void ota_handle(int sock, int fw_size)
     ESP_LOGI(TAG, "[OTA] 准备就绪, 分区=%s, 固件大小=%d", partition->label, fw_size);
     send(sock, "OTA_READY\n", 10, 0);
 
-    uint8_t *buf = (uint8_t *)malloc(4096);
+    uint8_t *buf = (uint8_t *)malloc(OTA_BUF_SIZE);
+    if (!buf) {
+        ESP_LOGE(TAG, "[OTA] 内存不足, 无法分配接收缓冲");
+        esp_ota_abort(ota_handle);
+        send(sock, "OTA_FAIL:nomem\n", 15, 0);
+        return;
+    }
     int total = 0;
     int last_pct = -1;
+    int since_ack = 0;
 
     while (total < fw_size) {
         int to_read = fw_size - total;
-        if (to_read > 4096) to_read = 4096;
+        if (to_read > OTA_BUF_SIZE) to_read = OTA_BUF_SIZE;
 
         int len = recv(sock, buf, to_read, 0);
         if (len <= 0) {
             ESP_LOGE(TAG, "[OTA] 接收失败 已收=%d/%d", total, fw_size);
             free(buf);
-            esp_ota_end(ota_handle);
+            esp_ota_abort(ota_handle);   // 出错必须abort, 不能end, 否则分区处于中间态
             send(sock, "OTA_FAIL:recv_error\n", 20, 0);
             return;
         }
@@ -1049,12 +1066,14 @@ static void ota_handle(int sock, int fw_size)
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "[OTA] 写入失败: %d", err);
             free(buf);
-            esp_ota_end(ota_handle);
+            esp_ota_abort(ota_handle);
             send(sock, "OTA_FAIL:write_error\n", 21, 0);
             return;
         }
 
         total += len;
+        since_ack += len;
+
         int pct = total * 100 / fw_size;
         int report_pct = (pct / 10) * 10;
         if (report_pct != last_pct) {
@@ -1064,6 +1083,14 @@ static void ota_handle(int sock, int fw_size)
             send(sock, pct_msg, pct_len, 0);
             ESP_LOGI(TAG, "[OTA] 进度: %d%%", report_pct);
         }
+
+        // 回执: 让发送端确认设备仍在正常写入, 避免发送端盲发
+        if (since_ack >= OTA_ACK_INTERVAL || total >= fw_size) {
+            since_ack = 0;
+            char ack_msg[32];
+            int ack_len = snprintf(ack_msg, sizeof(ack_msg), "OTA_ACK:%d\n", total);
+            send(sock, ack_msg, ack_len, 0);
+        }
     }
 
     free(buf);
@@ -1071,6 +1098,7 @@ static void ota_handle(int sock, int fw_size)
     err = esp_ota_end(ota_handle);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "[OTA] esp_ota_end失败: %d", err);
+        esp_ota_abort(ota_handle);
         send(sock, "OTA_FAIL:end_error\n", 19, 0);
         return;
     }
@@ -1562,11 +1590,22 @@ static void handle_client(int client_sock, int server_sock)
         else if (strncmp(cmd, "OTA:START:", 10) == 0) {
             char *filename = cmd + 10;
             char *size_str = strchr(filename, ':');
-            if (!size_str) continue;
+            if (!size_str) {
+                ESP_LOGE(TAG, "[OTA] 命令格式错误, 缺少大小字段");
+                send(client_sock, "OTA_FAIL:bad_cmd\n", 17, 0);
+                continue;
+            }
             *size_str = '\0';
-            int fw_size = atoi(size_str + 1);
-            ESP_LOGI(TAG, "[OTA] 收到OTA:START 文件=%s 大小=%d", filename, fw_size);
-            ota_handle(client_sock, fw_size);
+            // 严格解析大小: 非数字/<=0 直接拒绝, 不让 atoi 的 0 蒙混过关
+            char *endptr = NULL;
+            long fw_size = strtol(size_str + 1, &endptr, 10);
+            if (endptr == size_str + 1 || fw_size <= 0 || fw_size > 0x7FFFFFFFL) {
+                ESP_LOGE(TAG, "[OTA] 固件大小字段非法: %s", size_str + 1);
+                send(client_sock, "OTA_FAIL:bad_size\n", 18, 0);
+                continue;
+            }
+            ESP_LOGI(TAG, "[OTA] 收到OTA:START 文件=%s 大小=%ld", filename, fw_size);
+            ota_handle(client_sock, (int)fw_size);
         }
     }
 
@@ -1658,6 +1697,10 @@ extern "C" void app_main(void)
 
     // ADC初始化放最后，避免影响摄像头GPIO
     battery_adc_init();
+
+    // 已成功跑到主逻辑: 标记当前固件有效, 取消回滚
+    // 配合 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE, OTA 后起不来会自动回滚到旧固件
+    esp_ota_mark_app_valid_cancel_rollback();
 
     // 呼吸灯初始化（所有功能初始化完成后开始）
     breath_led_init();

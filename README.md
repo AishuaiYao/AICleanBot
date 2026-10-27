@@ -716,7 +716,9 @@ python py_scripts/utils/inference_test.py
 OTA:START:<固件名>:<字节数>
 ```
 
-设备回 `OTA_READY` 后开始接收二进制流，过程中回 `OTA_PROGRESS:<百分比>`，结束回 `OTA_OK` 并自动重启。失败会返回 `OTA_FAIL:<原因>`。
+设备校验 `<字节数>` 合法（>0 且不超过 OTA 分区容量）后回 `OTA_READY`，然后接收二进制流：每收满 16 KB 回一次 `OTA_ACK:<已收字节数>` 作为流控回执，过程中回 `OTA_PROGRESS:<百分比>`，收满且写入校验通过后回 `OTA_OK` 并自动重启。任何环节失败返回 `OTA_FAIL:<原因>`（如 `bad_size` / `nomem` / `recv_error` / `write_error` / `end_error`），并 `esp_ota_abort` 回滚本次写入。
+
+发送端请**按 `OTA_ACK` 分批发送**（小程序端每 16 KB 等一次回执），不要盲发：盲发会在弱网下把固件写残。已开启 `CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`，新固件若启动失败会自动回滚到上一版本。
 
 ---
 

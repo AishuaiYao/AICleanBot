@@ -659,7 +659,9 @@ Dual app partitions (`partitions.csv`: `ota_0` / `ota_1`, 3900 K each). After th
 OTA:START:<firmware name>:<byte count>
 ```
 
-The device replies `OTA_READY`, then receives the binary stream, reports `OTA_PROGRESS:<percent>`, and finishes with `OTA_OK` plus an automatic reboot. Failures return `OTA_FAIL:<reason>`.
+After validating `<byte count>` (>0 and within the OTA partition size) the device replies `OTA_READY`, then receives the binary stream and acknowledges every 16 KB with `OTA_ACK:<bytes received>` for flow control, reports `OTA_PROGRESS:<percent>`, and — once the image is complete and verified — replies `OTA_OK` plus an automatic reboot. Any failure returns `OTA_FAIL:<reason>` (e.g. `bad_size` / `nomem` / `recv_error` / `write_error` / `end_error`) and calls `esp_ota_abort` to discard the partial image.
+
+Senders should **send in batches driven by `OTA_ACK`** (the mini-program waits for an ACK every 16 KB) instead of blindly streaming — blind streaming corrupts the image on lossy links. `CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE` is on, so an image that fails to boot rolls back automatically.
 
 ---
 
