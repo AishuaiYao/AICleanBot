@@ -21,6 +21,11 @@
 
 static const char *TAG = "CAM_TCP";
 
+// snprintf 返回的是"未截断长度"，直接拿它当发送长度会在格式化被截断时越界读写，
+// 统一钳到缓冲区容量内，并预留一位给结尾换行
+#define SNPRINTF_LEN(ret, cap) (((ret) < 0) ? 0 : \
+    (((size_t)(ret) >= (size_t)(cap)) ? (int)(cap) - 1 : (int)(ret)))
+
 // 声明嵌入的模型数据
 extern const uint8_t model_espdl[] asm("_binary_model_espdl_start");
 
@@ -822,14 +827,15 @@ static void experiment_stream(int cmd_sock, int img_sock)
 
             // 每帧统一打印编码器状态
             char enc_log_buf[160];
-            int enc_log_len = snprintf(enc_log_buf, sizeof(enc_log_buf),
+            int enc_log_len = SNPRINTF_LEN(snprintf(enc_log_buf, sizeof(enc_log_buf),
                 "[Enc] %-7s | cur L=%5d R=%5d | delta L=%5d R=%5d | ratio L=%3d%% R=%3d%% (thr=%d%%) | running=%d",
                 enc_state, enc_l, enc_r,
                 enc_l - prev_enc_l, enc_r - prev_enc_r,
                 log_ratio_l, log_ratio_r,
-                (int)(MA_DROP_RATIO * 100), (int)g_motor_running);
+                (int)(MA_DROP_RATIO * 100), (int)g_motor_running), sizeof(enc_log_buf));
             ESP_LOGI(TAG, "%s", enc_log_buf);
-            strcat(enc_log_buf, "\n");
+            // 直接在有效长度末尾写换行，不用 strcat（strcat 会向缓冲区外多写 1 字节）
+            enc_log_buf[enc_log_len] = '\n';
             send(cmd_sock, enc_log_buf, enc_log_len + 1, 0);
 
             // 更新上一帧累计值
@@ -1030,7 +1036,7 @@ static void ota_handle(int sock, int fw_size)
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "[OTA] esp_ota_begin失败: %d", err);
         char msg[64];
-        int len = snprintf(msg, sizeof(msg), "OTA_FAIL:begin_err_%d\n", err);
+        int len = SNPRINTF_LEN(snprintf(msg, sizeof(msg), "OTA_FAIL:begin_err_%d\n", err), sizeof(msg));
         send(sock, msg, len, 0);
         return;
     }
@@ -1079,7 +1085,7 @@ static void ota_handle(int sock, int fw_size)
         if (report_pct != last_pct) {
             last_pct = report_pct;
             char pct_msg[32];
-            int pct_len = snprintf(pct_msg, sizeof(pct_msg), "OTA_PROGRESS:%d\n", report_pct);
+            int pct_len = SNPRINTF_LEN(snprintf(pct_msg, sizeof(pct_msg), "OTA_PROGRESS:%d\n", report_pct), sizeof(pct_msg));
             send(sock, pct_msg, pct_len, 0);
             ESP_LOGI(TAG, "[OTA] 进度: %d%%", report_pct);
         }
@@ -1088,7 +1094,7 @@ static void ota_handle(int sock, int fw_size)
         if (since_ack >= OTA_ACK_INTERVAL || total >= fw_size) {
             since_ack = 0;
             char ack_msg[32];
-            int ack_len = snprintf(ack_msg, sizeof(ack_msg), "OTA_ACK:%d\n", total);
+            int ack_len = SNPRINTF_LEN(snprintf(ack_msg, sizeof(ack_msg), "OTA_ACK:%d\n", total), sizeof(ack_msg));
             send(sock, ack_msg, ack_len, 0);
         }
     }
