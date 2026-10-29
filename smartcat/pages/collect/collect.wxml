@@ -1,0 +1,43 @@
+<view class="container">
+  <!-- 状态栏 - 左上角 -->
+  <view class="status-bar">
+    <text>{{streaming ? 'FPS:' + fps + ' | Saved:' + savedCount + ' | ' + voltage + 'V' : 'Connecting...'}}</text>
+  </view>
+
+  <!-- 状态栏 - 右上角（电机PWM + 编码器脉冲） -->
+  <view class="status-bar-right">
+    <text>MOTOR:{{motorA}}/{{motorB}}</text>
+    <text>ENC:{{encoderA}}/{{encoderB}}</text>
+  </view>
+
+  <!-- 顶部控制栏 -->
+  <view class="top-control">
+    <view class="start-btn {{running ? 'running' : ''}}" bindtap="onStartStop">
+      <text>{{running ? '停止' : '启动'}}</text>
+    </view>
+    <view class="speed-control">
+      <text class="speed-label">速度</text>
+      <view class="speed-btn" bindtap="onSpeedDown">-</view>
+      <text class="speed-value">{{speed}}</text>
+      <view class="speed-btn" bindtap="onSpeedUp">+</view>
+    </view>
+    <view class="save-chart-btn" bindtap="onSaveChart">💾</view>
+  </view>
+
+  <!-- 图像区 - 居中 -->
+  <view class="image-area">
+    <image class="preview" src="{{imageData}}" mode="aspectFit" wx:if="{{imageData}}"></image>
+    <text class="placeholder" wx:else>等待图像...</text>
+  </view>
+
+  <!-- 左侧控制 - 左转 -->
+  <view class="control-left">
+    <view class="ctrl-btn" bindtouchstart="onLeft" bindtouchend="onStop"></view>
+  </view>
+
+  <!-- 右侧控制 - 右转 -->
+  <view class="control-right">
+    <view class="ctrl-btn" bindtouchstart="onRight" bindtouchend="onStop"></view>
+  </view>
+
+</view>

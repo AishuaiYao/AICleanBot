@@ -1,0 +1,94 @@
+I (2450) dl::Model: +------------------------------+---------+----------+
+I (2460) dl::Model: | total                        |         | 324865us |
+I (2470) dl::Model: +------------------------------+---------+----------+
+
+I (2480) TEST_MODEL: [Model] 输入数量: 1
+I (2480) TEST_MODEL: [Model] 输入名称: input
+I (2490) TEST_MODEL: [Model] 输出数量: 1
+I (2490) TEST_MODEL: [Model] 输出名称: output
+I (2500) TEST_MODEL: [Model] 模型加载成功
+I (2500) pp: pp rom version: e7ae62f
+I (2510) net80211: net80211 rom version: e7ae62f
+I (2520) wifi:wifi driver task: 3fcbdf38, prio:23, stack:6656, core=0
+I (2520) wifi:wifi firmware version: ccaebfa
+I (2520) wifi:wifi certification version: v7.0
+I (2520) wifi:config NVS flash: enabled
+I (2530) wifi:config nano formating: disabled
+I (2530) wifi:Init data frame dynamic rx buffer num: 32
+I (2540) wifi:Init static rx mgmt buffer num: 5
+I (2540) wifi:Init management short buffer num: 32
+I (2550) wifi:Init static tx buffer num: 16
+I (2550) wifi:Init tx cache buffer num: 32
+I (2550) wifi:Init static tx FG buffer num: 2
+I (2560) wifi:Init static rx buffer size: 1600
+I (2560) wifi:Init static rx buffer num: 10
+I (2570) wifi:Init dynamic rx buffer num: 32
+I (2570) wifi_init: rx ba win: 6
+I (2570) wifi_init: accept mbox: 6
+I (2580) wifi_init: tcpip mbox: 32
+I (2580) wifi_init: udp mbox: 6
+I (2590) wifi_init: tcp mbox: 6
+I (2590) wifi_init: tcp tx win: 5760
+I (2590) wifi_init: tcp rx win: 5760
+I (2600) wifi_init: tcp mss: 1440
+I (2600) wifi_init: WiFi IRAM OP enabled
+I (2610) wifi_init: WiFi RX IRAM OP enabled
+I (2610) phy_init: phy_version 680,a6008b2,Jun  4 2024,16:41:10
+I (2650) wifi:mode : softAP (3c:0f:02:d7:57:01)
+I (2650) wifi:Total power save buffer number: 8
+I (2650) wifi:Init max length of beacon: 752/752
+I (2650) wifi:Init max length of beacon: 752/752
+I (2650) TEST_MODEL: [WiFi] AP已启动 SSID=ESP32-TEST 密码=** IP=192.168.4.1
+I (2660) esp_netif_lwip: DHCP server started on interface WIFI_AP_DEF with IP: 192.168.4.1
+I (2670) TEST_MODEL: ========================================
+I (2670) TEST_MODEL: [TCP] Server已启动, 端口=5000
+I (2680) TEST_MODEL: 系统启动完成!
+I (2690) TEST_MODEL: 热点: ESP32-TEST  密码: **
+I (2700) TEST_MODEL: TCP端口: 5000
+I (2700) TEST_MODEL: ========================================
+I (2710) main_task: Returned from app_main()
+I (5910) wifi:new:<1,1>, old:<1,1>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0
+I (5910) wifi:station: e0:2b:e9:43:ee:64 join, AID=1, bgn, 40U
+I (5930) esp_netif_lwip: DHCP server assigned IP to a client, IP is: 192.168.4.2
+I (6430) wifi:<ba-add>idx:2 (ifx:1, e0:2b:e9:43:ee:64), tid:0, ssn:23, winSize:64
+
+
+
+输入目录: e:\AICleanBot\py_scripts\utils\..\test_images
+输出目录: e:\AICleanBot\py_scripts\utils\..\test_results
+==================================================
+[连接] 尝试连接 192.168.4.1:5000
+[连接] TCP连接成功
+[握手] 设备信息: TestModel V1|🧪|3C:0F:02:D7:57:01
+
+[测试] 找到 5 张图片
+[测试] 输入目录: e:\AICleanBot\py_scripts\utils\..\test_images
+[测试] 输出目录: e:\AICleanBot\py_scripts\utils\..\test_results
+
+[1/5] 处理: 00001.png
+  [发送] 图片大小: 19200 bytes
+  [错误] timed out
+
+[2/5] 处理: 00002.png
+  [发送] 图片大小: 19200 bytes
+  [错误] timed out
+
+[3/5] 处理: 00003.png
+  [发送] 图片大小: 19200 bytes
+  [错误] timed out
+
+[4/5] 处理: 00004.png
+  [发送] 图片大小: 19200 bytes
+  [错误] timed out
+
+[5/5] 处理: 00005.png
+  [发送] 图片大小: 19200 bytes
+  [错误] timed out
+
+==================================================
+[完成] 成功处理: 0/5
+[完成] 总耗时: 25.0 秒
+[完成] 平均耗时: 25.05 秒/张
+==================================================
+[断开] 连接已关闭
+(.venv) PS E:\AICleanBot> 

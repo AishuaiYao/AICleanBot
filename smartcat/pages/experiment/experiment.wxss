@@ -1,0 +1,272 @@
+page {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+  overflow: hidden;
+}
+
+.status-bar {
+  position: absolute;
+  top: 20rpx;
+  left: 20rpx;
+  padding: 6rpx 10rpx;
+  color: #9C27B0;
+  font-size: 12rpx;
+  line-height: 1.4;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 4rpx;
+  z-index: 10;
+  font-family: monospace;
+}
+
+.status-bar-right {
+  position: absolute;
+  top: 20rpx;
+  right: 20rpx;
+  padding: 6rpx 10rpx;
+  color: #9C27B0;
+  font-size: 12rpx;
+  line-height: 1.4;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 4rpx;
+  z-index: 10;
+  font-family: monospace;
+}
+
+/* 顶部控制栏 */
+.top-control {
+  position: absolute;
+  top: 1rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4rpx;
+  z-index: 10;
+  white-space: nowrap;
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.start-btn {
+  padding: 2rpx 20rpx;
+  background: #9C27B0;
+  color: #fff;
+  font-size: 16rpx;
+  font-weight: bold;
+  border-radius: 24rpx;
+}
+
+.start-btn.running {
+  background: #ff4d4f;
+}
+
+.start-btn-placeholder {
+  visibility: hidden;
+  padding: 2rpx 20rpx;
+  font-size: 16rpx;
+  font-weight: bold;
+  border-radius: 24rpx;
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2rpx 15rpx;
+  border-radius: 24rpx;
+}
+
+.speed-label {
+  color: #fff;
+  font-size: 16rpx;
+}
+
+.speed-btn {
+  width: 40rpx;
+  height: 40rpx;
+  background: #9C27B0;
+  color: #fff;
+  font-size: 22rpx;
+  font-weight: bold;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 40rpx;
+}
+
+.speed-btn:active {
+  background: #7B1FA2;
+}
+
+.speed-value {
+  color: #9C27B0;
+  font-size: 16rpx;
+  font-weight: bold;
+  min-width: 30rpx;
+  text-align: center;
+}
+
+.kp-control {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2rpx 15rpx;
+  border-radius: 24rpx;
+}
+
+.kp-label {
+  color: #fff;
+  font-size: 16rpx;
+}
+
+.kp-btn {
+  width: 40rpx;
+  height: 40rpx;
+  background: #9C27B0;
+  color: #fff;
+  font-size: 22rpx;
+  font-weight: bold;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 40rpx;
+}
+
+.kp-btn:active {
+  background: #7B1FA2;
+}
+
+.kp-value {
+  color: #9C27B0;
+  font-size: 16rpx;
+  font-weight: bold;
+  min-width: 30rpx;
+  text-align: center;
+}
+
+/* 左右主区域 - 占据除顶部栏外的所有空间 */
+.main-area {
+  width: 100vw;
+  height: calc(100vh - 70rpx);
+  margin-top: 70rpx;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* 左侧图像区 */
+.image-panel {
+  width: 55%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8rpx;
+  box-sizing: border-box;
+  border-right: 1rpx solid #333;
+}
+
+.preview {
+  width: 100%;
+  max-width: 480rpx;
+  border: none;
+  border-radius: 8rpx;
+}
+
+.placeholder {
+  color: #666;
+  font-size: 28rpx;
+}
+
+/* 右侧图表区 */
+.chart-panel {
+  width: 45%;
+  height: 100%;
+  display: block;
+  padding: 8rpx;
+  box-sizing: border-box;
+}
+
+.error-chart {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.save-chart-btn {
+  width: 40rpx;
+  height: 40rpx;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20rpx;
+}
+
+.save-chart-btn:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 力度控制栏（3号电机） */
+.motor3-control {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2rpx 15rpx;
+  border-radius: 24rpx;
+}
+
+.motor3-label {
+  color: #fff;
+  font-size: 16rpx;
+}
+
+.motor3-btn {
+  width: 40rpx;
+  height: 40rpx;
+  background: #9C27B0;
+  color: #fff;
+  font-size: 22rpx;
+  font-weight: bold;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 40rpx;
+}
+
+.motor3-btn:active {
+  background: #7B1FA2;
+}
+
+.motor3-value {
+  color: #9C27B0;
+  font-size: 16rpx;
+  font-weight: bold;
+  min-width: 40rpx;
+  text-align: center;
+}

@@ -1,0 +1,44 @@
+<view class="container">
+  <!-- 连接状态 -->
+  <view class="status-bar {{connected ? 'connected' : 'disconnected'}}">
+    <text>{{connecting ? '连接中...' : (connected ? '已连接 ' + deviceName : '未连接')}}</text>
+  </view>
+
+  <!-- 测试按钮 -->
+  <button class="btn btn-capture"
+          bindtap="captureImage"
+          disabled="{{!connected || capturing}}">
+    {{capturing ? '采集中 ' + progress + '%' : '测试'}}
+  </button>
+
+  <!-- 数据采集按钮 -->
+  <button class="btn btn-collect"
+          bindtap="goToCollect"
+          disabled="{{!connected}}">
+    数据采集
+  </button>
+
+  <!-- 实验按钮 -->
+  <button class="btn btn-experiment"
+          bindtap="goToExperiment"
+          disabled="{{!connected}}">
+    实验
+  </button>
+
+
+  <!-- 打开相册 -->
+  <button class="btn btn-album" bindtap="goToAlbum">
+    打开相册
+  </button>
+
+  <!-- 当前拍摄预览 -->
+  <view class="preview-section" wx:if="{{imageData}}">
+    <text class="section-title">当前拍摄</text>
+    <image class="preview-image" src="{{imageData}}" mode="widthFix"></image>
+  </view>
+
+  <!-- 更新固件 -->
+  <button class="btn btn-firmware" bindtap="goToFirmware">
+    更新固件
+  </button>
+</view>

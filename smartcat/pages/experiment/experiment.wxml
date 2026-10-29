@@ -1,0 +1,58 @@
+<view class="container">
+  <!-- 状态栏 - 左上角 -->
+  <view class="status-bar">
+    <text>{{streaming ? delayMs + 'ms | ' + voltage + 'V' : 'Connecting...'}}</text>
+  </view>
+
+  <!-- 状态栏 - 右上角（电机PWM + 编码器跳变率） -->
+  <view class="status-bar-right">
+    <text>MOTOR:{{motorA}}/{{motorB}}\nENC:L{{encJumpL}}% R{{encJumpR}}%</text>
+  </view>
+
+  <!-- 顶部控制栏 -->
+  <view class="top-control">
+    <view class="control-row">
+      <view class="start-btn {{running ? 'running' : ''}}" bindtap="onStartStop">
+        <text>{{running ? '停止' : '启动'}}</text>
+      </view>
+      <view class="speed-control">
+        <text class="speed-label">速度</text>
+        <view class="speed-btn" bindtap="onSpeedDown">-</view>
+        <text class="speed-value">{{speed}}</text>
+        <view class="speed-btn" bindtap="onSpeedUp">+</view>
+      </view>
+      <view class="kp-control">
+        <text class="kp-label">Kp</text>
+        <view class="kp-btn" bindtap="onKpDown">-</view>
+        <text class="kp-value">{{kp}}</text>
+        <view class="kp-btn" bindtap="onKpUp">+</view>
+      </view>
+      <view class="save-chart-btn" bindtap="onSaveChart">💾</view>
+    </view>
+    <view class="control-row">
+      <view class="start-btn-placeholder">
+        <text>启动</text>
+      </view>
+      <view class="motor3-control">
+        <text class="motor3-label">力度</text>
+        <view class="motor3-btn" bindtap="onMotor3Down">-</view>
+        <text class="motor3-value">{{motor3Duty}}%</text>
+        <view class="motor3-btn" bindtap="onMotor3Up">+</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 左右分栏 -->
+  <view class="main-area">
+    <!-- 左侧：图像区 -->
+    <view class="image-panel">
+      <image class="preview" src="{{imageData}}" mode="aspectFit" wx:if="{{imageData}}"></image>
+      <text class="placeholder" wx:else>等待图像...</text>
+    </view>
+
+    <!-- 右侧：误差曲线图 -->
+    <view class="chart-panel">
+      <canvas type="2d" id="errorChart" class="error-chart"></canvas>
+    </view>
+  </view>
+</view>

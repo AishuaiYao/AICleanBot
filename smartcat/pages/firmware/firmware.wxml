@@ -1,0 +1,84 @@
+<view class="container">
+  <!-- ========== 操作指引 ========== -->
+  <view class="guide-title">固件更新指引</view>
+  <view class="guide-desc">请按顺序完成以下步骤</view>
+
+  <!-- Step 1: 选择固件 -->
+  <view class="step {{step1Done ? 'step-done' : 'step-current'}}">
+    <view class="step-header">
+      <view class="step-icon">{{step1Done ? '✓' : '1'}}</view>
+      <text class="step-text">选择要更新的固件版本</text>
+    </view>
+    <view class="step-body">
+      <picker mode="selector" range="{{firmwareList}}" value="{{selectedIndex}}" bindchange="onPickerChange" disabled="{{downloading || flashing}}">
+        <view class="picker-box {{selectedIndex < 0 ? 'placeholder' : ''}}">
+          <text>{{selectedIndex < 0 ? '请点击选择固件' : selectedName}}</text>
+          <text class="picker-arrow">▼</text>
+        </view>
+      </picker>
+    </view>
+  </view>
+
+  <!-- Step 2: 切换家庭WiFi -->
+  <view class="step {{step2Done ? 'step-done' : (step1Done ? 'step-current' : 'step-pending')}}">
+    <view class="step-header">
+      <view class="step-icon">{{step2Done ? '✓' : '2'}}</view>
+      <text class="step-text">将手机 WiFi 切换到可上网的家庭网络</text>
+    </view>
+    <view class="step-body">
+      <view class="step-tip" wx:if="{{!step2Done}}">需要网络才能从云端下载固件</view>
+      <button class="btn-step" bindtap="confirmStep2" wx:if="{{step1Done && !step2Done && !step3Done}}">确认已切换</button>
+    </view>
+  </view>
+
+  <!-- Step 3: 拉取固件 -->
+  <view class="step {{step3Done ? 'step-done' : (step2Done ? 'step-current' : 'step-pending')}}">
+    <view class="step-header">
+      <view class="step-icon">{{step3Done ? '✓' : '3'}}</view>
+      <text class="step-text">拉取固件到本地</text>
+    </view>
+    <view class="step-body">
+      <view class="step-tip" wx:if="{{!step3Done && step2Done}}">点击按钮从云端下载固件文件</view>
+      <view class="fetch-info" wx:if="{{step3Done}}">已拉取 {{selectedName}} ({{otaSize}})</view>
+      <button class="btn-fetch" bindtap="startFetch" disabled="{{downloading || step3Done}}" wx:if="{{step2Done && !step3Done}}">{{downloading ? '拉取中...' : '拉取'}}</button>
+    </view>
+  </view>
+
+  <!-- Step 4: 切回设备WiFi -->
+  <view class="step {{step4Done ? 'step-done' : (step3Done ? 'step-current' : 'step-pending')}}">
+    <view class="step-header">
+      <view class="step-icon">{{step4Done ? '✓' : '4'}}</view>
+      <text class="step-text">将手机 WiFi 切换回 LinePatrol V1</text>
+    </view>
+    <view class="step-body">
+      <view class="step-tip" wx:if="{{!step4Done && step3Done}}">烧录需要通过设备热点直连 LinePatrol V1</view>
+      <button class="btn-step" bindtap="confirmStep4" wx:if="{{step3Done && !step4Done}}">确认已切换</button>
+    </view>
+  </view>
+
+  <!-- Step 5: 烧录固件 -->
+  <view class="step {{step5Done ? 'step-done' : (step4Done ? 'step-current' : 'step-pending')}}">
+    <view class="step-header">
+      <view class="step-icon">{{step5Done ? '✓' : '5'}}</view>
+      <text class="step-text">烧录固件到 LinePatrol V1</text>
+    </view>
+    <view class="step-body">
+      <view class="step-tip" wx:if="{{!step5Done && step4Done}}">确保设备页面已连接 LinePatrol V1，然后点击烧录</view>
+      <button class="btn-flash" bindtap="startFlash" disabled="{{flashing || !step4Done || step5Done}}">{{flashing ? '烧录中...' : '烧录'}}</button>
+    </view>
+  </view>
+
+  <!-- 进度条 -->
+  <view class="section" wx:if="{{flashing}}">
+    <text class="section-title">烧录进度</text>
+    <view class="progress-bar">
+      <view class="progress-fill" style="width: {{progress}}%"></view>
+    </view>
+    <text class="progress-text">{{progress}}%</text>
+  </view>
+
+  <!-- 状态提示 -->
+  <view class="status {{statusType}}" wx:if="{{status}}">
+    <text>{{status}}</text>
+  </view>
+</view>

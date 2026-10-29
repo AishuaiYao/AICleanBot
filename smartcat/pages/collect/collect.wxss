@@ -1,0 +1,197 @@
+page {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a1a;
+  overflow: hidden;
+}
+
+.status-bar {
+  position: absolute;
+  top: 20rpx;
+  left: 20rpx;
+  padding: 6rpx 10rpx;
+  color: #FF9800;
+  font-size: 12rpx;
+  line-height: 1.4;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 4rpx;
+  z-index: 10;
+  font-family: monospace;
+}
+
+.status-bar-right {
+  position: absolute;
+  top: 20rpx;
+  right: 20rpx;
+  padding: 6rpx 10rpx;
+  color: #FF9800;
+  font-size: 12rpx;
+  line-height: 1.4;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 4rpx;
+  z-index: 10;
+  font-family: monospace;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 顶部控制栏 */
+.top-control {
+  position: absolute;
+  top: 1rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  z-index: 10;
+}
+
+.start-btn {
+  padding: 2rpx 20rpx;
+  background: #FF9800;
+  color: #fff;
+  font-size: 20rpx;
+  font-weight: bold;
+  border-radius: 24rpx;
+}
+
+.start-btn.running {
+  background: #ff4d4f;
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2rpx 15rpx;
+  border-radius: 24rpx;
+}
+
+.speed-label {
+  color: #fff;
+  font-size: 20rpx;
+}
+
+.speed-btn {
+  width: 40rpx;
+  height: 40rpx;
+  background: #FF9800;
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: bold;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 40rpx;
+}
+
+.speed-btn:active {
+  background: #F57C00;
+}
+
+.speed-value {
+  color: #FF9800;
+  font-size: 20rpx;
+  font-weight: bold;
+  min-width: 30rpx;
+  text-align: center;
+}
+
+.image-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview {
+  width: 480rpx;
+  border: none;
+  border-radius: 0;
+}
+
+.placeholder {
+  color: #666;
+  font-size: 28rpx;
+}
+
+/* 左侧控制区 - 左转 */
+.control-left {
+  position: absolute;
+  left: 100rpx;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* 右侧控制区 - 右转 */
+.control-right {
+  position: absolute;
+  right: 100rpx;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* 控制按钮 - 半透明带粗箭头 */
+.ctrl-btn {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.ctrl-btn:active {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* 左转箭头 */
+.control-left .ctrl-btn::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-top: 30rpx solid transparent;
+  border-bottom: 30rpx solid transparent;
+  border-right: 50rpx solid #fff;
+}
+
+/* 右转箭头 */
+.control-right .ctrl-btn::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-top: 30rpx solid transparent;
+  border-bottom: 30rpx solid transparent;
+  border-left: 50rpx solid #fff;
+}
+
+.save-chart-btn {
+  width: 40rpx;
+  height: 40rpx;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20rpx;
+}
+
+.save-chart-btn:active {
+  background: rgba(255, 255, 255, 0.2);
+}

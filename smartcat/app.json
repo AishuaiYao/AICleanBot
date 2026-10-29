@@ -1,0 +1,20 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/smart/smart",
+    "pages/assistant/assistant",
+    "pages/my/my",
+    "pages/device/device",
+    "pages/album/album",
+    "pages/collect/collect",
+    "pages/experiment/experiment",
+    "pages/firmware/firmware"
+  ],
+  "window": {
+    "navigationBarTitleText": "ESP32摄像头",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f5f5"
+  },
+  "sitemapLocation": "sitemap.json"
+}

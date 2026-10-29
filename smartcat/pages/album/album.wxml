@@ -1,0 +1,152 @@
+<view class="container">
+  <!-- 顶部统计卡片 -->
+  <view class="stats-card">
+    <view class="stat-item">
+      <text class="stat-value">{{images.length}}</text>
+      <text class="stat-label">总图片</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-value">{{uploadedCount}}</text>
+      <text class="stat-label">已上传</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-value">{{images.length - uploadedCount}}</text>
+      <text class="stat-label">待上传</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-value">{{storageSize}}</text>
+      <text class="stat-label">占用空间</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item clickable" bindtap="openCloud">
+      <text class="stat-icon">☁️</text>
+      <text class="stat-label">云端</text>
+    </view>
+  </view>
+
+  <!-- 操作栏 -->
+  <view class="toolbar" wx:if="{{images.length > 0}}">
+    <view class="toolbar-left">
+      <text class="select-info">已选 {{selectedCount}} 张</text>
+    </view>
+    <view class="toolbar-right">
+      <text class="btn-text" bindtap="selectAll">全选</text>
+      <text class="btn-divider">|</text>
+      <text class="btn-text" bindtap="deselectAll">取消</text>
+    </view>
+  </view>
+
+  <!-- 图片网格 -->
+  <scroll-view class="image-grid" scroll-y wx:if="{{images.length > 0}}">
+    <view class="grid-container">
+      <view class="image-item {{item.selected ? 'selected' : ''}}"
+            wx:for="{{images}}" wx:key="path"
+            bindtap="toggleSelect" data-index="{{index}}">
+        <image class="image" src="{{item.path}}" mode="aspectFit" lazy-load
+               catchtap="previewImage" data-index="{{index}}"></image>
+        <view class="checkbox {{item.selected ? 'checked' : ''}}">
+          <text wx:if="{{item.selected}}">✓</text>
+        </view>
+        <view class="status-badge {{item.uploaded ? 'uploaded' : 'pending'}}">
+          {{item.uploaded ? '已上传' : '待上传'}}
+        </view>
+      </view>
+    </view>
+    <view class="bottom-space"></view>
+  </scroll-view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{images.length === 0}}">
+    <view class="empty-icon">📷</view>
+    <text class="empty-title">暂无图片</text>
+    <text class="empty-desc">采集的数据将显示在这里</text>
+    <navigator url="/pages/device/device" class="empty-btn">去采集</navigator>
+  </view>
+
+  <!-- 上传进度遮罩 -->
+  <view class="upload-overlay" wx:if="{{uploading}}">
+    <view class="upload-modal">
+      <view class="upload-spinner"></view>
+      <text class="upload-text">上传中 {{uploadProgress}}%</text>
+      <text class="upload-detail">{{uploadCurrent}}/{{uploadTotal}}</text>
+    </view>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-bar" wx:if="{{images.length > 0}}">
+    <button class="btn btn-delete" bindtap="deleteSelected"
+            disabled="{{selectedCount === 0 || uploading}}">
+      删除 ({{selectedCount}})
+    </button>
+    <button class="btn btn-upload" bindtap="uploadSelected"
+            disabled="{{selectedCount === 0 || uploading}}">
+      上传云端
+    </button>
+  </view>
+
+  <!-- 云端图片弹窗 -->
+  <view class="cloud-overlay" wx:if="{{showCloud}}" bindtap="closeCloud" catchtouchmove="preventBubble">
+    <view class="cloud-modal" catchtap="preventBubble">
+      <view class="cloud-header">
+        <text class="cloud-title">云端图片 ({{cloudImages.length}})</text>
+        <text class="cloud-close" catchtap="closeCloud">✕</text>
+      </view>
+
+      <!-- 云端操作栏 -->
+      <view class="cloud-toolbar" wx:if="{{cloudImages.length > 0}}">
+        <view class="toolbar-left">
+          <text class="select-info">已选 {{cloudSelectedCount}} 张</text>
+        </view>
+        <view class="toolbar-right">
+          <text class="btn-text" bindtap="selectAllCloud">全选</text>
+          <text class="btn-divider">|</text>
+          <text class="btn-text" bindtap="deselectAllCloud">取消</text>
+        </view>
+      </view>
+      
+      <scroll-view class="cloud-content" scroll-y wx:if="{{!cloudLoading && cloudImages.length > 0}}">
+        <view class="cloud-grid">
+          <view class="cloud-item {{item.selected ? 'selected' : ''}}"
+                wx:for="{{cloudImages}}" wx:key="_id"
+                bindtap="toggleCloudSelect" data-index="{{index}}">
+            <image class="cloud-image" src="{{item.image}}" mode="aspectFit"
+                   catchtap="previewCloudImage" data-index="{{index}}"></image>
+            <view class="checkbox {{item.selected ? 'checked' : ''}}">
+              <text wx:if="{{item.selected}}">✓</text>
+            </view>
+          </view>
+        </view>
+        <view class="load-more" wx:if="{{cloudHasMore}}" bindtap="loadCloudImages">
+          <text class="load-more-text">加载更多</text>
+        </view>
+        <view class="no-more" wx:if="{{!cloudHasMore && cloudImages.length > 0}}">
+          <text class="no-more-text">已加载全部</text>
+        </view>
+      </scroll-view>
+
+      <view class="cloud-loading" wx:if="{{cloudLoading}}">
+        <view class="upload-spinner"></view>
+        <text>加载中...</text>
+      </view>
+
+      <view class="cloud-empty" wx:if="{{!cloudLoading && cloudImages.length === 0}}">
+        <text>云端暂无图片</text>
+      </view>
+
+      <!-- 云端底部操作栏 -->
+      <view class="cloud-bottom-bar" wx:if="{{cloudImages.length > 0}}">
+        <button class="btn btn-delete" bindtap="deleteCloudSelected"
+                disabled="{{cloudSelectedCount === 0}}">
+          删除 ({{cloudSelectedCount}})
+        </button>
+        <button class="btn btn-upload" bindtap="saveCloudSelected"
+                disabled="{{cloudSelectedCount === 0}}">
+          保存到相册
+        </button>
+      </view>
+    </view>
+  </view>
+</view>

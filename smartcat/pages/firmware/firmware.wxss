@@ -1,0 +1,240 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  padding: 24rpx 32rpx;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.guide-title {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.guide-desc {
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 30rpx;
+}
+
+/* ========== 步骤卡片 ========== */
+.step {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #fff;
+  border-radius: 16rpx;
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  border-left: 6rpx solid #d9d9d9;
+  transition: all 0.3s;
+}
+
+.step-current {
+  border-left-color: #1890ff;
+  box-shadow: 0 2rpx 12rpx rgba(24,144,255,0.1);
+}
+
+.step-done {
+  border-left-color: #52c41a;
+  opacity: 0.85;
+}
+
+.step-pending {
+  border-left-color: #e8e8e8;
+  opacity: 0.6;
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.step-icon {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: bold;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.step-current .step-icon {
+  background-color: #1890ff;
+  color: #fff;
+}
+
+.step-done .step-icon {
+  background-color: #52c41a;
+  color: #fff;
+}
+
+.step-pending .step-icon {
+  background-color: #e8e8e8;
+  color: #bbb;
+}
+
+.step-text {
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.4;
+}
+
+.step-done .step-text {
+  color: #999;
+}
+
+/* ========== 步骤内容区（统一左缩进 + 最小高度） ========== */
+.step-body {
+  width: 100%;
+  box-sizing: border-box;
+  padding-left: 60rpx;
+  min-height: 64rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.step-tip {
+  font-size: 22rpx;
+  color: #fa8c16;
+  margin-bottom: 12rpx;
+  line-height: 1.4;
+}
+
+.fetch-info {
+  font-size: 24rpx;
+  color: #52c41a;
+  margin-bottom: 10rpx;
+}
+
+/* ========== 固件选择器 ========== */
+.picker-box {
+  width: 100%;
+  box-sizing: border-box;
+  height: 64rpx;
+  background-color: #f5f5f5;
+  border-radius: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28rpx;
+  font-size: 26rpx;
+  border: 2rpx solid #1890ff;
+  color: #333;
+}
+
+.picker-arrow {
+  color: #999;
+  font-size: 22rpx;
+}
+
+/* ========== 操作按钮 ========== */
+.btn-step,
+.btn-fetch,
+.btn-flash {
+  width: 100%;
+  box-sizing: border-box;
+  height: 64rpx;
+  line-height: 64rpx;
+  font-size: 26rpx;
+  border-radius: 32rpx;
+  text-align: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+}
+
+.btn-step {
+  background-color: #1890ff;
+  color: #fff;
+}
+
+.btn-fetch {
+  background-color: #1890ff;
+  color: #fff;
+}
+
+.btn-fetch:disabled {
+  background-color: #d9d9d9;
+  color: #999;
+}
+
+.btn-flash {
+  background-color: #fa8c16;
+  color: #fff;
+}
+
+.btn-flash:disabled {
+  background-color: #d9d9d9;
+  color: #999;
+}
+
+/* ========== 进度条 ========== */
+.section {
+  width: 100%;
+  margin-top: 30rpx;
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 24rpx;
+  background-color: #e0e0e0;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #52c41a;
+  border-radius: 12rpx;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  display: block;
+  text-align: center;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #666;
+}
+
+/* ========== 状态提示 ========== */
+.status {
+  width: 100%;
+  padding: 20rpx 24rpx;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  text-align: center;
+  margin-top: 10rpx;
+}
+
+.status.info {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.status.success {
+  background-color: #f6ffed;
+  color: #52c41a;
+}
+
+.status.error {
+  background-color: #fff1f0;
+  color: #ff4d4f;
+}

@@ -1,0 +1,286 @@
+.page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+}
+
+.top-bar {
+  padding: 180rpx 30rpx 20rpx;
+  background: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.avatar {
+  font-size: 48rpx;
+  width: 64rpx;
+  height: 64rpx;
+  line-height: 64rpx;
+  text-align: center;
+  background: #e6f7ff;
+  border-radius: 50%;
+  display: block;
+}
+
+.add-btn {
+  font-size: 48rpx;
+  width: 64rpx;
+  height: 64rpx;
+  line-height: 64rpx;
+  text-align: center;
+  background: #07c160;
+  border-radius: 50%;
+  color: #fff;
+  display: block;
+}
+
+.title-row {
+  padding: 20rpx 30rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title-left {
+  font-size: 44rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.title-right-group {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.debug-btn {
+  font-size: 24rpx;
+  color: #1890ff;
+}
+
+.title-right {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.device-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 24rpx;
+  gap: 24rpx;
+}
+
+.device-card {
+  width: calc(50% - 12rpx);
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 30rpx 20rpx;
+  text-align: center;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.delete-btn {
+  position: absolute;
+  top: -10rpx;
+  right: -10rpx;
+  width: 44rpx;
+  height: 44rpx;
+  background: #ff4d4f;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 28rpx;
+  line-height: 44rpx;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.device-card.show-delete .delete-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.card-icon {
+  font-size: 56rpx;
+  display: block;
+  margin-bottom: 10rpx;
+}
+
+.card-name {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  display: block;
+}
+
+.card-status {
+  font-size: 22rpx;
+  color: #999;
+  display: block;
+  margin-top: 6rpx;
+}
+
+/* 空状态 */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 40rpx;
+}
+
+.empty-icon {
+  font-size: 96rpx;
+  opacity: 0.6;
+}
+
+.empty-title {
+  font-size: 30rpx;
+  color: #666;
+  margin-top: 20rpx;
+}
+
+.empty-sub {
+  font-size: 24rpx;
+  color: #aaa;
+  margin-top: 10rpx;
+}
+
+.bottom-bar {
+  height: 100rpx;
+  background: #fff;
+  border-top: 1rpx solid #eee;
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+}
+
+.nav-item text:last-child {
+  font-size: 20rpx;
+  margin-top: 4rpx;
+}
+
+/* 雷达弹窗 */
+.radar-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.radar-modal.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.radar-box {
+  width: 560rpx;
+  background: #1a1a2e;
+  border-radius: 30rpx;
+  padding: 60rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.radar-area {
+  position: relative;
+  width: 300rpx;
+  height: 300rpx;
+}
+
+.radar-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 2rpx solid rgba(7,193,96,0.4);
+  border-radius: 50%;
+  animation: radar-pulse 2s ease-out infinite;
+}
+
+.radar-circle.c2 {
+  animation-delay: 0.5s;
+}
+
+.radar-circle.c3 {
+  animation-delay: 1s;
+}
+
+@keyframes radar-pulse {
+  0% { width: 80rpx; height: 80rpx; opacity: 1; }
+  100% { width: 300rpx; height: 300rpx; opacity: 0; }
+}
+
+.radar-sweep {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150rpx;
+  height: 4rpx;
+  margin-left: -2rpx;
+  margin-top: -2rpx;
+  background: linear-gradient(90deg, #07c160, transparent);
+  transform-origin: left center;
+  animation: sweep 1.5s linear infinite;
+}
+
+@keyframes sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.radar-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 50rpx;
+}
+
+.radar-text {
+  margin-top: 40rpx;
+  font-size: 28rpx;
+  color: #07c160;
+}
+
+.ok-btn {
+  margin-top: 30rpx;
+  padding: 16rpx 50rpx;
+  background: #07c160;
+  color: #fff;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.ok-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
