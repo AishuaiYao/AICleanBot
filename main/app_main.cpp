@@ -157,6 +157,21 @@ static void init_sigmoid_lut(float out_scale)
     }
 }
 
+// ===========================
+// 输入量化查表
+// ===========================
+static int8_t input_quant_lut[256];  // 灰度值查表（256字节）
+
+// 初始化输入量化查表（根据模型输入量化参数构建）
+// 预处理是每帧 19200 像素的循环，查表把逐像素浮点归一化+量化换成一次数组访问
+static void init_input_quant_lut(float in_inv_scale)
+{
+    for (int i = 0; i < 256; i++) {
+        float normalized = i / 255.0f;
+        input_quant_lut[i] = (int8_t)DL_CLIP(dl::tool::round(normalized * in_inv_scale), -128, 127);
+    }
+}
+
 // 原地旋转图像180度 (swap首尾像素)
 static void rotate_180_inplace(uint8_t* buf, int width, int height)
 {
@@ -728,15 +743,12 @@ static void experiment_stream(int cmd_sock, int img_sock)
         
         int64_t t1 = esp_timer_get_time();  // 采集结束
 
-        // ========== 图像预处理 ==========
+        // ========== 图像预处理（量化查表） ==========
         dl::TensorBase *input_tensor = g_model->get_input("input");
         int8_t *model_input = (int8_t *)input_tensor->data;
-        int exponent = input_tensor->get_exponent();
-        float inv_scale = DL_RESCALE(exponent);
-        
+
         for (int i = 0; i < INPUT_WIDTH * INPUT_HEIGHT; i++) {
-            float normalized = fb->buf[i] / 255.0f;
-            model_input[i] = (int8_t)DL_CLIP(dl::tool::round(normalized * inv_scale), -128, 127);
+            model_input[i] = input_quant_lut[fb->buf[i]];
         }
         int64_t t2 = esp_timer_get_time();  // 预处理结束
 
@@ -1247,13 +1259,10 @@ static void handle_client(int client_sock, int server_sock)
                      in_shape.size() > 3 ? in_shape[3] : 0);
 
             int8_t *model_input = (int8_t *)input_tensor->data;
-            int exponent = input_tensor->get_exponent();
-            float inv_scale = DL_RESCALE(exponent);
 
-            // 归一化并量化: uint8 [0,255] -> float [0.0,1.0] -> int8
+            // 归一化并量化: uint8 [0,255] -> int8，查表代替逐像素浮点运算
             for (int i = 0; i < INPUT_WIDTH * INPUT_HEIGHT; i++) {
-                float normalized = fb->buf[i] / 255.0f;
-                model_input[i] = (int8_t)DL_CLIP(dl::tool::round(normalized * inv_scale), -128, 127);
+                model_input[i] = input_quant_lut[fb->buf[i]];
             }
 
             int64_t t4 = esp_timer_get_time();
@@ -1694,6 +1703,11 @@ extern "C" void app_main(void)
     float out_scale = DL_SCALE(out_exponent);
     init_sigmoid_lut(out_scale);
     ESP_LOGI(TAG, "[Init] Sigmoid查表初始化完成 (exponent=%d, scale=%.6f)", out_exponent, out_scale);
+
+    // 根据模型输入量化参数初始化输入量化查表
+    float in_inv_scale = DL_RESCALE(g_model->get_input("input")->get_exponent());
+    init_input_quant_lut(in_inv_scale);
+    ESP_LOGI(TAG, "[Init] 输入量化查表初始化完成 (inv_scale=%.6f)", in_inv_scale);
 
     camera_init();
     motor_init();
