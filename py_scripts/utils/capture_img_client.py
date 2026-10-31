@@ -162,7 +162,8 @@ class GrayscaleImageClient:
 
     def _receive_bytes(self, num_bytes):
         """可靠地接收指定数量的字节"""
-        data = b''
+        # bytes 的 `+=` 每次整块重拷贝，收大帧时总开销随帧长呈 O(n^2)，故先收集再拼接
+        chunks = []
         remaining = num_bytes
 
         while remaining > 0:
@@ -173,7 +174,7 @@ class GrayscaleImageClient:
                 if not chunk:
                     return None
 
-                data += chunk
+                chunks.append(chunk)
                 remaining -= len(chunk)
 
             except socket.timeout:
@@ -183,7 +184,7 @@ class GrayscaleImageClient:
                 print(f"接收错误: {e}")
                 return None
 
-        return data
+        return b''.join(chunks)
 
     def _save_as_png(self, frame_num, image_data):
         """保存为PNG图像"""
