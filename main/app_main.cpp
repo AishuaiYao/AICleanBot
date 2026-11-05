@@ -1295,6 +1295,11 @@ static void handle_client(int client_sock, int server_sock)
             
             // 分配预测图缓冲区
             uint8_t *pred_data = (uint8_t *)malloc(OUTPUT_WIDTH * OUTPUT_HEIGHT);
+            if (!pred_data) {
+                ESP_LOGE(TAG, "[Capture] pred_data 分配失败, 跳过本帧");
+                esp_camera_fb_return(fb);
+                continue;
+            }
             
             // 后处理: sigmoid查表 + 阈值分割 (输出尺寸与输入相同，无需resize)
             for (int i = 0; i < OUTPUT_WIDTH * OUTPUT_HEIGHT; i++) {
@@ -1308,6 +1313,12 @@ static void handle_client(int client_sock, int server_sock)
             // ========== 横向拼接 ==========
             uint32_t concat_size = OUTPUT_WIDTH * 2 * OUTPUT_HEIGHT;  // 320x120
             uint8_t *concat_data = (uint8_t *)malloc(concat_size);
+            if (!concat_data) {
+                ESP_LOGE(TAG, "[Capture] concat_data 分配失败, 跳过本帧");
+                free(pred_data);
+                esp_camera_fb_return(fb);
+                continue;
+            }
             
             for (int y = 0; y < OUTPUT_HEIGHT; y++) {
                 // 左侧：原图
@@ -1445,6 +1456,10 @@ static void handle_client(int client_sock, int server_sock)
                         encoder_read(&enc_l, &enc_r);
                         uint8_t bat_voltage = battery_read_voltage();
                         chunk_buf = (uint8_t *)malloc(11 + current_chunk_size);
+                        if (!chunk_buf) {
+                            ESP_LOGE(TAG, "[UDP] 分片缓冲分配失败, 跳过该分片");
+                            continue;
+                        }
                         header_size = 11;
                         chunk_buf[4] = bat_voltage;   // 电池电压(十分之一伏特)
                         chunk_buf[5] = g_motor_l_pwm;  // 左电机PWM值
@@ -1456,6 +1471,10 @@ static void handle_client(int client_sock, int server_sock)
                     } else {
                         // 其他分片：[帧号2B][总分片1B][索引1B][数据...]
                         chunk_buf = (uint8_t *)malloc(4 + current_chunk_size);
+                        if (!chunk_buf) {
+                            ESP_LOGE(TAG, "[UDP] 分片缓冲分配失败, 跳过该分片");
+                            continue;
+                        }
                         header_size = 4;
                     }
                     
