@@ -31,6 +31,10 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 save_path = os.path.join(os.path.dirname(script_dir), "dataset", "FRAME_QQVGA")
 h, w = 160, 120  #
 
+# 帧头是 4B 大端长度，一旦链路错位会解出任意大的值。服务端单帧最大约 38KB(拼接图)，
+# 这里放宽到 2MB：既容纳后续分辨率升级，也避免按 GB 级长度收包导致内存耗尽/长时间挂起。
+MAX_FRAME_SIZE = 2 * 1024 * 1024
+
 
 class GrayscaleImageClient:
     def __init__(self, server_ip, server_port=5000):
@@ -69,7 +73,7 @@ class GrayscaleImageClient:
         if self.client_socket:
             try:
                 self.client_socket.close()
-            except:
+            except OSError:
                 pass
             self.client_socket = None
 
@@ -108,8 +112,14 @@ class GrayscaleImageClient:
                     else:
                         break
 
-                # 解析帧大小
+                # 解析帧大小，先校验上限再按此长度收包
                 frame_size = struct.unpack('>I', header_data)[0]
+                if frame_size == 0 or frame_size > MAX_FRAME_SIZE:
+                    print(f"非法帧长 {frame_size} (上限 {MAX_FRAME_SIZE}), 重新同步...")
+                    if self._reconnect():
+                        continue
+                    else:
+                        break
 
                 # 2. 接收图像数据
                 image_data = self._receive_bytes(frame_size)
@@ -166,9 +176,10 @@ class GrayscaleImageClient:
         chunks = []
         remaining = num_bytes
 
-        while remaining > 0:
-            try:
-                self.client_socket.settimeout(1.0)
+        try:
+            # 超时设置对整个帧只需一次，不必每次 recv 都重设
+            self.client_socket.settimeout(1.0)
+            while remaining > 0:
                 chunk = self.client_socket.recv(min(8192, remaining))
 
                 if not chunk:
@@ -177,12 +188,12 @@ class GrayscaleImageClient:
                 chunks.append(chunk)
                 remaining -= len(chunk)
 
-            except socket.timeout:
-                print(f"接收超时，剩余 {remaining} 字节")
-                return None
-            except socket.error as e:
-                print(f"接收错误: {e}")
-                return None
+        except socket.timeout:
+            print(f"接收超时，剩余 {remaining} 字节")
+            return None
+        except socket.error as e:
+            print(f"接收错误: {e}")
+            return None
 
         return b''.join(chunks)
 
@@ -237,7 +248,7 @@ class GrayscaleImageClient:
         if self.client_socket:
             try:
                 self.client_socket.close()
-            except:
+            except OSError:
                 pass
 
         print(f"客户端已停止")
