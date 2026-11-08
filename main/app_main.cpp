@@ -26,6 +26,19 @@ static const char *TAG = "CAM_TCP";
 #define SNPRINTF_LEN(ret, cap) (((ret) < 0) ? 0 : \
     (((size_t)(ret) >= (size_t)(cap)) ? (int)(cap) - 1 : (int)(ret)))
 
+// TCP 是字节流：单次 send() 允许只写出一部分，19210B 这种大于 MSS 的帧几乎必然短写。
+// 循环写满后再返回，否则接收端会把半帧当完整帧，后续所有帧头都会错位。
+static bool send_all(int sock, const uint8_t *data, size_t len)
+{
+    size_t written = 0;
+    while (written < len) {
+        int n = send(sock, data + written, len - written, 0);
+        if (n <= 0) return false;   // 含 n == 0，避免原地空转
+        written += (size_t)n;
+    }
+    return true;
+}
+
 // 声明嵌入的模型数据
 extern const uint8_t model_espdl[] asm("_binary_model_espdl_start");
 
@@ -909,7 +922,7 @@ static void experiment_stream(int cmd_sock, int img_sock)
         // ========== TCP发送完整帧 ==========
         // [帧号2B][电压1B][左PWM 1B][右PWM 1B][G1 1B][G2 1B][左跳变率1][右跳变率1][电机运行1B][图像数据19200B] = 19210字节
         // send_buf 为流级复用缓冲，本帧直接覆盖写入即可
-        int sent_ok = 0;
+        int sent_ok;
 
         send_buf[0] = (frame_count >> 8) & 0xFF;
         send_buf[1] = frame_count & 0xFF;
@@ -923,10 +936,7 @@ static void experiment_stream(int cmd_sock, int img_sock)
         send_buf[9] = (uint8_t)g_motor_running;                          // 电机实际运行状态
         memcpy(send_buf + header_size, overlay_data, overlay_size);
 
-        int total_sent = send(img_sock, send_buf, frame_packet_size, 0);
-        if (total_sent == frame_packet_size) {
-            sent_ok = 1;
-        }
+        sent_ok = send_all(img_sock, send_buf, frame_packet_size);
 
         int64_t t6 = esp_timer_get_time();  // 传输结束
         
