@@ -465,11 +465,25 @@ static void battery_adc_init(void)
 // 读取电池电压(十分之一伏特，如120表示12.0V)
 static uint8_t battery_read_voltage(void)
 {
-    int adc_raw;
-    adc_oneshot_read(adc_handle, BAT_ADC_CHANNEL, &adc_raw);
+    static uint8_t last_01v = 0;   // 读取失败时沿用上次有效值，避免电压字节乱跳
+    static bool warned = false;    // 持续失败时也只告警一次，防止每帧刷屏
+
+    int adc_raw = 0;
+    esp_err_t err = adc_oneshot_read(adc_handle, BAT_ADC_CHANNEL, &adc_raw);
+    if (err != ESP_OK) {
+        if (!warned) {
+            ESP_LOGW(TAG, "[Battery] ADC读取失败: %d, 沿用上次电压", err);
+            warned = true;
+        }
+        return last_01v;
+    }
+
     float voltage = adc_raw * 3.3f / 4095.0f;
-    uint8_t battery_01v = (uint8_t)(voltage * BAT_VOLTAGE_DIVIDER * 10.0f);
-    return battery_01v;
+    // 满量程换算为 363(36.3V)，直接转 uint8_t 会回绕成很小的电压值，需先钳位
+    int battery_01v = (int)(voltage * BAT_VOLTAGE_DIVIDER * 10.0f);
+    if (battery_01v > 255) battery_01v = 255;
+    last_01v = (uint8_t)battery_01v;
+    return last_01v;
 }
 
 // ===========================
