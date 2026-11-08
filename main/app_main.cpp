@@ -1511,10 +1511,11 @@ static void handle_client(int client_sock, int server_sock)
                 
                 if (chunks_sent == total_chunks) {
                     frame_count++;
-                    // 每20帧打印一次编码器值
-                    int l_count = 0, r_count = 0;
-                    encoder_read(&l_count, &r_count);
+                    // 仅日志需要，20帧读一次即可；首片 UDP 头已每帧调用 encoder_read，
+                    // PCNT 的溢出清零时机不受影响
                     if (frame_count % 20 == 0) {
+                        int l_count = 0, r_count = 0;
+                        encoder_read(&l_count, &r_count);
                         ESP_LOGI(TAG, "[Encoder] 左轮:%d  右轮:%d", l_count, r_count);
                     }
                     // 每100帧打印一次状态
