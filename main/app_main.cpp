@@ -1352,23 +1352,26 @@ static void handle_client(int client_sock, int server_sock)
             header[2] = (frame_size >> 8) & 0xFF;
             header[3] = frame_size & 0xFF;
 
-            send(client_sock, header, 4, 0);
+            // 帧头同样可能短写；send() 返回 0 时若继续循环会原地空转，统一交给 send_all
+            bool send_ok = send_all(client_sock, header, sizeof(header));
 
-            // 分块发送图像数据
+            // 分块发送图像数据，每片不超过一个 MSS，减少 lwIP 内部拷贝
             uint32_t offset = 0;
-            while (offset < frame_size) {
+            while (send_ok && offset < frame_size) {
                 int chunk = frame_size - offset;
                 if (chunk > 1460) chunk = 1460;
-                int sent = send(client_sock, concat_data + offset, chunk, 0);
-                if (sent < 0) {
-                    ESP_LOGE(TAG, "[TCP] 发送失败");
+                if (!send_all(client_sock, concat_data + offset, chunk)) {
+                    ESP_LOGE(TAG, "[TCP] 发送失败 @%lu/%lu bytes",
+                             (unsigned long)offset, (unsigned long)frame_size);
+                    send_ok = false;
                     break;
                 }
-                offset += sent;
+                offset += chunk;
             }
 
             int64_t t10 = esp_timer_get_time();
-            ESP_LOGI(TAG, "[TCP] 图像发送完成: %lu bytes, 传输耗时%.1fms, 总耗时%.1fms",
+            ESP_LOGI(TAG, "[TCP] 图像发送%s: %lu bytes, 传输耗时%.1fms, 总耗时%.1fms",
+                     send_ok ? "完成" : "失败",
                      (unsigned long)frame_size, (t10 - t9) / 1000.0, (t10 - t_start) / 1000.0);
             
             // 释放内存
