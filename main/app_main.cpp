@@ -693,14 +693,16 @@ static void experiment_stream(int cmd_sock, int img_sock)
     const int header_size = 10; // 帧号2 + 电压1 + 左PWM1 + 右PWM1 + G11 + G21 + 左跳变率1 + 右跳变率1 + 电机运行态1
     const int frame_packet_size = header_size + overlay_size;   // 19210 字节
     
-    // 分配临时缓冲区
+    // 分配临时缓冲区：三块缓冲在整个实验流期间复用，避免每帧 malloc/free
     uint8_t *pred_data = (uint8_t *)malloc(INPUT_WIDTH * INPUT_HEIGHT);
     uint8_t *overlay_data = (uint8_t *)malloc(overlay_size);
-    
-    if (!pred_data || !overlay_data) {
+    uint8_t *send_buf = (uint8_t *)malloc(frame_packet_size);
+
+    if (!pred_data || !overlay_data || !send_buf) {
         ESP_LOGE(TAG, "[Exp] 内存分配失败");
         if (pred_data) free(pred_data);
         if (overlay_data) free(overlay_data);
+        if (send_buf) free(send_buf);
         return;
     }
     
@@ -906,27 +908,24 @@ static void experiment_stream(int cmd_sock, int img_sock)
 
         // ========== TCP发送完整帧 ==========
         // [帧号2B][电压1B][左PWM 1B][右PWM 1B][G1 1B][G2 1B][左跳变率1][右跳变率1][电机运行1B][图像数据19200B] = 19210字节
-        uint8_t *send_buf = (uint8_t *)malloc(frame_packet_size);
+        // send_buf 为流级复用缓冲，本帧直接覆盖写入即可
         int sent_ok = 0;
 
-        if (send_buf) {
-            send_buf[0] = (frame_count >> 8) & 0xFF;
-            send_buf[1] = frame_count & 0xFF;
-            send_buf[2] = battery_read_voltage();
-            send_buf[3] = g_motor_l_pwm;
-            send_buf[4] = g_motor_r_pwm;
-            send_buf[5] = (uint8_t)g1;   // G1: 顶部质心x
-            send_buf[6] = (uint8_t)g2;   // G2: 底部质心x
-            send_buf[7] = (uint8_t)(log_ratio_l > 255 ? 255 : log_ratio_l);  // 左轮delta占比(%)
-            send_buf[8] = (uint8_t)(log_ratio_r > 255 ? 255 : log_ratio_r);  // 右轮delta占比(%)
-            send_buf[9] = (uint8_t)g_motor_running;                          // 电机实际运行状态
-            memcpy(send_buf + header_size, overlay_data, overlay_size);
+        send_buf[0] = (frame_count >> 8) & 0xFF;
+        send_buf[1] = frame_count & 0xFF;
+        send_buf[2] = battery_read_voltage();
+        send_buf[3] = g_motor_l_pwm;
+        send_buf[4] = g_motor_r_pwm;
+        send_buf[5] = (uint8_t)g1;   // G1: 顶部质心x
+        send_buf[6] = (uint8_t)g2;   // G2: 底部质心x
+        send_buf[7] = (uint8_t)(log_ratio_l > 255 ? 255 : log_ratio_l);  // 左轮delta占比(%)
+        send_buf[8] = (uint8_t)(log_ratio_r > 255 ? 255 : log_ratio_r);  // 右轮delta占比(%)
+        send_buf[9] = (uint8_t)g_motor_running;                          // 电机实际运行状态
+        memcpy(send_buf + header_size, overlay_data, overlay_size);
 
-            int total_sent = send(img_sock, send_buf, frame_packet_size, 0);
-            if (total_sent == frame_packet_size) {
-                sent_ok = 1;
-            }
-            free(send_buf);
+        int total_sent = send(img_sock, send_buf, frame_packet_size, 0);
+        if (total_sent == frame_packet_size) {
+            sent_ok = 1;
         }
 
         int64_t t6 = esp_timer_get_time();  // 传输结束
@@ -971,6 +970,7 @@ static void experiment_stream(int cmd_sock, int img_sock)
                 ESP_LOGI(TAG, "===================================");
                 free(pred_data);
                 free(overlay_data);
+                free(send_buf);
                 return;
             }
             else if (strncmp(cmd_buf, "START:", 6) == 0) {
@@ -1414,22 +1414,31 @@ static void handle_client(int client_sock, int server_sock)
                 continue;
             }
             
-            ESP_LOGI(TAG, "[Stream] UDP目标: %s:%d", 
-                     inet_ntoa(g_udp_client_addr.sin_addr), 
-                     ntohs(g_udp_client_addr.sin_port));
-            ESP_LOGI(TAG, "[Stream] 帧大小: %d bytes, 分片数: 4", INPUT_WIDTH * INPUT_HEIGHT);
-            ESP_LOGI(TAG, "================================");
-            
-            int frame_count = 0;
-            bool streaming = true;
-            int64_t stream_start_time = esp_timer_get_time();
-            
             // 分片参数
             const uint32_t frame_size = INPUT_WIDTH * INPUT_HEIGHT;  // 19200
             const int total_chunks = 3;
             const int chunk_size = 8000;  // 每分片最大8000字节
             const int last_chunk_size = frame_size - chunk_size * (total_chunks - 1);  // 3200
-            
+
+            ESP_LOGI(TAG, "[Stream] UDP目标: %s:%d", 
+                     inet_ntoa(g_udp_client_addr.sin_addr), 
+                     ntohs(g_udp_client_addr.sin_port));
+            ESP_LOGI(TAG, "[Stream] 帧大小: %u bytes, 分片数: %d", (unsigned)frame_size, total_chunks);
+            ESP_LOGI(TAG, "================================");
+
+            // 全部分片共用一个发送缓冲：sendto 同步返回后缓冲即可复用，
+            // 容量按最大的一片(首片 11B 扩展头 + chunk_size)分配
+            uint8_t *chunk_buf = (uint8_t *)malloc(11 + chunk_size);
+            if (!chunk_buf) {
+                ESP_LOGE(TAG, "[Stream] 分片缓冲分配失败");
+                send(client_sock, "ERROR\n", 6, 0);
+                continue;
+            }
+
+            int frame_count = 0;
+            bool streaming = true;
+            int64_t stream_start_time = esp_timer_get_time();
+
             while (streaming) {
                 int64_t frame_start = esp_timer_get_time();
                 
@@ -1439,27 +1448,19 @@ static void handle_client(int client_sock, int server_sock)
                     continue;
                 }
 
-                // UDP分片发送
+                // UDP分片发送：三个分片顺序发送，共用同一个 chunk_buf
                 int chunks_sent = 0;
                 for (int i = 0; i < total_chunks; i++) {
                     // 计算当前分片数据大小和偏移
                     int current_chunk_size = (i == total_chunks - 1) ? last_chunk_size : chunk_size;
                     int offset = i * chunk_size;
-                    
-                    // 第一分片包含电机PWM值
-                    uint8_t *chunk_buf;
                     int header_size;
-                    
+
                     if (i == 0) {
                         // 第一分片：[帧号2B][总分片1B][索引1B][电压1B][左电机PWM 1B][右电机PWM 1B][编码器L 2B][编码器R 2B][数据...]
                         int enc_l = 0, enc_r = 0;
                         encoder_read(&enc_l, &enc_r);
                         uint8_t bat_voltage = battery_read_voltage();
-                        chunk_buf = (uint8_t *)malloc(11 + current_chunk_size);
-                        if (!chunk_buf) {
-                            ESP_LOGE(TAG, "[UDP] 分片缓冲分配失败, 跳过该分片");
-                            continue;
-                        }
                         header_size = 11;
                         chunk_buf[4] = bat_voltage;   // 电池电压(十分之一伏特)
                         chunk_buf[5] = g_motor_l_pwm;  // 左电机PWM值
@@ -1470,33 +1471,25 @@ static void handle_client(int client_sock, int server_sock)
                         chunk_buf[10] = enc_r & 0xFF;         // 右编码器 低字节
                     } else {
                         // 其他分片：[帧号2B][总分片1B][索引1B][数据...]
-                        chunk_buf = (uint8_t *)malloc(4 + current_chunk_size);
-                        if (!chunk_buf) {
-                            ESP_LOGE(TAG, "[UDP] 分片缓冲分配失败, 跳过该分片");
-                            continue;
-                        }
                         header_size = 4;
                     }
-                    
-                    if (chunk_buf) {
-                        // 协议头
-                        chunk_buf[0] = (frame_count >> 8) & 0xFF;    // 帧号高字节
-                        chunk_buf[1] = frame_count & 0xFF;           // 帧号低字节
-                        chunk_buf[2] = total_chunks;                  // 总分片数
-                        chunk_buf[3] = i;                             // 当前分片索引
-                        
-                        // 复制数据
-                        memcpy(chunk_buf + header_size, fb->buf + offset, current_chunk_size);
-                        
-                        // 发送UDP分片
-                        int sent = sendto(g_udp_sock, chunk_buf, header_size + current_chunk_size, 0,
-                                          (struct sockaddr *)&g_udp_client_addr, 
-                                          sizeof(g_udp_client_addr));
-                        
-                        if (sent > 0) {
-                            chunks_sent++;
-                        }
-                        free(chunk_buf);
+
+                    // 协议头
+                    chunk_buf[0] = (frame_count >> 8) & 0xFF;    // 帧号高字节
+                    chunk_buf[1] = frame_count & 0xFF;           // 帧号低字节
+                    chunk_buf[2] = total_chunks;                  // 总分片数
+                    chunk_buf[3] = i;                             // 当前分片索引
+
+                    // 复制数据
+                    memcpy(chunk_buf + header_size, fb->buf + offset, current_chunk_size);
+
+                    // 发送UDP分片（sendto 返回后 chunk_buf 即可被下一片覆盖）
+                    int sent = sendto(g_udp_sock, chunk_buf, header_size + current_chunk_size, 0,
+                                      (struct sockaddr *)&g_udp_client_addr,
+                                      sizeof(g_udp_client_addr));
+
+                    if (sent > 0) {
+                        chunks_sent++;
                     }
                 }
                 
@@ -1591,6 +1584,9 @@ static void handle_client(int client_sock, int server_sock)
                 // 小延时，控制帧率
                 vTaskDelay(pdMS_TO_TICKS(20));
             }
+
+            free(chunk_buf);
+            ESP_LOGI(TAG, "[Stream] 视频流结束, 累计帧数: %d", frame_count);
         }
         else if (strncmp(cmd, "EXPERIMENT", 10) == 0) {
             // 等待小程序建立第二条图像TCP连接
