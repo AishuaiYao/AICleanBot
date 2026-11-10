@@ -1164,9 +1164,10 @@ static void handle_client(int client_sock, int server_sock)
     ESP_LOGI(TAG, "[TCP] 客户端已连接");
 
     // ========== 握手协议 ==========
-    char handshake_buf[64];
+    char handshake_buf[64] = {};
     int handshake_len = recv(client_sock, handshake_buf, sizeof(handshake_buf) - 1, 0);
-    if (handshake_len <= 0 || strncmp(handshake_buf, "HELLO", 5) != 0) {
+    // 短包也要按失败处理：len 为 1~4 时 strncmp 会读到缓冲区里未初始化的字节
+    if (handshake_len < 5 || strncmp(handshake_buf, "HELLO", 5) != 0) {
         ESP_LOGI(TAG, "[TCP] 握手失败");
         close(client_sock);
         return;
