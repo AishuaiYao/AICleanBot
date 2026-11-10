@@ -877,7 +877,8 @@ static void experiment_stream(int cmd_sock, int img_sock)
             ESP_LOGI(TAG, "%s", enc_log_buf);
             // 直接在有效长度末尾写换行，不用 strcat（strcat 会向缓冲区外多写 1 字节）
             enc_log_buf[enc_log_len] = '\n';
-            send(cmd_sock, enc_log_buf, enc_log_len + 1, 0);
+            // 状态行按行解析，短写会留下半行，统一用 send_all 写满
+            send_all(cmd_sock, (const uint8_t *)enc_log_buf, (size_t)enc_log_len + 1);
 
             // 更新上一帧累计值
             prev_enc_l = enc_l;
@@ -1179,7 +1180,8 @@ static void handle_client(int client_sock, int server_sock)
     char device_info[64];
     snprintf(device_info, sizeof(device_info), "LinePatrol V1|😊|%02X:%02X:%02X:%02X:%02X:%02X\n",
              mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-    send(client_sock, device_info, strlen(device_info), 0);
+    // 设备信息里含多字节 emoji，短写会让客户端收到半截握手串
+    send_all(client_sock, (const uint8_t *)device_info, strlen(device_info));
     ESP_LOGI(TAG, "[TCP] 握手成功: %s", device_info);
 
     char buf[64];
