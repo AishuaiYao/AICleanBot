@@ -162,7 +162,10 @@ class ImageServer:
                 frame_size = len(buf)
                 header = frame_size.to_bytes(4, 'big')
                 try:
-                    self.client_socket.sendall(header + buf)
+                    # 分两次发：header + buf 会为每帧再分配并拷贝一整帧数据，
+                    # MicroPython 堆紧张时这笔开销不必要；TCP 仍按字节流保证顺序
+                    self.client_socket.sendall(header)
+                    self.client_socket.sendall(buf)
                     self.frame_count += 1
                     print(f"{self.frame_count} 已发送 {frame_size} 字节")
                 except (socket.error, OSError) as e:
