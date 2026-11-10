@@ -1409,10 +1409,15 @@ static void handle_client(int client_sock, int server_sock)
             
             if (client_udp_port > 0 && g_udp_sock >= 0) {
                 // 获取客户端IP (从TCP连接中获取)
-                struct sockaddr_in tcp_client_addr;
+                struct sockaddr_in tcp_client_addr = {};
                 socklen_t addr_len = sizeof(tcp_client_addr);
-                getpeername(client_sock, (struct sockaddr *)&tcp_client_addr, &addr_len);
-                
+                if (getpeername(client_sock, (struct sockaddr *)&tcp_client_addr, &addr_len) < 0) {
+                    ESP_LOGE(TAG, "[UDP] getpeername失败, 不设置UDP目标地址");
+                    g_udp_client_ready = false;
+                    send(client_sock, "UDP_NOT_READY\n", 14, 0);
+                    continue;
+                }
+
                 // 设置UDP目标地址
                 g_udp_client_addr.sin_family = AF_INET;
                 g_udp_client_addr.sin_addr = tcp_client_addr.sin_addr;
@@ -1429,6 +1434,7 @@ static void handle_client(int client_sock, int server_sock)
             } else {
                 ESP_LOGE(TAG, "[UDP] UDP_HELLO处理失败: port=%d, sock=%d", 
                          client_udp_port, g_udp_sock);
+                g_udp_client_ready = false;   // 不残留上一次连接的目标地址
             }
         }
         else if (strncmp(cmd, "STREAM", 6) == 0) {
