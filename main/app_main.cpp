@@ -682,7 +682,7 @@ static void udp_init(void)
         return;
     }
 
-    struct sockaddr_in addr;
+    struct sockaddr_in addr = {};   // sin_zero 也要清零，不传未初始化栈内容给内核
     addr.sin_family = AF_INET;
     addr.sin_port = htons(UDP_PORT);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -1684,17 +1684,32 @@ client_disconnected:
 static void tcp_server_task(void *pvParameters)
 {
     int server_sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_sock < 0) {
+        ESP_LOGE(TAG, "[TCP] 创建socket失败");
+        vTaskDelete(NULL);
+        return;
+    }
 
     int opt = 1;
     setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-    struct sockaddr_in addr;
+    struct sockaddr_in addr = {};   // sin_zero 也要清零，不传未初始化栈内容给内核
     addr.sin_family = AF_INET;
     addr.sin_port = htons(TCP_PORT);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    bind(server_sock, (struct sockaddr *)&addr, sizeof(addr));
-    listen(server_sock, 2);  // 支持命令+图像两条连接
+    if (bind(server_sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+        ESP_LOGE(TAG, "[TCP] bind失败, 端口=%d", TCP_PORT);
+        close(server_sock);
+        vTaskDelete(NULL);
+        return;
+    }
+    if (listen(server_sock, 2) < 0) {  // 支持命令+图像两条连接
+        ESP_LOGE(TAG, "[TCP] listen失败");
+        close(server_sock);
+        vTaskDelete(NULL);
+        return;
+    }
 
     ESP_LOGI(TAG, "[TCP] Server已启动, 端口=%d", TCP_PORT);
 
@@ -1705,6 +1720,9 @@ static void tcp_server_task(void *pvParameters)
 
         if (client_sock >= 0) {
             handle_client(client_sock, server_sock);
+        } else {
+            // accept 连续失败时不要让任务空转打满 CPU
+            vTaskDelay(pdMS_TO_TICKS(100));
         }
     }
 
