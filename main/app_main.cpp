@@ -766,6 +766,13 @@ static void experiment_stream(int cmd_sock, int img_sock)
             ESP_LOGE(TAG, "[Exp] 帧%d: 采集失败", frame_count);
             continue;
         }
+        // 后面按 160x120 灰度整帧读取(旋转/量化/叠加)，长度不足会越界读
+        if (fb->len < INPUT_WIDTH * INPUT_HEIGHT) {
+            ESP_LOGE(TAG, "[Exp] 帧%d: 长度异常 %u < %d, 跳过", frame_count,
+                     (unsigned)fb->len, INPUT_WIDTH * INPUT_HEIGHT);
+            esp_camera_fb_return(fb);
+            continue;
+        }
         
         // 旋转180度
         rotate_180_inplace(fb->buf, OUTPUT_WIDTH, OUTPUT_HEIGHT);
@@ -1277,6 +1284,15 @@ static void handle_client(int client_sock, int server_sock)
                 send(client_sock, err, strlen(err), 0);
                 continue;
             }
+            // 预处理与拼接都按 160x120 灰度整帧读取，长度不足会越界读 fb->buf
+            if (fb->len < INPUT_WIDTH * INPUT_HEIGHT) {
+                ESP_LOGE(TAG, "[Camera] 帧长度异常: %u < %d, 跳过本帧",
+                         (unsigned)fb->len, INPUT_WIDTH * INPUT_HEIGHT);
+                esp_camera_fb_return(fb);
+                const char *err = "ERROR\n";
+                send(client_sock, err, strlen(err), 0);
+                continue;
+            }
 
             ESP_LOGI(TAG, "[Camera] 采集成功: %dx%d, 大小=%lu bytes, 耗时%.1fms",
                      fb->width, fb->height, (unsigned long)fb->len, (t2 - t1) / 1000.0);
@@ -1489,6 +1505,13 @@ static void handle_client(int client_sock, int server_sock)
                 camera_fb_t *fb = esp_camera_fb_get();
                 if (!fb) {
                     ESP_LOGE(TAG, "[Stream] 帧%d: 采集失败", frame_count);
+                    continue;
+                }
+                // 三个分片合计按 19200B 从 fb->buf 拷贝，长度不足会越界读
+                if (fb->len < frame_size) {
+                    ESP_LOGE(TAG, "[Stream] 帧%d: 长度异常 %u < %u, 跳过", frame_count,
+                             (unsigned)fb->len, (unsigned)frame_size);
+                    esp_camera_fb_return(fb);
                     continue;
                 }
 
