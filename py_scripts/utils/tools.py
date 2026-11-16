@@ -471,8 +471,9 @@ def split_dataset(image_dir, label_dir, train_dir, val_dir, train_ratio=0.8, see
         Train set saved to: <仓库>/py_scripts/dataset/train
         Val set saved to:   <仓库>/py_scripts/dataset/val
     """
-    # 固定随机种子
-    random.seed(seed)
+    # 用局部 Random 实例：random.seed 会重置整个进程的全局随机状态，
+    # 调用方后续的 random.* 结果都会被这次划分悄悄改变
+    rng = random.Random(seed)
     
     # 创建输出目录
     train_img_dir = os.path.join(train_dir, 'images')
@@ -490,8 +491,8 @@ def split_dataset(image_dir, label_dir, train_dir, val_dir, train_ratio=0.8, see
     
     print(f"Total samples: {len(common_names)}")
     
-    # 随机打乱
-    random.shuffle(common_names)
+    # 随机打乱（只作用于局部 rng）
+    rng.shuffle(common_names)
     
     # 划分数据集
     train_size = int(len(common_names) * train_ratio)
@@ -590,45 +591,47 @@ def parse_and_plot_enc_log(log_path, output_dir=None):
     trigger_idx = [i for i, s in enumerate(status) if s == 'TRIGGER']
 
     # ---- 2. 绑制综合overview图 (2x2) ----
-    plt.style.use('dark_background')
-    base_name = os.path.splitext(os.path.basename(log_path))[0]
+    # 用局部样式上下文：plt.style.use 会永久改写全局 rcParams，
+    # 之后调用方画的每一张图都会莫名变成黑底
+    with plt.style.context('dark_background'):
+        base_name = os.path.splitext(os.path.basename(log_path))[0]
 
-    fig, axes = plt.subplots(2, 2, figsize=(16, 10))
+        fig, axes = plt.subplots(2, 2, figsize=(16, 10))
 
-    axes[0,0].plot(idx, cur_L,    label='cur_L',  color='#00CCFF', linewidth=1.2)
-    axes[0,0].plot(idx, cur_R,    label='cur_R',  color='#FF8844', linewidth=1.2)
-    for ti in trigger_idx:
-        axes[0,0].axvline(x=ti, color='red', linestyle='--', alpha=0.6, linewidth=1)
-    axes[0,0].set_title('Cumulative (cur)', fontsize=12, fontweight='bold')
-    axes[0,0].legend(fontsize=9); axes[0,0].grid(alpha=0.3)
+        axes[0,0].plot(idx, cur_L,    label='cur_L',  color='#00CCFF', linewidth=1.2)
+        axes[0,0].plot(idx, cur_R,    label='cur_R',  color='#FF8844', linewidth=1.2)
+        for ti in trigger_idx:
+            axes[0,0].axvline(x=ti, color='red', linestyle='--', alpha=0.6, linewidth=1)
+        axes[0,0].set_title('Cumulative (cur)', fontsize=12, fontweight='bold')
+        axes[0,0].legend(fontsize=9); axes[0,0].grid(alpha=0.3)
 
-    axes[0,1].plot(idx, delta_L,  label='delta_L', color='#00CC88', linewidth=1.2)
-    axes[0,1].plot(idx, delta_R,  label='delta_R', color='#FF4444', linewidth=1.2)
-    for ti in trigger_idx:
-        axes[0,1].axvline(x=ti, color='red', linestyle='--', alpha=0.6, linewidth=1)
-    axes[0,1].set_title('Delta (1st-diff)', fontsize=12, fontweight='bold')
-    axes[0,1].legend(fontsize=9); axes[0,1].grid(alpha=0.3)
+        axes[0,1].plot(idx, delta_L,  label='delta_L', color='#00CC88', linewidth=1.2)
+        axes[0,1].plot(idx, delta_R,  label='delta_R', color='#FF4444', linewidth=1.2)
+        for ti in trigger_idx:
+            axes[0,1].axvline(x=ti, color='red', linestyle='--', alpha=0.6, linewidth=1)
+        axes[0,1].set_title('Delta (1st-diff)', fontsize=12, fontweight='bold')
+        axes[0,1].legend(fontsize=9); axes[0,1].grid(alpha=0.3)
 
-    axes[1,0].plot(idx, ratio_L, label='ratio_L', color='#CC88FF', linewidth=1.2)
-    axes[1,0].plot(idx, ratio_R, label='ratio_R', color='#FFCC00', linewidth=1.2)
-    axes[1,0].axhline(y=thr[0], color='#FF4444', linestyle='-', label=f'thr={thr[0]}%', alpha=0.7, linewidth=1.5)
-    for ti in trigger_idx:
-        axes[1,0].axvline(x=ti, color='red', linestyle='--', alpha=0.6, linewidth=1)
-    axes[1,0].set_title('Ratio (% of MA)', fontsize=12, fontweight='bold')
-    axes[1,0].legend(fontsize=9); axes[1,0].grid(alpha=0.3)
+        axes[1,0].plot(idx, ratio_L, label='ratio_L', color='#CC88FF', linewidth=1.2)
+        axes[1,0].plot(idx, ratio_R, label='ratio_R', color='#FFCC00', linewidth=1.2)
+        axes[1,0].axhline(y=thr[0], color='#FF4444', linestyle='-', label=f'thr={thr[0]}%', alpha=0.7, linewidth=1.5)
+        for ti in trigger_idx:
+            axes[1,0].axvline(x=ti, color='red', linestyle='--', alpha=0.6, linewidth=1)
+        axes[1,0].set_title('Ratio (% of MA)', fontsize=12, fontweight='bold')
+        axes[1,0].legend(fontsize=9); axes[1,0].grid(alpha=0.3)
 
-    axes[1,1].fill_between(idx, running, step='mid', color='#00FF88', alpha=0.4)
-    axes[1,1].step(idx, running, where='mid', color='#00FF88', linewidth=1.2)
-    for ti in trigger_idx:
-        axes[1,1].axvline(x=ti, color='red', linestyle='--', alpha=0.6, linewidth=1)
-    axes[1,1].set_title('Running State', fontsize=12, fontweight='bold')
-    axes[1,1].set_ylim(-0.2, 1.2); axes[1,1].grid(alpha=0.3)
+        axes[1,1].fill_between(idx, running, step='mid', color='#00FF88', alpha=0.4)
+        axes[1,1].step(idx, running, where='mid', color='#00FF88', linewidth=1.2)
+        for ti in trigger_idx:
+            axes[1,1].axvline(x=ti, color='red', linestyle='--', alpha=0.6, linewidth=1)
+        axes[1,1].set_title('Running State', fontsize=12, fontweight='bold')
+        axes[1,1].set_ylim(-0.2, 1.2); axes[1,1].grid(alpha=0.3)
 
-    fig.suptitle(f'Encoder Log Overview - {base_name} (N={n})', fontsize=14, fontweight='bold')
-    fig.tight_layout()
-    save_path = os.path.join(output_dir, f'{base_name}_overview.png')
-    fig.savefig(save_path, dpi=150)
-    plt.close(fig)
+        fig.suptitle(f'Encoder Log Overview - {base_name} (N={n})', fontsize=14, fontweight='bold')
+        fig.tight_layout()
+        save_path = os.path.join(output_dir, f'{base_name}_overview.png')
+        fig.savefig(save_path, dpi=150)
+        plt.close(fig)
 
     print(f"[parse_enc_log] overview图已保存到: {save_path}")
 
