@@ -1423,10 +1423,17 @@ static void handle_client(int client_sock, int server_sock)
         }
         else if (strncmp(cmd, "UDP_HELLO", 9) == 0) {
             // 解析客户端UDP端口: UDP_HELLO:端口
+            // atoi 对非数字/溢出会静默返回 0 或截断值，htons 对 >65535 又会把高位丢掉，
+            // 结果是把视频流发往一个看似合法的错误端口。改用 strtol 严格解析并限定范围
             int client_udp_port = 0;
             char *port_str = strchr(cmd, ':');
             if (port_str) {
-                client_udp_port = atoi(port_str + 1);
+                char *endptr = NULL;
+                long port = strtol(port_str + 1, &endptr, 10);
+                if (endptr != port_str + 1 && (*endptr == '\0' || *endptr == '\r') &&
+                    port >= 1 && port <= 65535) {
+                    client_udp_port = (int)port;
+                }
             }
             
             ESP_LOGI(TAG, "========== UDP_HELLO ==========");
