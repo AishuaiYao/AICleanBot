@@ -39,6 +39,13 @@ static bool send_all(int sock, const uint8_t *data, size_t len)
     return true;
 }
 
+// 文本状态回执统一走 send_all: 短写会让客户端解析到半截状态行；
+// 长度由 strlen 计算，避免写死的数字与字面量不同步(曾出现多发 1 字节)
+static bool send_text(int sock, const char *msg)
+{
+    return send_all(sock, (const uint8_t *)msg, strlen(msg));
+}
+
 // 声明嵌入的模型数据
 extern const uint8_t model_espdl[] asm("_binary_model_espdl_start");
 
@@ -711,7 +718,7 @@ static void experiment_stream(int cmd_sock, int img_sock)
 
     if (img_sock < 0) {
         ESP_LOGE(TAG, "[Exp] 图像通道无效");
-        send(cmd_sock, "IMG_NOT_READY\n", 15, 0);
+        send_text(cmd_sock, "IMG_NOT_READY\n");
         return;
     }
 
@@ -1064,14 +1071,14 @@ static void ota_handle(int sock, int fw_size)
     const esp_partition_t *partition = esp_ota_get_next_update_partition(NULL);
     if (!partition) {
         ESP_LOGE(TAG, "[OTA] 无可用OTA分区");
-        send(sock, "OTA_FAIL:no_ota_partition\n", 26, 0);
+        send_text(sock, "OTA_FAIL:no_ota_partition\n");
         return;
     }
 
     // 必须校验大小: 超限会写坏分区, 过小/为0说明命令解析异常
     if (fw_size <= 0 || (size_t)fw_size > partition->size) {
         ESP_LOGE(TAG, "[OTA] 固件大小非法: %d (分区容量=%u)", fw_size, (unsigned)partition->size);
-        send(sock, "OTA_FAIL:bad_size\n", 18, 0);
+        send_text(sock, "OTA_FAIL:bad_size\n");
         return;
     }
 
@@ -1080,19 +1087,19 @@ static void ota_handle(int sock, int fw_size)
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "[OTA] esp_ota_begin失败: %d", err);
         char msg[64];
-        int len = SNPRINTF_LEN(snprintf(msg, sizeof(msg), "OTA_FAIL:begin_err_%d\n", err), sizeof(msg));
-        send(sock, msg, len, 0);
+        snprintf(msg, sizeof(msg), "OTA_FAIL:begin_err_%d\n", err);
+        send_text(sock, msg);
         return;
     }
 
     ESP_LOGI(TAG, "[OTA] 准备就绪, 分区=%s, 固件大小=%d", partition->label, fw_size);
-    send(sock, "OTA_READY\n", 10, 0);
+    send_text(sock, "OTA_READY\n");
 
     uint8_t *buf = (uint8_t *)malloc(OTA_BUF_SIZE);
     if (!buf) {
         ESP_LOGE(TAG, "[OTA] 内存不足, 无法分配接收缓冲");
         esp_ota_abort(ota_handle);
-        send(sock, "OTA_FAIL:nomem\n", 15, 0);
+        send_text(sock, "OTA_FAIL:nomem\n");
         return;
     }
     int total = 0;
@@ -1108,7 +1115,7 @@ static void ota_handle(int sock, int fw_size)
             ESP_LOGE(TAG, "[OTA] 接收失败 已收=%d/%d", total, fw_size);
             free(buf);
             esp_ota_abort(ota_handle);   // 出错必须abort, 不能end, 否则分区处于中间态
-            send(sock, "OTA_FAIL:recv_error\n", 20, 0);
+            send_text(sock, "OTA_FAIL:recv_error\n");
             return;
         }
 
@@ -1117,7 +1124,7 @@ static void ota_handle(int sock, int fw_size)
             ESP_LOGE(TAG, "[OTA] 写入失败: %d", err);
             free(buf);
             esp_ota_abort(ota_handle);
-            send(sock, "OTA_FAIL:write_error\n", 21, 0);
+            send_text(sock, "OTA_FAIL:write_error\n");
             return;
         }
 
@@ -1129,8 +1136,8 @@ static void ota_handle(int sock, int fw_size)
         if (report_pct != last_pct) {
             last_pct = report_pct;
             char pct_msg[32];
-            int pct_len = SNPRINTF_LEN(snprintf(pct_msg, sizeof(pct_msg), "OTA_PROGRESS:%d\n", report_pct), sizeof(pct_msg));
-            send(sock, pct_msg, pct_len, 0);
+            snprintf(pct_msg, sizeof(pct_msg), "OTA_PROGRESS:%d\n", report_pct);
+            send_text(sock, pct_msg);
             ESP_LOGI(TAG, "[OTA] 进度: %d%%", report_pct);
         }
 
@@ -1138,8 +1145,8 @@ static void ota_handle(int sock, int fw_size)
         if (since_ack >= OTA_ACK_INTERVAL || total >= fw_size) {
             since_ack = 0;
             char ack_msg[32];
-            int ack_len = SNPRINTF_LEN(snprintf(ack_msg, sizeof(ack_msg), "OTA_ACK:%d\n", total), sizeof(ack_msg));
-            send(sock, ack_msg, ack_len, 0);
+            snprintf(ack_msg, sizeof(ack_msg), "OTA_ACK:%d\n", total);
+            send_text(sock, ack_msg);
         }
     }
 
@@ -1149,19 +1156,19 @@ static void ota_handle(int sock, int fw_size)
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "[OTA] esp_ota_end失败: %d", err);
         esp_ota_abort(ota_handle);
-        send(sock, "OTA_FAIL:end_error\n", 19, 0);
+        send_text(sock, "OTA_FAIL:end_error\n");
         return;
     }
 
     err = esp_ota_set_boot_partition(partition);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "[OTA] 设置启动分区失败: %d", err);
-        send(sock, "OTA_FAIL:boot_set_error\n", 24, 0);
+        send_text(sock, "OTA_FAIL:boot_set_error\n");
         return;
     }
 
     ESP_LOGI(TAG, "[OTA] 完成! 总计=%d字节, 准备重启", total);
-    send(sock, "OTA_OK\n", 7, 0);
+    send_text(sock, "OTA_OK\n");
 
     vTaskDelay(pdMS_TO_TICKS(1000));
     esp_restart();
@@ -1280,8 +1287,7 @@ static void handle_client(int client_sock, int server_sock)
 
             if (!fb) {
                 ESP_LOGE(TAG, "[Camera] 采集失败! 耗时%.1fms", (t2 - t1) / 1000.0);
-                const char *err = "ERROR\n";
-                send(client_sock, err, strlen(err), 0);
+                send_text(client_sock, "ERROR\n");
                 continue;
             }
             // 预处理与拼接都按 160x120 灰度整帧读取，长度不足会越界读 fb->buf
@@ -1289,8 +1295,7 @@ static void handle_client(int client_sock, int server_sock)
                 ESP_LOGE(TAG, "[Camera] 帧长度异常: %u < %d, 跳过本帧",
                          (unsigned)fb->len, INPUT_WIDTH * INPUT_HEIGHT);
                 esp_camera_fb_return(fb);
-                const char *err = "ERROR\n";
-                send(client_sock, err, strlen(err), 0);
+                send_text(client_sock, "ERROR\n");
                 continue;
             }
 
@@ -1447,7 +1452,7 @@ static void handle_client(int client_sock, int server_sock)
                 if (getpeername(client_sock, (struct sockaddr *)&tcp_client_addr, &addr_len) < 0) {
                     ESP_LOGE(TAG, "[UDP] getpeername失败, 不设置UDP目标地址");
                     g_udp_client_ready = false;
-                    send(client_sock, "UDP_NOT_READY\n", 14, 0);
+                    send_text(client_sock, "UDP_NOT_READY\n");
                     continue;
                 }
 
@@ -1463,7 +1468,7 @@ static void handle_client(int client_sock, int server_sock)
                 ESP_LOGI(TAG, "================================");
                 
                 // 回复确认
-                send(client_sock, "UDP_OK\n", 7, 0);
+                send_text(client_sock, "UDP_OK\n");
             } else {
                 ESP_LOGE(TAG, "[UDP] UDP_HELLO处理失败: port=%d, sock=%d", 
                          client_udp_port, g_udp_sock);
@@ -1476,7 +1481,7 @@ static void handle_client(int client_sock, int server_sock)
             
             if (!g_udp_client_ready || g_udp_sock < 0) {
                 ESP_LOGE(TAG, "[Stream] UDP未就绪，请先发送UDP_HELLO");
-                send(client_sock, "UDP_NOT_READY\n", 14, 0);
+                send_text(client_sock, "UDP_NOT_READY\n");
                 ESP_LOGI(TAG, "================================");
                 continue;
             }
@@ -1498,7 +1503,7 @@ static void handle_client(int client_sock, int server_sock)
             uint8_t *chunk_buf = (uint8_t *)malloc(11 + chunk_size);
             if (!chunk_buf) {
                 ESP_LOGE(TAG, "[Stream] 分片缓冲分配失败");
-                send(client_sock, "ERROR\n", 6, 0);
+                send_text(client_sock, "ERROR\n");
                 continue;
             }
 
@@ -1666,7 +1671,7 @@ static void handle_client(int client_sock, int server_sock)
         else if (strncmp(cmd, "EXPERIMENT", 10) == 0) {
             // 等待小程序建立第二条图像TCP连接
             ESP_LOGI(TAG, "[Exp] 等待图像通道连接...");
-            send(client_sock, "WAITING_IMG_CONN\n", 17, 0);
+            send_text(client_sock, "WAITING_IMG_CONN\n");
 
             struct sockaddr_in img_addr;
             socklen_t img_addr_len = sizeof(img_addr);
@@ -1679,7 +1684,7 @@ static void handle_client(int client_sock, int server_sock)
                 if (img_hs_len > 0) {
                     img_handshake[img_hs_len] = '\0';
                     ESP_LOGI(TAG, "[Exp] 图像通道握手: %s", img_handshake);
-                    send(img_sock, "IMG_OK\n", 7, 0);
+                    send_text(img_sock, "IMG_OK\n");
                 }
 
                 ESP_LOGI(TAG, "[Exp] 图像通道已连接(sock=%d), 开始实验模式", img_sock);
@@ -1689,7 +1694,7 @@ static void handle_client(int client_sock, int server_sock)
                 ESP_LOGI(TAG, "[Exp] 图像通道已关闭");
             } else {
                 ESP_LOGE(TAG, "[Exp] 图像通道accept失败");
-                send(client_sock, "IMG_CONN_FAILED\n", 17, 0);
+                send_text(client_sock, "IMG_CONN_FAILED\n");
             }
         }
         else if (strncmp(cmd, "OTA:START:", 10) == 0) {
@@ -1697,7 +1702,7 @@ static void handle_client(int client_sock, int server_sock)
             char *size_str = strchr(filename, ':');
             if (!size_str) {
                 ESP_LOGE(TAG, "[OTA] 命令格式错误, 缺少大小字段");
-                send(client_sock, "OTA_FAIL:bad_cmd\n", 17, 0);
+                send_text(client_sock, "OTA_FAIL:bad_cmd\n");
                 continue;
             }
             *size_str = '\0';
@@ -1706,7 +1711,7 @@ static void handle_client(int client_sock, int server_sock)
             long fw_size = strtol(size_str + 1, &endptr, 10);
             if (endptr == size_str + 1 || fw_size <= 0 || fw_size > 0x7FFFFFFFL) {
                 ESP_LOGE(TAG, "[OTA] 固件大小字段非法: %s", size_str + 1);
-                send(client_sock, "OTA_FAIL:bad_size\n", 18, 0);
+                send_text(client_sock, "OTA_FAIL:bad_size\n");
                 continue;
             }
             ESP_LOGI(TAG, "[OTA] 收到OTA:START 文件=%s 大小=%ld", filename, fw_size);
