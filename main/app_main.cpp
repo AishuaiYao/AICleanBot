@@ -1189,17 +1189,25 @@ static void handle_client(int client_sock, int server_sock)
     while (1) {
         char cmd[128] = {};
         int ci = 0;
+        int recv_retries = 0;
         while (ci < (int)sizeof(cmd) - 1) {
             int r = recv(client_sock, cmd + ci, 1, 0);
-            if (r <= 0) {
-                if (ci == 0) {
-                    ESP_LOGI(TAG, "[TCP] 客户端断开");
+            if (r == 0) {
+                // 对端已关闭: 只收到半条命令也必须断开。tcp_server_task 是串行 accept 的，
+                // 在这里无限等下去会让整个服务再也无法接受新连接
+                ESP_LOGI(TAG, "[TCP] 命令接收中客户端断开");
+                goto client_disconnected;
+            }
+            if (r < 0) {
+                // 仅"已收到部分命令"时短暂等待补齐，并设上限(20*50ms=1s)防止永久空转
+                if (ci == 0 || ++recv_retries > 20) {
+                    ESP_LOGE(TAG, "[TCP] recv失败(retries=%d), 断开连接", recv_retries);
                     goto client_disconnected;
                 }
-                // 收到部分数据但recv失败, 等待50ms重试
                 vTaskDelay(pdMS_TO_TICKS(50));
                 continue;
             }
+            recv_retries = 0;
             if (cmd[ci] == '\n') break;
             ci++;
         }
