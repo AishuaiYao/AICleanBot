@@ -1,5 +1,9 @@
 const app = getApp()
 
+// 帧头是 4B 大端长度，链路错位会解出任意大的值；服务端单帧最大约 38KB(拼接图)，
+// 这里与 PC 客户端保持一致放宽到 2MB，避免按 GB 级长度分配缓冲
+const MAX_FRAME_SIZE = 2 * 1024 * 1024
+
 Page({
   data: {
     connected: false,
@@ -138,8 +142,18 @@ Page({
         }
         if (this.headerBuffer.length < 4) return
 
-        this.expectedLength = (this.headerBuffer[0] << 24) | (this.headerBuffer[1] << 16) | (this.headerBuffer[2] << 8) | this.headerBuffer[3]
+        // 用乘法而不是 <<24：位运算是 32 位有符号，首字节 >=128 时会解出负数
+        const frameSize = this.headerBuffer[0] * 0x1000000 +
+                          (this.headerBuffer[1] << 16) +
+                          (this.headerBuffer[2] << 8) +
+                          this.headerBuffer[3]
         this.headerBuffer = []
+        if (frameSize <= 0 || frameSize > MAX_FRAME_SIZE) {
+          this.log('!!! 帧头长度非法: ' + frameSize + '，丢弃本包重新同步')
+          this.setData({ capturing: false, progress: 0 })
+          return
+        }
+        this.expectedLength = frameSize
         this.receiveBuffer = new Uint8Array(this.expectedLength)
         this.receiveOffset = 0
         this.chunkCount = 0
@@ -169,6 +183,11 @@ Page({
 
   processImage(grayData) {
     this.log('>>> 处理图像, 长度=' + grayData.length)
+    // 只支持 160x120 原图与 320x120 拼接图；其它长度按 160 宽渲染会写出大量黑块
+    if (grayData.length !== 19200 && grayData.length !== 38400) {
+      this.log('!!! 图像长度异常，跳过渲染')
+      return
+    }
     const width = grayData.length === 38400 ? 320 : 160
     const height = 120
     const rgbaData = new Uint8ClampedArray(width * height * 4)
