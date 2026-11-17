@@ -24,6 +24,7 @@ Page({
   imgSocket: null,          // 图像TCP连接
   recvBuffer: null,         // 图像接收缓冲区（Uint8Array动态增长）
   textBuffer: '',           // 命令通道文本缓冲区（解决TCP拆包）
+  MAX_TEXT_BUFFER: 64 * 1024, // 无换行数据持续到达时的上限，保留尾部重新同步
   FRAME_HEADER_SIZE: 10,    // 帧头: [帧号2][电压1][左PWM1][右PWM1][G1][G2][左跳变率1][右跳变率1][电机运行1] = 10
   FRAME_IMAGE_SIZE: 19200,  // 图像数据: 160x120
   FRAME_PACKET_SIZE: 19210, // 每帧总大小
@@ -282,8 +283,23 @@ Page({
   onMessage(res) {
     const bytes = new Uint8Array(res.message)
 
+    // 分块转换，避免大消息用展开语法(...bytes)触发参数栈溢出
+    let text = ''
+    for (let i = 0; i < bytes.length; i += 8192) {
+      text += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192))
+    }
     // 追加到文本缓冲区（解决TCP拆包：一条[Enc]日志可能分多次onMessage到达）
-    this.textBuffer += String.fromCharCode(...bytes)
+    this.textBuffer += text
+
+    // 链路错位或设备持续发送无换行数据时缓冲会无限增长，保留尾部重新同步；
+    // 告警只在连续超限的首包打一次，避免错位期间刷屏
+    if (this.textBuffer.length > this.MAX_TEXT_BUFFER) {
+      this.textBuffer = this.textBuffer.slice(-this.MAX_TEXT_BUFFER)
+      if (!this._textBufferWarned) {
+        this._textBufferWarned = true
+        console.warn('[Experiment] 命令文本缓冲超限，已截断重新同步')
+      }
+    }
 
     // 按换行符切分完整消息
     let nlIdx
@@ -309,6 +325,12 @@ Page({
       }
 
       // IMG_OK / UDP_OK 等其他消息忽略
+    }
+
+    // 切分后缓冲降到上限以下（严格小于：截断后恰好等于上限不算恢复），
+    // 才允许下一轮连续超限时重新告警
+    if (this.textBuffer.length < this.MAX_TEXT_BUFFER) {
+      this._textBufferWarned = false
     }
   },
 
