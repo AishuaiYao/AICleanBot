@@ -1,5 +1,9 @@
 const app = getApp()
 
+// 设备目前固定 3 个分片，这里放宽到 8 留余量；UDP 包头里的数字未可信，
+// 直接拿它 new Array(totalChunks) 会让错包撑大数组或让帧缓冲永远收不齐
+const MAX_UDP_CHUNKS = 8
+
 Page({
   data: {
     imageData: null,
@@ -339,6 +343,13 @@ Page({
     const frameNum = (bytes[0] << 8) | bytes[1]    // 帧号
     const totalChunks = bytes[2]                    // 总分片数
     const chunkIndex = bytes[3]                     // 当前分片索引
+
+    if (totalChunks < 1 || totalChunks > MAX_UDP_CHUNKS ||
+        chunkIndex >= totalChunks || (chunkIndex === 0 && bytes.length < 11)) {
+      console.warn('[UDP] 分片头非法, 丢弃:', totalChunks, chunkIndex, bytes.length)
+      return
+    }
+
     let chunkData
     
     // 第一分片包含电压、电机PWM值和编码器脉冲数
@@ -415,10 +426,12 @@ Page({
     
     for (let i = 0; i < this.frameBuffer.totalChunks; i++) {
       const chunk = this.frameBuffer.chunks[i]
-      if (chunk) {
-        grayData.set(chunk, offset)
-        offset += chunk.length
+      // 缺片或累计长度超过一帧时 set() 会抛 RangeError / 写出错位图像，直接丢弃本帧
+      if (!chunk || offset + chunk.length > grayData.length) {
+        return null
       }
+      grayData.set(chunk, offset)
+      offset += chunk.length
     }
     
     return grayData
