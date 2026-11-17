@@ -29,11 +29,22 @@ exports.main = async (event, context) => {
   const fileID = CLOUD_PREFIX + filename
   console.log('[getFirmwareUrl] fileID:', fileID)
 
-  const result = await cloud.getTempFileURL({
-    fileList: [fileID]
-  })
+  let result
+  try {
+    result = await cloud.getTempFileURL({
+      fileList: [fileID]
+    })
+  } catch (err) {
+    console.error('[getFirmwareUrl] getTempFileURL 异常:', err)
+    return {
+      success: false,
+      errMsg: '获取下载链接异常: ' + ((err && err.errMsg) || err)
+    }
+  }
 
-  const file = result.fileList[0]
+  // fileList 为空或结果结构异常时直接取 [0] 会抛 TypeError，变成云函数 500；
+  // 统一降级成空对象，让调用方拿到结构化的失败响应
+  const file = (result && Array.isArray(result.fileList) && result.fileList[0]) || {}
   console.log('[getFirmwareUrl] 结果:', JSON.stringify(file))
 
   if (file.tempFileURL) {
