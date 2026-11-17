@@ -67,6 +67,9 @@ App({
       console.log('[App] TCP连接关闭')
       this.globalData.connected = false
       this.globalData.tcpSocket = null
+      // OTA 页面异常退出时不会走 clearOTACallback，残留的回调会吞掉重连后的
+      // 所有 TCP 消息(含握手)，必须随连接一起清掉
+      this.globalData.otaMessageCallback = null
       this.globalData.closeCallbacks.forEach(cb => cb())
     })
 
@@ -74,6 +77,7 @@ App({
       console.log('[App] !!! TCP错误:', err)
       this.globalData.connected = false
       this.globalData.tcpSocket = null
+      this.globalData.otaMessageCallback = null
       this.globalData.errorCallbacks.forEach(cb => cb(err))
     })
 
@@ -141,6 +145,7 @@ App({
     this.globalData.messageCallbacks = []
     this.globalData.closeCallbacks = []
     this.globalData.errorCallbacks = []
+    this.globalData.otaMessageCallback = null
     console.log('[App] ====================================')
   },
 
