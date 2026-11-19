@@ -268,81 +268,101 @@ Page({
 
   startUpload() {
     const selectedImages = this.data.images.filter(img => img.selected)
+    const total = selectedImages.length
     this.setData({
       uploading: true,
       uploadProgress: 0,
       uploadCurrent: 0,
-      uploadTotal: selectedImages.length
+      uploadTotal: total
     })
+
+    if (total === 0) {
+      this.setData({ uploading: false })
+      return
+    }
 
     let successCount = 0
     let failCount = 0
     let completed = 0
-    const db = wx.cloud.database()
+
+    // 每张图无论读图/上传成功或失败都要计入 completed 并统一收尾，
+    // 否则读图全部失败时 uploading 会永远停在 true
+    const finishOne = (ok) => {
+      if (!ok) failCount++
+      completed++
+      this.setData({
+        uploadProgress: Math.round((completed / total) * 100),
+        uploadCurrent: completed
+      })
+
+      if (completed === total) {
+        const storageImages = this.data.images.map(({ selected, ...rest }) => rest)
+        wx.setStorageSync('savedImages', storageImages)
+        const uploadedCount = this.data.images.filter(img => img.uploaded).length
+
+        this.setData({
+          uploading: false,
+          uploadProgress: 0,
+          selectedCount: 0,
+          uploadedCount
+        })
+
+        wx.showModal({
+          title: '上传完成',
+          content: `成功: ${successCount} 张\n失败: ${failCount} 张`,
+          showCancel: false
+        })
+      }
+    }
+
+    let db
+    try {
+      db = wx.cloud.database()
+    } catch (err) {
+      console.log('[Album] 云开发未初始化:', err)
+      for (let i = 0; i < total; i++) finishOne(false)
+      return
+    }
 
     selectedImages.forEach((img) => {
       wx.getFileSystemManager().readFile({
         filePath: img.path,
         encoding: 'base64',
         success: (res) => {
-          db.collection('dataset').add({
-            data: {
-              image: res.data,
-              width: 160,
-              height: 120,
-              time: new Date(),
-              uploadedAt: db.serverDate()
-            },
-            success: () => {
-              successCount++
-              const images = this.data.images
-              const idx = images.findIndex(item => item.path === img.path)
-              if (idx !== -1) {
-                images[idx].uploaded = true
-                images[idx].selected = false
-              }
-              this.setData({ images })
-            },
-            fail: (err) => {
-              failCount++
-              console.log('上传失败:', err)
-            },
-            complete: () => {
-              completed++
-              this.setData({
-                uploadProgress: Math.round((completed / selectedImages.length) * 100),
-                uploadCurrent: completed
-              })
-
-              if (completed === selectedImages.length) {
-                const storageImages = this.data.images.map(({ selected, ...rest }) => rest)
-                wx.setStorageSync('savedImages', storageImages)
-                const uploadedCount = this.data.images.filter(img => img.uploaded).length
-
-                this.setData({
-                  uploading: false,
-                  uploadProgress: 0,
-                  selectedCount: 0,
-                  uploadedCount
-                })
-
-                wx.showModal({
-                  title: '上传完成',
-                  content: `成功: ${successCount} 张\n失败: ${failCount} 张`,
-                  showCancel: false
-                })
-              }
-            }
-          })
+          let ok = false
+          try {
+            db.collection('dataset').add({
+              data: {
+                image: res.data,
+                width: 160,
+                height: 120,
+                time: new Date(),
+                uploadedAt: db.serverDate()
+              },
+              success: () => {
+                ok = true
+                successCount++
+                const images = this.data.images
+                const idx = images.findIndex(item => item.path === img.path)
+                if (idx !== -1) {
+                  images[idx].uploaded = true
+                  images[idx].selected = false
+                }
+                this.setData({ images })
+              },
+              fail: (err) => {
+                console.log('上传失败:', err)
+              },
+              complete: () => finishOne(ok)
+            })
+          } catch (err) {
+            console.log('上传异常:', err)
+            finishOne(false)
+          }
         },
         fail: (err) => {
-          failCount++
-          completed++
           console.log('读取图片失败:', err)
-          this.setData({
-            uploadProgress: Math.round((completed / selectedImages.length) * 100),
-            uploadCurrent: completed
-          })
+          finishOne(false)
         }
       })
     })
