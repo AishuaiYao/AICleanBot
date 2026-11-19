@@ -22,6 +22,11 @@ Page({
     statusType: ''
   },
 
+  // OTA 回执按行缓冲：TCP 是字节流，一条状态行可能分多个包到达，
+  // 也可能多条粘在一个包里(设备侧 OTA_PROGRESS 与 OTA_ACK 常相邻)。
+  _otaTextBuffer: '',
+  MAX_OTA_TEXT_BUFFER: 4096,
+
   onLoad() {
     this.loadFirmwareList()
   },
@@ -140,6 +145,7 @@ Page({
     this.setData({ flashing: true, progress: 0, status: '正在启动 OTA...', statusType: 'info' })
 
     app.setOTACallback(this.onOTAMessage.bind(this))
+    this._otaTextBuffer = ''
     this._otaOffset = 0
     this._otaAckTotal = 0
     this._otaState = 'wait_ready'
@@ -172,8 +178,28 @@ Page({
   },
 
   onOTAMessage(res) {
-    const bytes = new Uint8Array(res.message)
-    const text = String.fromCharCode.apply(null, bytes).trim()
+    const bytes = new Uint8Array(res.message || new ArrayBuffer(0))
+    // 分块转换，避免大包触发参数过多导致 RangeError
+    let chunk = ''
+    for (let i = 0; i < bytes.length; i += 8192) {
+      chunk += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192))
+    }
+
+    const text = (this._otaTextBuffer || '') + chunk
+    const lines = text.split('\n')
+    // 末段可能只是半条状态行，留到下一个包继续拼
+    this._otaTextBuffer = lines.pop() || ''
+    if (this._otaTextBuffer.length > this.MAX_OTA_TEXT_BUFFER) {
+      this._otaTextBuffer = this._otaTextBuffer.slice(-this.MAX_OTA_TEXT_BUFFER)
+    }
+
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (trimmed) this._handleOTALine(trimmed)
+    }
+  },
+
+  _handleOTALine(text) {
     console.log('[Firmware] OTA 响应:', text)
 
     if (text.startsWith('OTA_PROGRESS:')) {
