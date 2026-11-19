@@ -476,50 +476,70 @@ Page({
       success: (res) => {
         if (res.confirm) {
           const selectedImages = this.data.cloudImages.filter(img => img.selected)
+          const total = selectedImages.length
+          if (total === 0) {
+            wx.showToast({ title: '请先选择图片', icon: 'none' })
+            return
+          }
+
+          let db
+          try {
+            db = wx.cloud.database()
+          } catch (err) {
+            console.log('[Album] 云开发未初始化:', err)
+            wx.showToast({ title: '云开发未初始化', icon: 'none' })
+            return
+          }
+
           let successCount = 0
           let failCount = 0
-          const total = selectedImages.length
-          const db = wx.cloud.database()
+          const deletedIds = []
 
           wx.showLoading({ title: '删除中...', mask: true })
 
+          // 回调是异步乱序的，必须在成功回调里记录真实的 _id，
+          // 不能按 selectedImages 的顺序推断哪几张删成功了
+          const finishOne = (id, ok) => {
+            if (ok) {
+              successCount++
+              deletedIds.push(id)
+            } else {
+              failCount++
+            }
+            if (successCount + failCount !== total) return
+
+            wx.hideLoading()
+            if (failCount > 0) {
+              wx.showModal({
+                title: '删除完成',
+                content: `成功: ${successCount} 张\n失败: ${failCount} 张\n\n失败可能原因：数据库权限不足，请在云开发控制台设置 dataset 集合权限为"所有用户可读写"`,
+                showCancel: false
+              })
+            } else {
+              wx.showToast({ title: '删除成功', icon: 'success' })
+            }
+
+            // 只移除云端确实删掉的，失败项保留在列表里以便重试；
+            // 同时清掉选中态，与 cloudSelectedCount 保持一致
+            const cloudImages = this.data.cloudImages
+              .filter(item => !deletedIds.includes(item._id))
+              .map(item => ({ ...item, selected: false }))
+            this.setData({ cloudImages, cloudSelectedCount: 0 })
+          }
+
           selectedImages.forEach((img) => {
-            db.collection('dataset').doc(img._id).remove({
-              success: () => {
-                successCount++
-                if (successCount + failCount === total) {
-                  wx.hideLoading()
-                  if (failCount > 0) {
-                    wx.showModal({
-                      title: '删除完成',
-                      content: `成功: ${successCount} 张\n失败: ${failCount} 张\n\n失败可能原因：数据库权限不足，请在云开发控制台设置 dataset 集合权限为"所有用户可读写"`,
-                      showCancel: false
-                    })
-                  } else {
-                    wx.showToast({ title: '删除成功', icon: 'success' })
-                  }
-                  // 从列表中移除已删除的图片
-                  const cloudImages = this.data.cloudImages.filter(item => !item.selected)
-                  this.setData({ cloudImages, cloudSelectedCount: 0 })
+            try {
+              db.collection('dataset').doc(img._id).remove({
+                success: () => finishOne(img._id, true),
+                fail: (err) => {
+                  console.log('删除失败:', err)
+                  finishOne(img._id, false)
                 }
-              },
-              fail: (err) => {
-                console.log('删除失败:', err)
-                failCount++
-                if (successCount + failCount === total) {
-                  wx.hideLoading()
-                  wx.showModal({
-                    title: '删除完成',
-                    content: `成功: ${successCount} 张\n失败: ${failCount} 张\n\n失败可能原因：数据库权限不足，请在云开发控制台设置 dataset 集合权限为"所有用户可读写"`,
-                    showCancel: false
-                  })
-                  // 只移除成功删除的图片
-                  const deletedIds = selectedImages.slice(0, successCount).map(i => i._id)
-                  const cloudImages = this.data.cloudImages.filter(item => !deletedIds.includes(item._id))
-                  this.setData({ cloudImages, cloudSelectedCount: 0 })
-                }
-              }
-            })
+              })
+            } catch (err) {
+              console.log('删除异常:', err)
+              finishOne(img._id, false)
+            }
           })
         }
       }
