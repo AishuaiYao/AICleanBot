@@ -48,14 +48,24 @@ App({
     }
     console.log('[App] TCPSocket创建成功')
 
+    // tcpSocket 存在但 connected 仍为 false 时(如握手中重连)，必须先关掉旧连接：
+    // 否则旧 socket 泄漏，且它的回调会把新连接的状态清掉
+    if (this.globalData.tcpSocket) {
+      const old = this.globalData.tcpSocket
+      this.globalData.tcpSocket = null
+      old.close()
+    }
     this.globalData.tcpSocket = socket
+    this.globalData.connected = false
 
     socket.onConnect(() => {
+      if (this.globalData.tcpSocket !== socket) return
       console.log('[App] TCP连接成功，发送HELLO')
       socket.write('HELLO\n')
     })
 
     socket.onMessage((res) => {
+      if (this.globalData.tcpSocket !== socket) return
       if (this.globalData.otaMessageCallback) {
         this.globalData.otaMessageCallback(res)
         return
@@ -64,6 +74,7 @@ App({
     })
 
     socket.onClose(() => {
+      if (this.globalData.tcpSocket !== socket) return
       console.log('[App] TCP连接关闭')
       this.globalData.connected = false
       this.globalData.tcpSocket = null
@@ -74,6 +85,7 @@ App({
     })
 
     socket.onError((err) => {
+      if (this.globalData.tcpSocket !== socket) return
       console.log('[App] !!! TCP错误:', err)
       this.globalData.connected = false
       this.globalData.tcpSocket = null
@@ -137,8 +149,10 @@ App({
     if (this.globalData.tcpSocket) {
       console.log('[App] 发送STOP命令')
       this.sendCommand('STOP')
-      this.globalData.tcpSocket.close()
+      // 主动断开由本函数统一清理状态，先摘引用避免随后触发的 onClose 再清一次
+      const old = this.globalData.tcpSocket
       this.globalData.tcpSocket = null
+      old.close()
       console.log('[App] TCP已关闭')
     }
     this.globalData.connected = false
