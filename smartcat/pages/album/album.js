@@ -554,41 +554,71 @@ Page({
     }
 
     const selectedImages = this.data.cloudImages.filter(img => img.selected)
+    const total = selectedImages.length
+    if (total === 0) {
+      wx.showToast({ title: '请先选择图片', icon: 'none' })
+      return
+    }
+
     let savedCount = 0
     let failCount = 0
-    const total = selectedImages.length
+    let completed = 0
 
     wx.showLoading({ title: '保存中...', mask: true })
 
+    // 每张图无论写文件/保存成功、失败还是抛异常都要计入 completed，
+    // 否则只要有一张图的回调没走到，loading 就会永远挂着
+    const finishOne = (ok) => {
+      if (ok) savedCount++
+      else failCount++
+      completed++
+      if (completed === total) this.checkSaveComplete(savedCount, failCount, total)
+    }
+
     selectedImages.forEach((img, index) => {
-      const base64 = img.image.split(',')[1]
-      const fs = wx.getFileSystemManager()
+      const base64 = (img.image || '').split(',')[1]
       const filePath = wx.env.USER_DATA_PATH + '/cloud_' + Date.now() + '_' + index + '.png'
-      
-      fs.writeFile({
-        filePath: filePath,
-        data: base64,
-        encoding: 'base64',
-        success: () => {
-          wx.saveImageToPhotosAlbum({
-            filePath: filePath,
-            success: () => {
-              savedCount++
-              fs.unlinkSync(filePath)
-              this.checkSaveComplete(savedCount, failCount, total)
-            },
-            fail: (err) => {
-              failCount++
-              fs.unlinkSync(filePath)
-              this.checkSaveComplete(savedCount, failCount, total)
+      if (!base64) {
+        finishOne(false)
+        return
+      }
+
+      let fs
+      try {
+        fs = wx.getFileSystemManager()
+      } catch (err) {
+        finishOne(false)
+        return
+      }
+
+      // 临时文件必须无条件清理；unlinkSync 抛异常也不能吞掉 finishOne
+      const cleanup = () => {
+        try { fs.unlinkSync(filePath) } catch (e) {}
+      }
+
+      try {
+        fs.writeFile({
+          filePath: filePath,
+          data: base64,
+          encoding: 'base64',
+          success: () => {
+            try {
+              wx.saveImageToPhotosAlbum({
+                filePath: filePath,
+                success: () => { cleanup(); finishOne(true) },
+                fail: () => { cleanup(); finishOne(false) }
+              })
+            } catch (err) {
+              cleanup()
+              finishOne(false)
             }
-          })
-        },
-        fail: () => {
-          failCount++
-          this.checkSaveComplete(savedCount, failCount, total)
-        }
-      })
+          },
+          fail: () => { cleanup(); finishOne(false) }
+        })
+      } catch (err) {
+        cleanup()
+        finishOne(false)
+      }
     })
   },
 
