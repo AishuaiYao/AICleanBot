@@ -259,8 +259,10 @@ Page({
     
     if (this.imgSocket) {
       app.sendCommand('STOP_EXPERIMENT')
-      this.imgSocket.close()
+      // 先摘引用再 close，避免随后触发的 onClose 在页面卸载后又 setData
+      const old = this.imgSocket
       this.imgSocket = null
+      old.close()
     }
     this.recvBuffer = null
   },
@@ -348,6 +350,14 @@ Page({
   setupImageTCP() {
     // console.log('========== 图像TCP初始化 ==========')
 
+    // 设备可能重复回 WAITING_IMG_CONN；必须先关掉旧连接并摘掉引用，
+    // 否则旧 socket 的回调会继续写同一份 recvBuffer、把新连接状态清掉
+    if (this.imgSocket) {
+      const old = this.imgSocket
+      this.imgSocket = null
+      old.close()
+    }
+
     const imgSock = wx.createTCPSocket()
     if (!imgSock) {
       // console.log('[Experiment] 创建图像TCPSocket失败')
@@ -358,11 +368,13 @@ Page({
     this.recvBuffer = new Uint8Array(0)
 
     imgSock.onConnect(() => {
+      if (this.imgSocket !== imgSock) return
       // console.log('[Experiment] 图像TCP连接成功，发送握手')
       imgSock.write('IMG_CONN\n')
     })
 
     imgSock.onMessage((res) => {
+      if (this.imgSocket !== imgSock) return
       const t0 = Date.now()
       const newData = new Uint8Array(res.message)
 
@@ -397,12 +409,17 @@ Page({
     })
 
     imgSock.onClose(() => {
+      if (this.imgSocket !== imgSock) return
       // console.log('[Experiment] 图像TCP已关闭')
+      this.imgSocket = null
+      this.recvBuffer = new Uint8Array(0)
       this.setData({ streaming: false })
     })
 
     imgSock.onError((err) => {
+      if (this.imgSocket !== imgSock) return
       // console.log('[Experiment] 图像TCP错误:', err)
+      this.setData({ streaming: false })
     })
 
     // console.log('[Experiment] 发起图像TCP连接...')
