@@ -64,69 +64,103 @@ Page({
 
     this.setData({ downloading: true, status: '正在获取下载地址...', statusType: 'info' })
 
+    // 云开发未初始化、云函数返回结构异常、读文件抛错等任一失败路径
+    // 都必须复位 downloading，否则页面会永远停在"下载中"
+    const failFetch = (msg) => {
+      console.error('[Firmware] ' + msg)
+      this.setData({ downloading: false, status: msg, statusType: 'error' })
+    }
+
     console.log('[Firmware] 请求云函数获取下载地址:', filename)
 
     const fileID = 'cloud://' + app.globalData.cloudEnvPrefix + '/firmware/' + filename
 
-    wx.cloud.callFunction({
-      name: 'getFirmwareUrl',
-      // filename 为云函数首选字段，fileID 兼容只读 fileID 的旧版云函数
-      data: { filename: filename, fileID: fileID },
-      success: cfRes => {
-        const { success, url } = cfRes.result
-        if (!success || !url) {
-          console.error('[Firmware] 获取下载地址失败:', cfRes.result)
-          this.setData({ downloading: false, status: '获取下载地址失败', statusType: 'error' })
-          return
-        }
+    try {
+      wx.cloud.callFunction({
+        name: 'getFirmwareUrl',
+        // filename 为云函数首选字段，fileID 兼容只读 fileID 的旧版云函数
+        data: { filename: filename, fileID: fileID },
+        success: cfRes => {
+          const result = cfRes && cfRes.result
+          const url = result && result.url
+          if (!result || !result.success || !url) {
+            console.error('[Firmware] 获取下载地址失败:', result)
+            failFetch('获取下载地址失败')
+            return
+          }
 
-        console.log('[Firmware] 获取到下载地址:', url)
-        this.setData({ status: '正在下载固件...', statusType: 'info' })
+          console.log('[Firmware] 获取到下载地址:', url)
+          this.setData({ status: '正在下载固件...', statusType: 'info' })
 
-        wx.downloadFile({
-          url: url,
-          success: dRes => {
-            if (dRes.statusCode !== 200) {
-              console.error('[Firmware] HTTP 状态码异常:', dRes.statusCode)
-              this.setData({ downloading: false, status: '下载失败: HTTP ' + dRes.statusCode, statusType: 'error' })
-              return
-            }
-            console.log('[Firmware] 下载完成, tempFilePath:', dRes.tempFilePath)
-            const fs = wx.getFileSystemManager()
-            fs.readFile({
-              filePath: dRes.tempFilePath,
-              success: readRes => {
-                const buffer = readRes.data
-                const size = buffer.byteLength || buffer.length
-                console.log('[Firmware] 固件大小:', size, 'bytes')
-                this._otaData = new Uint8Array(buffer instanceof ArrayBuffer ? buffer : buffer.buffer)
-                this._otaFilename = filename
-                const sizeStr = size > 1048576 ? (size / 1048576).toFixed(2) + ' MB' : (size / 1024).toFixed(0) + ' KB'
-                this.setData({
-                  downloading: false,
-                  step3Done: true,
-                  otaSize: sizeStr,
-                  status: '拉取成功！请切换回设备 WiFi',
-                  statusType: 'success'
-                })
+          try {
+            wx.downloadFile({
+              url: url,
+              success: dRes => {
+                if (dRes.statusCode !== 200) {
+                  failFetch('下载失败: HTTP ' + dRes.statusCode)
+                  return
+                }
+                console.log('[Firmware] 下载完成, tempFilePath:', dRes.tempFilePath)
+                try {
+                  const fs = wx.getFileSystemManager()
+                  fs.readFile({
+                    filePath: dRes.tempFilePath,
+                    success: readRes => {
+                      try {
+                        const buffer = readRes.data
+                        const size = buffer.byteLength || buffer.length
+                        if (!size) {
+                          failFetch('固件文件为空')
+                          return
+                        }
+                        // readFile 可能返回带 byteOffset 的视图，不能把整个底层
+                        // buffer 当成固件，否则 OTA 会多发/少发字节
+                        const bytes = buffer instanceof ArrayBuffer
+                          ? new Uint8Array(buffer)
+                          : (buffer.buffer
+                              ? new Uint8Array(buffer.buffer, buffer.byteOffset || 0, size)
+                              : Uint8Array.from(buffer))
+                        console.log('[Firmware] 固件大小:', size, 'bytes')
+                        this._otaData = bytes
+                        this._otaFilename = filename
+                        const sizeStr = size > 1048576 ? (size / 1048576).toFixed(2) + ' MB' : (size / 1024).toFixed(0) + ' KB'
+                        this.setData({
+                          downloading: false,
+                          step3Done: true,
+                          otaSize: sizeStr,
+                          status: '拉取成功！请切换回设备 WiFi',
+                          statusType: 'success'
+                        })
+                      } catch (err) {
+                        failFetch('解析固件失败')
+                      }
+                    },
+                    fail: err => {
+                      console.error('[Firmware] 读取文件失败:', err)
+                      failFetch('读取固件失败')
+                    }
+                  })
+                } catch (err) {
+                  failFetch('读取固件失败')
+                }
               },
               fail: err => {
-                console.error('[Firmware] 读取文件失败:', err)
-                this.setData({ downloading: false, status: '读取固件失败', statusType: 'error' })
+                console.error('[Firmware] 下载失败:', err)
+                failFetch('下载失败: ' + JSON.stringify(err))
               }
             })
-          },
-          fail: err => {
-            console.error('[Firmware] 下载失败:', err)
-            this.setData({ downloading: false, status: '下载失败: ' + JSON.stringify(err), statusType: 'error' })
+          } catch (err) {
+            failFetch('下载失败')
           }
-        })
-      },
-      fail: err => {
-        console.error('[Firmware] 云函数调用失败:', err)
-        this.setData({ downloading: false, status: '云函数调用失败，请检查网络', statusType: 'error' })
-      }
-    })
+        },
+        fail: err => {
+          console.error('[Firmware] 云函数调用失败:', err)
+          failFetch('云函数调用失败，请检查网络')
+        }
+      })
+    } catch (err) {
+      failFetch('云开发未初始化，请检查环境配置')
+    }
   },
 
   // Step 4: 确认切换回设备WiFi
