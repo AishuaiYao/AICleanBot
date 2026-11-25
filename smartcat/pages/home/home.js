@@ -205,9 +205,23 @@ Page({
     }
 
     this.connecting = true
-    wx.showLoading({ title: '连接中...', mask: true })
 
-    const socket = wx.createTCPSocket()
+    // createTCPSocket 可能返回空(基础库不支持/资源不足)，此时不能让
+    // connecting 与 loading 一直挂着，直接给出失败反馈
+    let socket = null
+    try {
+      socket = wx.createTCPSocket()
+    } catch (err) {
+      console.log('[Home] !!! 创建TCPSocket异常:', err)
+    }
+    if (!socket) {
+      console.log('[Home] !!! 创建TCPSocket失败')
+      this.connecting = false
+      wx.showToast({ title: '创建连接失败', icon: 'none' })
+      return
+    }
+
+    wx.showLoading({ title: '连接中...', mask: true })
     this.testSocket = socket
 
     // 设置超时：3秒后自动关闭
