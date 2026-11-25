@@ -81,8 +81,11 @@ Page({
     
     if (this.udpSocket) {
       app.sendCommand('STOP_STREAM')
-      this.udpSocket.close()
+      // 先摘引用再 close，随后到达的 UDP 回调会被身份校验挡掉
+      const old = this.udpSocket
       this.udpSocket = null
+      app.setUDPSocket(null)
+      old.close()
     }
     this.frameBuffer = null
   },
@@ -297,6 +300,8 @@ Page({
     app.setUDPSocket(udp)
 
     udp.onMessage((res) => {
+      // socket 已关闭/被替换后到达的数据不能继续写帧缓冲
+      if (this.udpSocket !== udp) return
       this.onReceiveUDPData(res.message)
     })
 
@@ -304,9 +309,25 @@ Page({
       console.log('[Collect] UDP错误:', err)
     })
 
-    const port = udp.bind(this.udpLocalPort)
+    let port = 0
+    try {
+      port = udp.bind(this.udpLocalPort)
+    } catch (err) {
+      console.log('[Collect] UDP绑定异常:', err)
+    }
     console.log('[Collect] UDP绑定端口: ' + port)
     console.log('================================')
+
+    // 绑定失败(端口被占用等)时不能拿 0/-1 去发 UDP_HELLO，
+    // 否则设备往无效端口推流，页面会永远等不到 UDP_OK
+    if (!(port > 0 && port <= 65535)) {
+      console.log('[Collect] !!! UDP绑定失败，清理socket')
+      this.udpSocket = null
+      app.setUDPSocket(null)
+      udp.close()
+      wx.showToast({ title: 'UDP端口绑定失败', icon: 'none' })
+      return
+    }
     
     app.sendCommand('UDP_HELLO:' + port)
     
